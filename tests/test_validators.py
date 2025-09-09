@@ -273,7 +273,7 @@ class TestRangeValidator:
 
         # Invalid range should be caught at AttributeDefinition creation
         with pytest.raises(ValidationError):
-            AttributeDefinition(type="int", range="invalid_range")
+            attr_def = AttributeDefinition(type="int", range="invalid_range")
 
 
 class TestEnumValidator:
