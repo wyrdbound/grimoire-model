@@ -270,7 +270,6 @@ class TestRangeValidator:
 
     def test_invalid_range_specification(self):
         """Test handling of invalid range specifications."""
-        RangeValidator()
 
         # Invalid range should be caught at AttributeDefinition creation
         with pytest.raises(ValidationError):
