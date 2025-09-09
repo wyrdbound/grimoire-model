@@ -30,11 +30,7 @@ class TestPathUtils:
         data = {
             "name": "John",
             "age": 30,
-            "address": {
-                "street": "123 Main St",
-                "city": "New York",
-                "country": "USA"
-            }
+            "address": {"street": "123 Main St", "city": "New York", "country": "USA"},
         }
 
         # Simple values
@@ -109,10 +105,7 @@ class TestPathUtils:
         """Test deleting nested values."""
         data = {
             "name": "John",
-            "address": {
-                "street": "123 Main St",
-                "city": "New York"
-            }
+            "address": {"street": "123 Main St", "city": "New York"},
         }
 
         # Delete simple value
@@ -140,8 +133,8 @@ class TestPathUtils:
             "name": "John",
             "address": {
                 "street": "123 Main St",
-                "city": None  # Explicitly None value
-            }
+                "city": None,  # Explicitly None value
+            },
         }
 
         # Existing values
@@ -161,10 +154,7 @@ class TestPathUtils:
         data = {
             "name": "John",
             "age": 30,
-            "address": {
-                "street": "123 Main St",
-                "city": "New York"
-            }
+            "address": {"street": "123 Main St", "city": "New York"},
         }
 
         flattened = flatten_dict(data)
@@ -173,7 +163,7 @@ class TestPathUtils:
             "name": "John",
             "age": 30,
             "address.street": "123 Main St",
-            "address.city": "New York"
+            "address.city": "New York",
         }
 
         assert flattened == expected
@@ -183,13 +173,8 @@ class TestPathUtils:
         data = {
             "user": {
                 "profile": {
-                    "personal": {
-                        "name": "John",
-                        "age": 30
-                    },
-                    "contact": {
-                        "email": "john@example.com"
-                    }
+                    "personal": {"name": "John", "age": 30},
+                    "contact": {"email": "john@example.com"},
                 }
             }
         }
@@ -199,20 +184,14 @@ class TestPathUtils:
         expected = {
             "user.profile.personal.name": "John",
             "user.profile.personal.age": 30,
-            "user.profile.contact.email": "john@example.com"
+            "user.profile.contact.email": "john@example.com",
         }
 
         assert flattened == expected
 
     def test_flatten_dict_custom_separator(self):
         """Test flattening with custom separator."""
-        data = {
-            "a": {
-                "b": {
-                    "c": "value"
-                }
-            }
-        }
+        data = {"a": {"b": {"c": "value"}}}
 
         flattened = flatten_dict(data, separator="/")
         assert flattened == {"a/b/c": "value"}
@@ -222,10 +201,7 @@ class TestPathUtils:
         data = {
             "name": "John",
             "tags": ["python", "testing"],
-            "config": {
-                "enabled": True,
-                "count": 5
-            }
+            "config": {"enabled": True, "count": 5},
         }
 
         flattened = flatten_dict(data)
@@ -234,7 +210,7 @@ class TestPathUtils:
             "name": "John",
             "tags": ["python", "testing"],  # List preserved
             "config.enabled": True,
-            "config.count": 5
+            "config.count": 5,
         }
 
         assert flattened == expected
@@ -246,7 +222,7 @@ class TestPathUtils:
             "age": 30,
             "address.street": "123 Main St",
             "address.city": "New York",
-            "user.profile.email": "john@example.com"
+            "user.profile.email": "john@example.com",
         }
 
         unflattened = unflatten_dict(flattened)
@@ -254,15 +230,8 @@ class TestPathUtils:
         expected = {
             "name": "John",
             "age": 30,
-            "address": {
-                "street": "123 Main St",
-                "city": "New York"
-            },
-            "user": {
-                "profile": {
-                    "email": "john@example.com"
-                }
-            }
+            "address": {"street": "123 Main St", "city": "New York"},
+            "user": {"profile": {"email": "john@example.com"}},
         }
 
         assert unflattened == expected
@@ -272,13 +241,7 @@ class TestPathUtils:
         flattened = {"a/b/c": "value"}
         unflattened = unflatten_dict(flattened, separator="/")
 
-        expected = {
-            "a": {
-                "b": {
-                    "c": "value"
-                }
-            }
-        }
+        expected = {"a": {"b": {"c": "value"}}}
 
         assert unflattened == expected
 
@@ -290,12 +253,9 @@ class TestPathUtils:
                 "age": 30,
                 "address": {
                     "street": "123 Main St",
-                    "coordinates": {
-                        "lat": 40.7128,
-                        "lng": -74.0060
-                    }
-                }
-            }
+                    "coordinates": {"lat": 40.7128, "lng": -74.0060},
+                },
+            },
         }
 
         flattened = flatten_dict(original)
@@ -308,10 +268,7 @@ class TestPathUtils:
         dict1 = {
             "name": "John",
             "age": 30,
-            "address": {
-                "street": "123 Main St",
-                "city": "New York"
-            }
+            "address": {"street": "123 Main St", "city": "New York"},
         }
 
         dict2 = {
@@ -319,8 +276,8 @@ class TestPathUtils:
             "email": "john@example.com",  # New
             "address": {
                 "city": "Boston",  # Override nested
-                "country": "USA"  # New nested
-            }
+                "country": "USA",  # New nested
+            },
         }
 
         result = merge_nested_dicts(dict1, dict2)
@@ -329,11 +286,7 @@ class TestPathUtils:
             "name": "John",
             "age": 31,
             "email": "john@example.com",
-            "address": {
-                "street": "123 Main St",
-                "city": "Boston",
-                "country": "USA"
-            }
+            "address": {"street": "123 Main St", "city": "Boston", "country": "USA"},
         }
 
         assert result == expected
@@ -341,26 +294,10 @@ class TestPathUtils:
     def test_merge_nested_dicts_deep(self):
         """Test merging deeply nested dictionaries."""
         dict1 = {
-            "level1": {
-                "level2": {
-                    "level3": {
-                        "value1": "old",
-                        "value2": "preserved"
-                    }
-                }
-            }
+            "level1": {"level2": {"level3": {"value1": "old", "value2": "preserved"}}}
         }
 
-        dict2 = {
-            "level1": {
-                "level2": {
-                    "level3": {
-                        "value1": "new",
-                        "value3": "added"
-                    }
-                }
-            }
-        }
+        dict2 = {"level1": {"level2": {"level3": {"value1": "new", "value3": "added"}}}}
 
         result = merge_nested_dicts(dict1, dict2)
 
@@ -370,7 +307,7 @@ class TestPathUtils:
                     "level3": {
                         "value1": "new",
                         "value2": "preserved",
-                        "value3": "added"
+                        "value3": "added",
                     }
                 }
             }
@@ -380,32 +317,15 @@ class TestPathUtils:
 
     def test_merge_nested_dicts_overwrite_behavior(self):
         """Test merge behavior when overwriting non-dict with dict."""
-        dict1 = {
-            "config": "simple_value",
-            "nested": {
-                "keep": "this"
-            }
-        }
+        dict1 = {"config": "simple_value", "nested": {"keep": "this"}}
 
-        dict2 = {
-            "config": {
-                "complex": "value"
-            },
-            "nested": {
-                "add": "this"
-            }
-        }
+        dict2 = {"config": {"complex": "value"}, "nested": {"add": "this"}}
 
         result = merge_nested_dicts(dict1, dict2)
 
         expected = {
-            "config": {
-                "complex": "value"
-            },
-            "nested": {
-                "keep": "this",
-                "add": "this"
-            }
+            "config": {"complex": "value"},
+            "nested": {"keep": "this", "add": "this"},
         }
 
         assert result == expected
@@ -420,29 +340,29 @@ class TestInheritanceUtils:
 
         # Create parent model (use proper type annotations)
         parent_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {
                 "name": {"type": "str", "required": True},
-                "created_at": {"type": "str", "computed": True, "derived": "{{now()}}"}
-            }
+                "created_at": {"type": "str", "computed": True, "derived": "{{now()}}"},
+            },
         )
         parent = ModelDefinition(
-            id="base_model",
-            name="BaseModel",
-            attributes=parent_attrs
+            id="base_model", name="BaseModel", attributes=parent_attrs
         )
 
         # Create child model
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {
                 "email": {"type": "str", "required": True},
-                "name": {"type": "str", "required": False}  # Override parent
-            }
+                "name": {"type": "str", "required": False},  # Override parent
+            },
         )
         child = ModelDefinition(
             id="user_model",
             name="UserModel",
             extends=["base_model"],
-            attributes=child_attrs
+            attributes=child_attrs,
         )
 
         models = {"base_model": parent, "user_model": child}
@@ -464,15 +384,10 @@ class TestInheritanceUtils:
         from typing import Any, Dict, Union, cast
 
         attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
-                "name": {"type": "str", "required": True}
-            }
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {"name": {"type": "str", "required": True}},
         )
-        model = ModelDefinition(
-            id="simple_model",
-            name="SimpleModel",
-            attributes=attrs
-        )
+        model = ModelDefinition(id="simple_model", name="SimpleModel", attributes=attrs)
 
         models = {"simple_model": model}
 
@@ -488,27 +403,20 @@ class TestInheritanceUtils:
 
         # Create parent with str type
         parent_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
-                "field": {"type": "str", "required": True}
-            }
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {"field": {"type": "str", "required": True}},
         )
-        parent = ModelDefinition(
-            id="parent",
-            name="Parent",
-            attributes=parent_attrs
-        )
+        parent = ModelDefinition(id="parent", name="Parent", attributes=parent_attrs)
 
         # Create child with conflicting int type
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {
                 "field": {"type": "int", "required": True}  # Conflicting type
-            }
+            },
         )
         child = ModelDefinition(
-            id="child",
-            name="Child",
-            extends=["parent"],
-            attributes=child_attrs
+            id="child", name="Child", extends=["parent"], attributes=child_attrs
         )
 
         models = {"parent": parent, "child": child}
@@ -523,27 +431,20 @@ class TestInheritanceUtils:
 
         # Create compatible models
         parent_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
-                "field": {"type": "str", "required": True}
-            }
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {"field": {"type": "str", "required": True}},
         )
-        parent = ModelDefinition(
-            id="parent",
-            name="Parent",
-            attributes=parent_attrs
-        )
+        parent = ModelDefinition(id="parent", name="Parent", attributes=parent_attrs)
 
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {
                 "field": {"type": "str", "required": False},  # Compatible override
-                "new_field": {"type": "int", "required": True}
-            }
+                "new_field": {"type": "int", "required": True},
+            },
         )
         child = ModelDefinition(
-            id="child",
-            name="Child",
-            extends=["parent"],
-            attributes=child_attrs
+            id="child", name="Child", extends=["parent"], attributes=child_attrs
         )
 
         models = {"parent": parent, "child": child}
@@ -554,20 +455,12 @@ class TestInheritanceUtils:
     def test_find_inheritance_cycles(self):
         """Test finding inheritance cycles."""
         # Create models with circular inheritance
-        model_a = ModelDefinition(
-            id="A",
-            name="A",
-            extends=["B"]
-        )
-        model_b = ModelDefinition(
-            id="B",
-            name="B",
-            extends=["C"]
-        )
+        model_a = ModelDefinition(id="A", name="A", extends=["B"])
+        model_b = ModelDefinition(id="B", name="B", extends=["C"])
         model_c = ModelDefinition(
             id="C",
             name="C",
-            extends=["A"]  # Creates cycle
+            extends=["A"],  # Creates cycle
         )
 
         models = {"A": model_a, "B": model_b, "C": model_c}
@@ -584,19 +477,11 @@ class TestInheritanceUtils:
     def test_find_inheritance_no_cycles(self):
         """Test finding inheritance with no cycles."""
         # Create models with valid inheritance
-        model_a = ModelDefinition(
-            id="A",
-            name="A",
-            extends=["B"]
-        )
-        model_b = ModelDefinition(
-            id="B",
-            name="B",
-            extends=["C"]
-        )
+        model_a = ModelDefinition(id="A", name="A", extends=["B"])
+        model_b = ModelDefinition(id="B", name="B", extends=["C"])
         model_c = ModelDefinition(
             id="C",
-            name="C"  # No inheritance
+            name="C",  # No inheritance
         )
 
         models = {"A": model_a, "B": model_b, "C": model_c}
@@ -609,15 +494,11 @@ class TestInheritanceUtils:
         from typing import Any, Dict, Union, cast
 
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
-            Dict[str, Union[AttributeDefinition, Dict[str, Any]]], {
-                "name": {"type": "str", "required": True}
-            }
+            Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
+            {"name": {"type": "str", "required": True}},
         )
         child = ModelDefinition(
-            id="child",
-            name="Child",
-            extends=["missing_parent"],
-            attributes=child_attrs
+            id="child", name="Child", extends=["missing_parent"], attributes=child_attrs
         )
 
         models = {"child": child}  # Missing parent
@@ -629,22 +510,11 @@ class TestInheritanceUtils:
 
     def test_build_inheritance_graph(self):
         """Test building inheritance graph."""
-        parent = ModelDefinition(
-            id="parent",
-            name="Parent"
-        )
+        parent = ModelDefinition(id="parent", name="Parent")
 
-        child1 = ModelDefinition(
-            id="child1",
-            name="Child1",
-            extends=["parent"]
-        )
+        child1 = ModelDefinition(id="child1", name="Child1", extends=["parent"])
 
-        child2 = ModelDefinition(
-            id="child2",
-            name="Child2",
-            extends=["parent"]
-        )
+        child2 = ModelDefinition(id="child2", name="Child2", extends=["parent"])
 
         models = {"parent": parent, "child1": child1, "child2": child2}
 
@@ -662,16 +532,9 @@ class TestInheritanceUtils:
     def test_validate_model_registry(self):
         """Test model registry validation."""
         # Create valid registry
-        parent = ModelDefinition(
-            id="parent",
-            name="Parent"
-        )
+        parent = ModelDefinition(id="parent", name="Parent")
 
-        child = ModelDefinition(
-            id="child",
-            name="Child",
-            extends=["parent"]
-        )
+        child = ModelDefinition(id="child", name="Child", extends=["parent"])
 
         valid_models = {"parent": parent, "child": child}
 
@@ -680,9 +543,7 @@ class TestInheritanceUtils:
 
         # Create invalid registry with missing parent
         invalid_child = ModelDefinition(
-            id="invalid_child",
-            name="InvalidChild",
-            extends=["missing_parent"]
+            id="invalid_child", name="InvalidChild", extends=["missing_parent"]
         )
 
         invalid_models = {"invalid_child": invalid_child}

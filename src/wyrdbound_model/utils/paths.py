@@ -9,22 +9,19 @@ from typing import Any, Dict, List
 
 
 def get_nested_value(
-    data: Dict[str, Any],
-    path: str,
-    default: Any = None,
-    separator: str = "."
+    data: Dict[str, Any], path: str, default: Any = None, separator: str = "."
 ) -> Any:
     """Get a nested value from a dictionary using dot notation.
-    
+
     Args:
         data: The dictionary to access
         path: Dot-separated path to the value (e.g., "stats.strength")
         default: Default value to return if path doesn't exist
         separator: Path separator character (default: ".")
-    
+
     Returns:
         The value at the specified path, or default if not found
-        
+
     Examples:
         >>> data = {"stats": {"strength": 15, "dex": 12}}
         >>> get_nested_value(data, "stats.strength")
@@ -54,21 +51,21 @@ def set_nested_value(
     path: str,
     value: Any,
     separator: str = ".",
-    create_missing: bool = True
+    create_missing: bool = True,
 ) -> None:
     """Set a nested value in a dictionary using dot notation.
-    
+
     Args:
         data: The dictionary to modify
         path: Dot-separated path to set (e.g., "stats.strength")
         value: Value to set
         separator: Path separator character (default: ".")
         create_missing: Whether to create missing intermediate dictionaries
-        
+
     Raises:
         KeyError: If create_missing is False and intermediate path doesn't exist
         TypeError: If intermediate path exists but is not a dictionary
-        
+
     Examples:
         >>> data = {}
         >>> set_nested_value(data, "stats.strength", 15)
@@ -102,21 +99,17 @@ def set_nested_value(
     current[keys[-1]] = value
 
 
-def has_nested_value(
-    data: Dict[str, Any],
-    path: str,
-    separator: str = "."
-) -> bool:
+def has_nested_value(data: Dict[str, Any], path: str, separator: str = ".") -> bool:
     """Check if a nested path exists in a dictionary.
-    
+
     Args:
         data: The dictionary to check
         path: Dot-separated path to check (e.g., "stats.strength")
         separator: Path separator character (default: ".")
-    
+
     Returns:
         True if the path exists, False otherwise
-        
+
     Examples:
         >>> data = {"stats": {"strength": 15}}
         >>> has_nested_value(data, "stats.strength")
@@ -141,21 +134,17 @@ def has_nested_value(
     return True
 
 
-def delete_nested_value(
-    data: Dict[str, Any],
-    path: str,
-    separator: str = "."
-) -> bool:
+def delete_nested_value(data: Dict[str, Any], path: str, separator: str = ".") -> bool:
     """Delete a nested value from a dictionary using dot notation.
-    
+
     Args:
         data: The dictionary to modify
         path: Dot-separated path to delete (e.g., "stats.strength")
         separator: Path separator character (default: ".")
-    
+
     Returns:
         True if the value was deleted, False if it didn't exist
-        
+
     Examples:
         >>> data = {"stats": {"strength": 15, "dex": 12}}
         >>> delete_nested_value(data, "stats.strength")
@@ -191,20 +180,18 @@ def delete_nested_value(
 
 
 def flatten_dict(
-    data: Dict[str, Any],
-    separator: str = ".",
-    prefix: str = ""
+    data: Dict[str, Any], separator: str = ".", prefix: str = ""
 ) -> Dict[str, Any]:
     """Flatten a nested dictionary into dot-notation keys.
-    
+
     Args:
         data: The dictionary to flatten
         separator: Path separator character (default: ".")
         prefix: Prefix to add to all keys
-    
+
     Returns:
         Flattened dictionary with dot-notation keys
-        
+
     Examples:
         >>> data = {"stats": {"strength": 15, "dex": 12}}
         >>> flatten_dict(data)
@@ -223,19 +210,16 @@ def flatten_dict(
     return result
 
 
-def unflatten_dict(
-    data: Dict[str, Any],
-    separator: str = "."
-) -> Dict[str, Any]:
+def unflatten_dict(data: Dict[str, Any], separator: str = ".") -> Dict[str, Any]:
     """Unflatten a dictionary with dot-notation keys into nested structure.
-    
+
     Args:
         data: The flattened dictionary
         separator: Path separator character (default: ".")
-    
+
     Returns:
         Nested dictionary
-        
+
     Examples:
         >>> data = {'stats.strength': 15, 'stats.dex': 12}
         >>> unflatten_dict(data)
@@ -250,20 +234,18 @@ def unflatten_dict(
 
 
 def merge_nested_dicts(
-    target: Dict[str, Any],
-    source: Dict[str, Any],
-    overwrite: bool = True
+    target: Dict[str, Any], source: Dict[str, Any], overwrite: bool = True
 ) -> Dict[str, Any]:
     """Recursively merge two nested dictionaries.
-    
+
     Args:
         target: Target dictionary to merge into
         source: Source dictionary to merge from
         overwrite: Whether to overwrite existing values
-    
+
     Returns:
         Merged dictionary (modifies target in-place)
-        
+
     Examples:
         >>> target = {"stats": {"strength": 15}}
         >>> source = {"stats": {"dex": 12}, "name": "Hero"}
@@ -282,20 +264,18 @@ def merge_nested_dicts(
 
 
 def get_nested_paths(
-    data: Dict[str, Any],
-    separator: str = ".",
-    include_intermediate: bool = False
+    data: Dict[str, Any], separator: str = ".", include_intermediate: bool = False
 ) -> List[str]:
     """Get all nested paths in a dictionary.
-    
+
     Args:
         data: The dictionary to analyze
         separator: Path separator character (default: ".")
         include_intermediate: Whether to include intermediate dictionary paths
-    
+
     Returns:
         List of all paths in the dictionary
-        
+
     Examples:
         >>> data = {"stats": {"strength": 15, "dex": 12}}
         >>> get_nested_paths(data)
@@ -321,20 +301,18 @@ def get_nested_paths(
 
 
 def filter_dict_by_paths(
-    data: Dict[str, Any],
-    paths: List[str],
-    separator: str = "."
+    data: Dict[str, Any], paths: List[str], separator: str = "."
 ) -> Dict[str, Any]:
     """Filter a dictionary to only include specified paths.
-    
+
     Args:
         data: The dictionary to filter
         paths: List of paths to include
         separator: Path separator character (default: ".")
-    
+
     Returns:
         New dictionary containing only the specified paths
-        
+
     Examples:
         >>> data = {"stats": {"strength": 15, "dex": 12}, "name": "Hero"}
         >>> filter_dict_by_paths(data, ["stats.strength", "name"])

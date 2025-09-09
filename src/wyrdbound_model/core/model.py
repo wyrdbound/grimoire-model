@@ -28,7 +28,7 @@ from .exceptions import (
 )
 from .schema import AttributeDefinition, ModelDefinition
 
-logger = get_logger('core.model')
+logger = get_logger("core.model")
 
 
 class WyrdboundModel(MutableMapping):
@@ -44,7 +44,7 @@ class WyrdboundModel(MutableMapping):
         template_resolver: Optional[TemplateResolver] = None,
         derived_field_resolver: Optional[DerivedFieldResolver] = None,
         instance_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ):
         """Initialize WyrdboundModel with dependency injection.
 
@@ -52,7 +52,8 @@ class WyrdboundModel(MutableMapping):
             model_definition: The model schema definition
             data: Initial data dictionary
             template_resolver: Template resolution service (injected dependency)
-            derived_field_resolver: Derived field management service (injected dependency)
+            derived_field_resolver: Derived field management service (injected
+                dependency)
             instance_id: Unique identifier for this model instance
             **kwargs: Additional configuration options
         """
@@ -61,8 +62,9 @@ class WyrdboundModel(MutableMapping):
 
         # Dependency injection - create defaults if not provided
         self._template_resolver = template_resolver or create_template_resolver()
-        self._derived_field_resolver = derived_field_resolver or create_derived_field_resolver(
-            self._template_resolver, self._instance_id
+        self._derived_field_resolver = (
+            derived_field_resolver
+            or create_derived_field_resolver(self._template_resolver, self._instance_id)
         )
 
         # Resolve inheritance to get complete schema
@@ -74,7 +76,9 @@ class WyrdboundModel(MutableMapping):
 
         # Set up derived field resolver with our data
         self._derived_field_resolver.set_model_data_accessor(dict(self._data))
-        self._derived_field_resolver.set_field_change_callback(self._on_derived_field_changed)
+        self._derived_field_resolver.set_field_change_callback(
+            self._on_derived_field_changed
+        )
 
         # Register derived fields
         self._register_derived_fields()
@@ -109,7 +113,7 @@ class WyrdboundModel(MutableMapping):
             data=new_data,
             template_resolver=self._template_resolver,
             derived_field_resolver=self._derived_field_resolver,
-            instance_id=self._instance_id
+            instance_id=self._instance_id,
         )
 
     # MutableMapping interface
@@ -161,7 +165,8 @@ class WyrdboundModel(MutableMapping):
     def get_derived_fields(self) -> Set[str]:
         """Get names of all derived fields."""
         return {
-            name for name, attr in self._resolved_attributes.items()
+            name
+            for name, attr in self._resolved_attributes.items()
             if isinstance(attr, AttributeDefinition) and attr.derived
         }
 
@@ -198,9 +203,9 @@ class WyrdboundModel(MutableMapping):
                 # Convert string results to boolean for proper evaluation
                 if isinstance(result, str):
                     # Convert common string representations to boolean
-                    if result.lower() in ('false', '0', 'no', 'off'):
+                    if result.lower() in ("false", "0", "no", "off"):
                         result = False
-                    elif result.lower() in ('true', '1', 'yes', 'on'):
+                    elif result.lower() in ("true", "1", "yes", "on"):
                         result = True
                     else:
                         # Non-empty strings are truthy, empty strings are falsy
@@ -210,7 +215,9 @@ class WyrdboundModel(MutableMapping):
                     errors.append(validation_rule.message)
 
             except Exception as e:
-                errors.append(f"Validation rule failed: {validation_rule.message} ({e})")
+                errors.append(
+                    f"Validation rule failed: {validation_rule.message} ({e})"
+                )
 
         return errors
 
@@ -253,16 +260,21 @@ class WyrdboundModel(MutableMapping):
         if not self._model_def.has_inheritance():
             # No inheritance, return attributes as-is
             return {
-                name: attr for name, attr in self._model_def.attributes.items()
+                name: attr
+                for name, attr in self._model_def.attributes.items()
                 if isinstance(attr, AttributeDefinition)
             }
 
         try:
             # Resolve inheritance using global registry
             from .registry import get_default_registry
-            resolved_model = resolve_model_inheritance(self._model_def, get_default_registry())
+
+            resolved_model = resolve_model_inheritance(
+                self._model_def, get_default_registry()
+            )
             return {
-                name: attr for name, attr in resolved_model.attributes.items()
+                name: attr
+                for name, attr in resolved_model.attributes.items()
                 if isinstance(attr, AttributeDefinition)
             }
         except Exception as e:
@@ -276,16 +288,24 @@ class WyrdboundModel(MutableMapping):
         """Register all derived fields with the resolver."""
         for attr_name, attr_def in self._resolved_attributes.items():
             if attr_def.derived:
-                self._derived_field_resolver.register_derived_field(attr_name, attr_def.derived, attr_def)
+                self._derived_field_resolver.register_derived_field(
+                    attr_name, attr_def.derived, attr_def
+                )
 
     def _apply_defaults(self) -> None:
         """Apply default values for attributes that don't have values."""
         data_dict = dict(self._data)
 
         for attr_name, attr_def in self._resolved_attributes.items():
-            if attr_name not in data_dict and attr_def.default is not None and not attr_def.computed:
+            if (
+                attr_name not in data_dict
+                and attr_def.default is not None
+                and not attr_def.computed
+            ):
                 data_dict[attr_name] = attr_def.default
-                logger.debug(f"Applied default value for '{attr_name}': {attr_def.default}")
+                logger.debug(
+                    f"Applied default value for '{attr_name}': {attr_def.default}"
+                )
 
         self._data = pmap(data_dict)
         self._derived_field_resolver.set_model_data_accessor(data_dict)
@@ -297,10 +317,15 @@ class WyrdboundModel(MutableMapping):
             raise ModelValidationError(
                 f"Model validation failed for '{self._model_def.id}'",
                 validation_errors=errors,
-                context={"model_id": self._model_def.id, "instance_id": self._instance_id},
+                context={
+                    "model_id": self._model_def.id,
+                    "instance_id": self._instance_id,
+                },
             )
 
-    def _set_with_validation(self, key: str, value: Any, skip_derived_update: bool = False) -> None:
+    def _set_with_validation(
+        self, key: str, value: Any, skip_derived_update: bool = False
+    ) -> None:
         """Set a field value with validation and derived field updates."""
         # Get attribute definition
         attr_def = self.get_attribute_definition(key)
@@ -398,9 +423,8 @@ class WyrdboundModel(MutableMapping):
         """Test equality with another object."""
         if not isinstance(other, WyrdboundModel):
             return False
-        return (
-            self._model_def == other._model_def
-            and dict(self._data) == dict(other._data)
+        return self._model_def == other._model_def and dict(self._data) == dict(
+            other._data
         )
 
     def __hash__(self) -> int:
@@ -413,27 +437,26 @@ def create_model(
     model_definition: ModelDefinition,
     data: Optional[Dict[str, Any]] = None,
     template_resolver_type: str = "jinja2",
-    **kwargs
+    **kwargs,
 ) -> WyrdboundModel:
     """Factory function to create WyrdboundModel instances.
-    
+
     Args:
         model_definition: The model schema definition
         data: Initial model data
         template_resolver_type: Type of template resolver to use
         **kwargs: Additional configuration options
-    
+
     Returns:
         Configured WyrdboundModel instance
     """
     template_resolver = create_template_resolver(
         resolver_type=template_resolver_type,
-        **kwargs.pop("template_resolver_kwargs", {})
+        **kwargs.pop("template_resolver_kwargs", {}),
     )
 
     derived_resolver = create_derived_field_resolver(
-        template_resolver=template_resolver,
-        **kwargs.pop("derived_resolver_kwargs", {})
+        template_resolver=template_resolver, **kwargs.pop("derived_resolver_kwargs", {})
     )
 
     return WyrdboundModel(
@@ -441,5 +464,5 @@ def create_model(
         data=data,
         template_resolver=template_resolver,
         derived_field_resolver=derived_resolver,
-        **kwargs
+        **kwargs,
     )

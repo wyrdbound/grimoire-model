@@ -8,7 +8,7 @@ inheritance, and merging attribute definitions from parent models.
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
+from typing import TYPE_CHECKING, Any
 
 from ..core.exceptions import InheritanceError
 from ..core.schema import AttributeDefinition, ModelDefinition, ValidationRule
@@ -17,21 +17,23 @@ from ..logging import get_logger
 if TYPE_CHECKING:
     from ..core.registry import ModelRegistry
 
-logger = get_logger('utils.inheritance')
+logger = get_logger("utils.inheritance")
 
 
 def _normalize_registry(
-    model_registry: Union[Dict[str, ModelDefinition], ModelRegistry]
-) -> Dict[str, ModelDefinition]:
+    model_registry: dict[str, ModelDefinition] | ModelRegistry,
+) -> dict[str, ModelDefinition]:
     """Normalize a model registry to dict format.
-    
+
     Args:
         model_registry: Registry in dict or ModelRegistry format
-        
+
     Returns:
         Registry as a dictionary
     """
-    if hasattr(model_registry, 'get_registry_dict') and callable(model_registry.get_registry_dict):
+    if hasattr(model_registry, "get_registry_dict") and callable(
+        model_registry.get_registry_dict
+    ):
         # It's a ModelRegistry instance
         return model_registry.get_registry_dict()  # type: ignore
     else:
@@ -40,15 +42,14 @@ def _normalize_registry(
 
 
 def _find_model_in_registry(
-    model_id: str,
-    model_registry: Dict[str, ModelDefinition]
-) -> Optional[ModelDefinition]:
+    model_id: str, model_registry: dict[str, ModelDefinition]
+) -> ModelDefinition | None:
     """Find a model in the registry by ID, handling both direct and namespaced keys.
-    
+
     Args:
         model_id: The model ID to find
         model_registry: Registry of models
-        
+
     Returns:
         The ModelDefinition if found, None otherwise
     """
@@ -66,19 +67,20 @@ def _find_model_in_registry(
 
 def resolve_model_inheritance(
     model_def: ModelDefinition,
-    model_registry: Union[Dict[str, ModelDefinition], ModelRegistry],
-    max_depth: int = 10
+    model_registry: dict[str, ModelDefinition] | ModelRegistry,
+    max_depth: int = 10,
 ) -> ModelDefinition:
     """Resolve inheritance for a model definition.
-    
+
     Args:
         model_def: The model definition to resolve inheritance for
-        model_registry: Registry of all available model definitions (dict or ModelRegistry)
+        model_registry: Registry of all available model definitions (dict or
+            ModelRegistry)
         max_depth: Maximum inheritance depth to prevent infinite recursion
-    
+
     Returns:
         New ModelDefinition with resolved inheritance
-        
+
     Raises:
         InheritanceError: If inheritance cannot be resolved
     """
@@ -102,7 +104,7 @@ def resolve_model_inheritance(
 
     # Create resolved model definition
     # Create a properly typed attributes dict
-    attributes_union: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = {}
+    attributes_union: dict[str, AttributeDefinition | dict[str, Any]] = {}
     for name, attr_def in resolved_attributes.items():
         attributes_union[name] = attr_def
 
@@ -119,27 +121,29 @@ def resolve_model_inheritance(
         metadata=model_def.metadata.copy(),
     )
 
-    logger.debug(f"Resolved model '{model_def.id}' with {len(resolved_attributes)} attributes")
+    logger.debug(
+        f"Resolved model '{model_def.id}' with {len(resolved_attributes)} attributes"
+    )
     return resolved_model
 
 
 def _get_inheritance_chain(
     model_def: ModelDefinition,
-    model_registry: Dict[str, ModelDefinition],
-    max_depth: int
-) -> List[str]:
+    model_registry: dict[str, ModelDefinition],
+    max_depth: int,
+) -> list[str]:
     """Get the complete inheritance chain for a model using method resolution order.
-    
+
     Uses C3 linearization algorithm for multiple inheritance resolution.
-    
+
     Args:
         model_def: The model definition to get chain for
         model_registry: Registry of all available model definitions
         max_depth: Maximum inheritance depth
-    
+
     Returns:
         List of model IDs in method resolution order (child to parent)
-        
+
     Raises:
         InheritanceError: If inheritance chain cannot be resolved
     """
@@ -171,7 +175,8 @@ def _get_inheritance_chain(
             if parent_id in visited:
                 if parent_id == model_def.id:
                     raise InheritanceError(
-                        f"Circular inheritance detected: model '{parent_id}' inherits from itself",
+                        f"Circular inheritance detected: model '{parent_id}' inherits "
+                        f"from itself",
                         model_id=model_def.id,
                         parent_ids=parent_ids,
                         inheritance_chain=chain + [parent_id],
@@ -182,7 +187,8 @@ def _get_inheritance_chain(
             chain.append(parent_id)
             visited.add(parent_id)
 
-            # Queue parent's parents for processing (parent_model already resolved above)
+            # Queue parent's parents for processing (parent_model already resolved
+            # above)
             if parent_model.extends:
                 queue.append((parent_id, parent_model.extends))
 
@@ -197,18 +203,17 @@ def _get_inheritance_chain(
 
 
 def _resolve_attributes(
-    inheritance_chain: List[str],
-    model_registry: Dict[str, ModelDefinition]
-) -> Dict[str, AttributeDefinition]:
+    inheritance_chain: list[str], model_registry: dict[str, ModelDefinition]
+) -> dict[str, AttributeDefinition]:
     """Resolve attributes from inheritance chain using method resolution order.
-    
+
     Attributes are resolved in reverse inheritance order (parent to child),
     with child attributes overriding parent attributes.
-    
+
     Args:
         inheritance_chain: List of model IDs in inheritance order
         model_registry: Registry of all available model definitions
-    
+
     Returns:
         Dictionary of resolved attribute definitions
     """
@@ -227,27 +232,31 @@ def _resolve_attributes(
             if isinstance(attr_def, AttributeDefinition):
                 # Child attributes override parent attributes
                 resolved_attributes[attr_name] = attr_def
-                logger.debug(f"Inherited attribute '{attr_name}' from model '{model_id}'")
+                logger.debug(
+                    f"Inherited attribute '{attr_name}' from model '{model_id}'"
+                )
             else:
                 # Convert dict to AttributeDefinition if needed
                 resolved_attributes[attr_name] = AttributeDefinition(**attr_def)
-                logger.debug(f"Inherited and converted attribute '{attr_name}' from model '{model_id}'")
+                logger.debug(
+                    f"Inherited and converted attribute '{attr_name}' from "
+                    f"model '{model_id}'"
+                )
 
     return resolved_attributes
 
 
 def _resolve_validations(
-    inheritance_chain: List[str],
-    model_registry: Dict[str, ModelDefinition]
-) -> List[ValidationRule]:
+    inheritance_chain: list[str], model_registry: dict[str, ModelDefinition]
+) -> list[ValidationRule]:
     """Resolve validation rules from inheritance chain.
-    
+
     Validation rules are accumulated from all models in the inheritance chain.
-    
+
     Args:
         inheritance_chain: List of model IDs in inheritance order
         model_registry: Registry of all available model definitions
-    
+
     Returns:
         List of all validation rules from the inheritance chain
     """
@@ -259,7 +268,8 @@ def _resolve_validations(
         model_def = _find_model_in_registry(model_id, model_registry)
         if model_def is None:
             raise InheritanceError(
-                f"Model '{model_id}' not found in registry during validation resolution",
+                f"Model '{model_id}' not found in registry during validation "
+                f"resolution",
                 model_id=model_id,
             )
 
@@ -270,21 +280,23 @@ def _resolve_validations(
             if rule_key not in seen_rules:
                 resolved_validations.append(validation)
                 seen_rules.add(rule_key)
-                logger.debug(f"Inherited validation rule from model '{model_id}': {validation.expression}")
+                logger.debug(
+                    f"Inherited validation rule from model '{model_id}': "
+                    f"{validation.expression}"
+                )
 
     return resolved_validations
 
 
 def check_inheritance_conflicts(
-    model_def: ModelDefinition,
-    model_registry: Dict[str, ModelDefinition]
-) -> List[str]:
+    model_def: ModelDefinition, model_registry: dict[str, ModelDefinition]
+) -> list[str]:
     """Check for potential inheritance conflicts in a model definition.
-    
+
     Args:
         model_def: The model definition to check
         model_registry: Registry of all available model definitions
-    
+
     Returns:
         List of conflict descriptions (empty if no conflicts)
     """
@@ -294,7 +306,9 @@ def check_inheritance_conflicts(
         return conflicts
 
     try:
-        inheritance_chain = _get_inheritance_chain(model_def, model_registry, max_depth=10)
+        inheritance_chain = _get_inheritance_chain(
+            model_def, model_registry, max_depth=10
+        )
     except InheritanceError as e:
         conflicts.append(str(e))
         return conflicts
@@ -321,22 +335,25 @@ def check_inheritance_conflicts(
         if len(sources) > 1:
             types = {attr_def.type for _, attr_def in sources}
             if len(types) > 1:
-                type_info = ", ".join(f"{model_id}: {attr_def.type}" for model_id, attr_def in sources)
+                type_info = ", ".join(
+                    f"{model_id}: {attr_def.type}" for model_id, attr_def in sources
+                )
                 conflicts.append(
-                    f"Attribute '{attr_name}' has conflicting types across inheritance chain: {type_info}"
+                    f"Attribute '{attr_name}' has conflicting types across "
+                    f"inheritance chain: {type_info}"
                 )
 
     return conflicts
 
 
 def build_inheritance_graph(
-    model_registry: Dict[str, ModelDefinition]
-) -> Dict[str, Set[str]]:
+    model_registry: dict[str, ModelDefinition],
+) -> dict[str, set[str]]:
     """Build an inheritance graph from a model registry.
-    
+
     Args:
         model_registry: Registry of all available model definitions
-    
+
     Returns:
         Dictionary mapping model IDs to their direct children
     """
@@ -351,13 +368,13 @@ def build_inheritance_graph(
 
 
 def find_inheritance_cycles(
-    model_registry: Dict[str, ModelDefinition]
-) -> List[List[str]]:
+    model_registry: dict[str, ModelDefinition],
+) -> list[list[str]]:
     """Find all inheritance cycles in a model registry.
-    
+
     Args:
         model_registry: Registry of all available model definitions
-    
+
     Returns:
         List of cycles, where each cycle is a list of model IDs
     """
@@ -365,7 +382,7 @@ def find_inheritance_cycles(
     visited = set()
     rec_stack = set()
 
-    def _dfs(model_id: str, path: List[str]) -> None:
+    def _dfs(model_id: str, path: list[str]) -> None:
         if model_id in rec_stack:
             # Found a cycle
             cycle_start = path.index(model_id)
@@ -392,14 +409,12 @@ def find_inheritance_cycles(
     return cycles
 
 
-def validate_model_registry(
-    model_registry: Dict[str, ModelDefinition]
-) -> List[str]:
+def validate_model_registry(model_registry: dict[str, ModelDefinition]) -> list[str]:
     """Validate a model registry for inheritance issues.
-    
+
     Args:
         model_registry: Registry of all available model definitions
-    
+
     Returns:
         List of validation error messages (empty if valid)
     """

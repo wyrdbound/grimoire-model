@@ -45,7 +45,9 @@ class TestJinja2TemplateResolver:
         variables = resolver.extract_variables("{{ name }} and {{ age }}")
         assert variables == {"name", "age"}
 
-        variables = resolver.extract_variables("{{ user.name }} is {{ user.age }} years old")
+        variables = resolver.extract_variables(
+            "{{ user.name }} is {{ user.age }} years old"
+        )
         assert variables == {"user"}
 
         variables = resolver.extract_variables("No variables here")
@@ -78,7 +80,9 @@ class TestJinja2TemplateResolver:
         resolver = Jinja2TemplateResolver()
 
         # JSON-like output should be parsed
-        result = resolver.resolve_template('{{ data | tojson }}', {"data": {"key": "value"}})
+        result = resolver.resolve_template(
+            "{{ data | tojson }}", {"data": {"key": "value"}}
+        )
         # This should be parsed back to dict if it looks like JSON
         if isinstance(result, str) and result.startswith("{"):
             # The _try_parse_structured_data method should handle this
@@ -134,8 +138,7 @@ class TestModelContextTemplateResolver:
         model_data = {"name": "Aragorn", "level": 5, "strength": 16}
 
         result = resolver.resolve_with_model_context(
-            "{{ name }} is level {{ level }}",
-            model_data
+            "{{ name }} is level {{ level }}", model_data
         )
         assert result == "Aragorn is level 5"
 
@@ -147,8 +150,7 @@ class TestModelContextTemplateResolver:
 
         # Use underscore since Jinja2 doesn't allow $ at start of variable names
         result = resolver.resolve_with_model_context(
-            "{{ _dollar.stats.strength }}",
-            model_data
+            "{{ _dollar.stats.strength }}", model_data
         )
 
         assert result == "16"
@@ -161,9 +163,7 @@ class TestModelContextTemplateResolver:
         additional_context = {"multiplier": 8}
 
         result = resolver.resolve_with_model_context(
-            "{{ level * multiplier }}",
-            model_data,
-            additional_context
+            "{{ level * multiplier }}", model_data, additional_context
         )
         assert result == "40"
 

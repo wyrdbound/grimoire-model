@@ -8,7 +8,7 @@ allowing users to provide their own logger implementations or use the default.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 
 class LoggerProtocol(Protocol):
@@ -37,15 +37,18 @@ class LoggerProtocol(Protocol):
 
 class StandardLogger:
     """Default logger implementation using Python's standard logging module.
-    
+
     This adapter allows any Python logger to be used with wyrdbound-model components.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None, name: str = "wyrdbound_model") -> None:
+    def __init__(
+        self, logger: logging.Logger | None = None, name: str = "wyrdbound_model"
+    ) -> None:
         """Initialize with an optional Python logger.
-        
+
         Args:
-            logger: Python logger instance. If None, creates a new logger with the given name.
+            logger: Python logger instance. If None, creates a new logger with the
+                given name.
             name: Name for the logger if logger is None.
         """
         self._logger = logger or logging.getLogger(name)
@@ -73,7 +76,7 @@ class StandardLogger:
 
 class NullLogger:
     """A no-op logger that discards all log messages.
-    
+
     Useful for testing or when logging is not desired.
     """
 
@@ -100,10 +103,10 @@ class NullLogger:
 
 def create_default_logger(name: str = "wyrdbound_model") -> LoggerProtocol:
     """Create a default logger instance.
-    
+
     Args:
         name: Name for the logger
-        
+
     Returns:
         A StandardLogger instance using Python's logging module
     """
@@ -112,7 +115,7 @@ def create_default_logger(name: str = "wyrdbound_model") -> LoggerProtocol:
 
 def create_null_logger() -> LoggerProtocol:
     """Create a null logger that discards all messages.
-    
+
     Returns:
         A NullLogger instance
     """

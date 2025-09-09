@@ -8,7 +8,7 @@ Applications can configure this logger using the standard Python logging configu
 import logging
 
 # Library-wide logger
-logger = logging.getLogger('wyrdbound_model')
+logger = logging.getLogger("wyrdbound_model")
 
 # Set a default level, but applications should configure this
 logger.setLevel(logging.INFO)
@@ -22,14 +22,14 @@ if not logger.handlers:
 def get_logger(name: str | None = None) -> logging.Logger:
     """
     Get a logger for the wyrdbound-model library.
-    
+
     Args:
         name: Optional name to append to the base logger name.
               If provided, creates a child logger like 'wyrdbound_model.core.registry'
-    
+
     Returns:
         A logger instance that applications can configure.
     """
     if name:
-        return logging.getLogger(f'wyrdbound_model.{name}')
+        return logging.getLogger(f"wyrdbound_model.{name}")
     return logger

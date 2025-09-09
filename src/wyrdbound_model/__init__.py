@@ -5,7 +5,7 @@ A dict-like model system with schema validation, derived fields, and inheritance
 designed for integration with wyrdbound-context.
 
 Key Features:
-- Dict-like interface (MutableMapping) 
+- Dict-like interface (MutableMapping)
 - Schema validation with Pydantic
 - Reactive derived fields with dependency tracking
 - Model inheritance support
@@ -15,7 +15,7 @@ Key Features:
 
 Example Usage:
     from wyrdbound_model import WyrdboundModel, ModelDefinition, create_model
-    
+
     # Define model schema
     character_def = ModelDefinition(
         id="character",
@@ -27,14 +27,14 @@ Example Usage:
             "max_hp": {"type": "int", "derived": "{{ level * 8 }}"}
         }
     )
-    
+
     # Create model instance
     character = create_model(character_def, {"name": "Aragorn", "level": 5})
-    
+
     # Use as dict
     character['level'] = 6  # Automatically updates max_hp derived field
     print(character['max_hp'])  # 48
-    
+
     # Works with wyrdbound-context
     from wyrdbound_context import WyrdboundContext
     context = WyrdboundContext({'character': character})
@@ -122,12 +122,10 @@ __all__ = [
     "ModelDefinition",
     "AttributeDefinition",
     "ValidationRule",
-
     # Factory functions
     "create_model",
     "create_template_resolver",
     "create_derived_field_resolver",
-
     # Registry
     "ModelRegistry",
     "get_default_registry",
@@ -135,11 +133,9 @@ __all__ = [
     "clear_registry",
     "register_model",
     "get_model",
-
     # Logging
     "logger",
     "get_logger",
-
     # Exceptions
     "WyrdboundModelError",
     "ModelValidationError",
@@ -147,7 +143,6 @@ __all__ = [
     "InheritanceError",
     "DependencyError",
     "ConfigurationError",
-
     # Resolvers
     "TemplateResolver",
     "Jinja2TemplateResolver",
@@ -157,7 +152,6 @@ __all__ = [
     "BatchedDerivedFieldResolver",
     "ObservableValue",
     "DependencyInfo",
-
     # Utilities
     "resolve_model_inheritance",
     "get_nested_value",
@@ -166,7 +160,6 @@ __all__ = [
     "delete_nested_value",
     "flatten_dict",
     "unflatten_dict",
-
     # Validators
     "TypeValidator",
     "RangeValidator",
@@ -181,10 +174,12 @@ __all__ = [
 ]
 
 # Package metadata
-__pkg_info__ = {
+__meta__ = {
     "name": "wyrdbound-model",
     "version": __version__,
-    "description": "Dict-like model system with validation and derived fields for Wyrdbound",
+    "description": (
+        "Dict-like model system with validation and derived fields for Wyrdbound"
+    ),
     "long_description": __doc__,
     "author": __author__,
     "author_email": __email__,
@@ -233,10 +228,11 @@ __pkg_info__ = {
     },
 }
 
+
 # Integration helpers for wyrdbound-context
 def register_with_wyrdbound_context():
     """Register WyrdboundModel as a compatible value type with wyrdbound-context.
-    
+
     This function should be called if you want seamless integration between
     wyrdbound-model and wyrdbound-context packages.
     """
@@ -244,13 +240,14 @@ def register_with_wyrdbound_context():
         from wyrdbound_context import WyrdboundContext
 
         # Register our model as a compatible dict-like type
-        if hasattr(WyrdboundContext, 'register_dict_like_type'):
+        if hasattr(WyrdboundContext, "register_dict_like_type"):
             WyrdboundContext.register_dict_like_type(WyrdboundModel)  # type: ignore
 
         return True
     except ImportError:
         # wyrdbound-context not available
         return False
+
 
 # Optional auto-registration
 try:

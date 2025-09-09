@@ -14,13 +14,17 @@ from .exceptions import ConfigurationError
 
 class ValidationRule(BaseModel):
     """Model validation rule definition.
-    
+
     Defines a validation rule that can be applied to model instances to ensure
     data consistency and business rule compliance.
     """
 
-    expression: str = Field(..., description="Template expression that must evaluate to True")
-    message: str = Field(..., description="Error message to display when validation fails")
+    expression: str = Field(
+        ..., description="Template expression that must evaluate to True"
+    )
+    message: str = Field(
+        ..., description="Error message to display when validation fails"
+    )
     fields: List[str] = Field(
         default_factory=list,
         description="List of fields this validation depends on",
@@ -50,14 +54,19 @@ class ValidationRule(BaseModel):
 
 class AttributeDefinition(BaseModel):
     """Definition of a model attribute.
-    
+
     Defines the schema for a single attribute within a model, including type
     information, constraints, default values, and derived field expressions.
     """
 
-    type: str = Field(..., description="Attribute type: int, str, float, bool, list, dict, or model ID")
+    type: str = Field(
+        ...,
+        description="Attribute type: int, str, float, bool, list, dict, or model ID",
+    )
     default: Any = Field(default=None, description="Default value for the attribute")
-    required: bool = Field(default=True, description="Whether the attribute is required")
+    required: bool = Field(
+        default=True, description="Whether the attribute is required"
+    )
     derived: Optional[str] = Field(
         default=None,
         description="Template expression for derived attributes",
@@ -118,7 +127,9 @@ class AttributeDefinition(BaseModel):
         basic_types = {"int", "str", "float", "bool", "list", "dict", "any"}
         if v not in basic_types and not v.replace("_", "").replace("-", "").isalnum():
             # Allow model IDs (alphanumeric with underscores/hyphens)
-            raise ValueError(f"Invalid type '{v}': must be basic type or valid model ID")
+            raise ValueError(
+                f"Invalid type '{v}': must be basic type or valid model ID"
+            )
         return v
 
     @field_validator("range")
@@ -130,7 +141,9 @@ class AttributeDefinition(BaseModel):
 
         # Basic validation for range format
         if not any(pattern in v for pattern in ["..", ">=", "<=", ">", "<", "="]):
-            raise ValueError(f"Invalid range format '{v}': must contain comparison operators")
+            raise ValueError(
+                f"Invalid range format '{v}': must contain comparison operators"
+            )
 
         return v
 
@@ -145,14 +158,16 @@ class AttributeDefinition(BaseModel):
             self.computed = True
 
         if self.readonly and self.default is None and not self.computed:
-            raise ValueError("Readonly attributes must have a default value or be computed")
+            raise ValueError(
+                "Readonly attributes must have a default value or be computed"
+            )
 
         return self
 
 
 class ModelDefinition(BaseModel):
     """Complete model definition following GRIMOIRE specification.
-    
+
     Defines a complete model schema including metadata, inheritance relationships,
     attributes, and validation rules. Automatically registers itself in the global
     model registry upon creation.
@@ -163,7 +178,9 @@ class ModelDefinition(BaseModel):
     kind: str = Field(default="model", description="Model kind/type")
     description: Optional[str] = Field(default=None, description="Model description")
     version: int = Field(default=1, description="Model schema version")
-    namespace: str = Field(default="default", description="Model namespace for registry organization")
+    namespace: str = Field(
+        default="default", description="Model namespace for registry organization"
+    )
 
     # Inheritance
     extends: List[str] = Field(
@@ -213,7 +230,8 @@ class ModelDefinition(BaseModel):
                 converted_attributes[key] = value
             else:
                 raise ConfigurationError(
-                    f"Invalid attribute definition type for '{key}': expected dict or AttributeDefinition, got {type(value)}",
+                    f"Invalid attribute definition type for '{key}': "
+                    f"expected dict or AttributeDefinition, got {type(value)}",
                     config_key=key,
                     config_value=value,
                 )
@@ -222,6 +240,7 @@ class ModelDefinition(BaseModel):
 
         # Register this model in the global registry
         from .registry import register_model
+
         register_model(self.namespace, self)
 
     @field_validator("id")
@@ -232,7 +251,10 @@ class ModelDefinition(BaseModel):
             raise ValueError("Model ID cannot be empty")
 
         if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Model ID must contain only alphanumeric characters, underscores, and hyphens")
+            raise ValueError(
+                "Model ID must contain only alphanumeric characters, "
+                "underscores, and hyphens"
+            )
 
         return v
 
@@ -244,7 +266,9 @@ class ModelDefinition(BaseModel):
         if v not in allowed_kinds:
             # Allow custom kinds but validate format
             if not v.replace("_", "").replace("-", "").isalnum():
-                raise ValueError("Model kind must be alphanumeric with underscores/hyphens")
+                raise ValueError(
+                    "Model kind must be alphanumeric with underscores/hyphens"
+                )
 
         return v
 
@@ -264,7 +288,10 @@ class ModelDefinition(BaseModel):
             raise ValueError("Namespace cannot be empty")
 
         if not v.replace("_", "").replace("-", "").replace(".", "").isalnum():
-            raise ValueError("Namespace must contain only alphanumeric characters, underscores, hyphens, and dots")
+            raise ValueError(
+                "Namespace must contain only alphanumeric characters, "
+                "underscores, hyphens, and dots"
+            )
 
         return v
 
@@ -276,7 +303,9 @@ class ModelDefinition(BaseModel):
 
         # Check for duplicate parents
         if len(self.extends) != len(set(self.extends)):
-            duplicates = [parent for parent in self.extends if self.extends.count(parent) > 1]
+            duplicates = [
+                parent for parent in self.extends if self.extends.count(parent) > 1
+            ]
             raise ValueError(f"Duplicate parent models: {duplicates}")
 
         return self
@@ -291,14 +320,18 @@ class ModelDefinition(BaseModel):
     def get_required_attributes(self) -> Dict[str, AttributeDefinition]:
         """Get all required attributes."""
         return {
-            name: attr for name, attr in self.attributes.items()
-            if isinstance(attr, AttributeDefinition) and attr.required and not attr.computed
+            name: attr
+            for name, attr in self.attributes.items()
+            if isinstance(attr, AttributeDefinition)
+            and attr.required
+            and not attr.computed
         }
 
     def get_derived_attributes(self) -> Dict[str, AttributeDefinition]:
         """Get all derived/computed attributes."""
         return {
-            name: attr for name, attr in self.attributes.items()
+            name: attr
+            for name, attr in self.attributes.items()
             if isinstance(attr, AttributeDefinition) and attr.computed
         }
 

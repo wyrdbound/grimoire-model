@@ -16,7 +16,7 @@ from jinja2 import BaseLoader, Environment, TemplateError, meta
 from ..core.exceptions import TemplateResolutionError
 from ..logging import get_logger
 
-logger = get_logger('resolvers.template')
+logger = get_logger("resolvers.template")
 
 
 class TemplateResolver(Protocol):
@@ -75,8 +75,8 @@ class Jinja2TemplateResolver:
         # Template detection patterns
         self._template_patterns = [
             re.compile(r"\{\{.*?\}\}"),  # Variables: {{ var }}
-            re.compile(r"\{%.*?%\}"),    # Statements: {% if %}
-            re.compile(r"\{#.*?#\}"),    # Comments: {# comment #}
+            re.compile(r"\{%.*?%\}"),  # Statements: {% if %}
+            re.compile(r"\{#.*?#\}"),  # Comments: {# comment #}
         ]
 
     def resolve_template(self, template_str: str, context: Dict[str, Any]) -> Any:
@@ -111,14 +111,19 @@ class Jinja2TemplateResolver:
         except Exception as e:
             error_msg = (
                 f"Template resolution failed for '{template_str}': {e}. "
-                f"Available context keys: {list(context.keys()) if isinstance(context, dict) else 'N/A'}"
+                f"Available context keys: "
+                f"{list(context.keys()) if isinstance(context, dict) else 'N/A'}"
             )
             logger.error(error_msg)
             raise TemplateResolutionError(
                 error_msg,
                 template_str=template_str,
                 template_variables=list(self.extract_variables(template_str)),
-                context={"available_keys": list(context.keys()) if isinstance(context, dict) else []},
+                context={
+                    "available_keys": list(context.keys())
+                    if isinstance(context, dict)
+                    else []
+                },
             ) from e
 
     def is_template(self, value: str) -> bool:
@@ -150,21 +155,27 @@ class Jinja2TemplateResolver:
 
         # Add Python built-ins that are commonly needed
         import builtins
-        enhanced.update({
-            'max': builtins.max,
-            'min': builtins.min,
-            'sum': builtins.sum,
-            'len': builtins.len,
-            'abs': builtins.abs,
-            'round': builtins.round,
-        })
+
+        enhanced.update(
+            {
+                "max": builtins.max,
+                "min": builtins.min,
+                "sum": builtins.sum,
+                "len": builtins.len,
+                "abs": builtins.abs,
+                "round": builtins.round,
+            }
+        )
 
         return enhanced
 
     def _check_simple_variable(self, template_str: str, context: Dict[str, Any]) -> Any:
-        """Check if template is a simple variable reference and return the value directly."""
+        """Check if template is a simple variable reference and return the value
+        directly."""
         # Match patterns like {{ variable }} or {{variable}}
-        match = re.match(r"^\s*\{\{\s*([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\s*\}\}\s*$", template_str)
+        match = re.match(
+            r"^\s*\{\{\s*([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\s*\}\}\s*$", template_str
+        )
         if match:
             var_name = match.group(1)
             if var_name in context:
@@ -211,13 +222,15 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
         super().__init__(**jinja_kwargs)
 
         # Add model-specific functions to the environment
-        self.env.globals.update({
-            "get_field": self._template_get_field,
-            "has_field": self._template_has_field,
-        })
+        self.env.globals.update(
+            {
+                "get_field": self._template_get_field,
+                "has_field": self._template_has_field,
+            }
+        )
 
         # Add pattern for $variable syntax
-        self._model_context_pattern = re.compile(r'\$\w+')
+        self._model_context_pattern = re.compile(r"\$\w+")
 
     def is_template(self, value: str) -> bool:
         """Check if a string contains template syntax (Jinja2 or model context)."""
@@ -242,7 +255,11 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
 
         try:
             # Check if this is a $variable template (not Jinja2)
-            if self._model_context_pattern.search(template_str) and not any(pattern.search(template_str) for pattern in self._template_patterns):
+            has_model_context = self._model_context_pattern.search(template_str)
+            has_template_patterns = any(
+                pattern.search(template_str) for pattern in self._template_patterns
+            )
+            if has_model_context and not has_template_patterns:
                 # Handle $variable substitution
                 return self._resolve_model_context_template(template_str, context)
             else:
@@ -258,11 +275,15 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
             raise TemplateResolutionError(
                 error_msg,
                 template_str=template_str,
-                template_variables=list(self._model_context_pattern.findall(template_str)),
-                context={"available_keys": list(context.keys())}
-            )
+                template_variables=list(
+                    self._model_context_pattern.findall(template_str)
+                ),
+                context={"available_keys": list(context.keys())},
+            ) from e
 
-    def _resolve_model_context_template(self, template_str: str, context: Dict[str, Any]) -> str:
+    def _resolve_model_context_template(
+        self, template_str: str, context: Dict[str, Any]
+    ) -> str:
         """Resolve $variable syntax in template strings."""
         result = template_str
 
@@ -302,13 +323,15 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
     def _template_get_field(self, path: str, default: Any = None) -> Any:
         """Template function to get a field value by path."""
         # This would be implemented to work with the current template context
-        # For now, return a placeholder that would be replaced with actual implementation
+        # For now, return a placeholder that would be replaced with actual
+        # implementation
         return f"get_field('{path}', {default})"
 
     def _template_has_field(self, path: str) -> bool:
         """Template function to check if a field exists."""
         # This would be implemented to work with the current template context
-        # For now, return a placeholder that would be replaced with actual implementation
+        # For now, return a placeholder that would be replaced with actual
+        # implementation
         return False
 
 
@@ -345,16 +368,16 @@ class CachingTemplateResolver:
                 # Simple LRU: remove oldest entry
                 self._variable_cache.pop(next(iter(self._variable_cache)))
 
-            self._variable_cache[template_str] = self.resolver.extract_variables(template_str)
+            self._variable_cache[template_str] = self.resolver.extract_variables(
+                template_str
+            )
 
         return self._variable_cache[template_str]
 
 
 # Factory function for easy creation
 def create_template_resolver(
-    resolver_type: str = "jinja2",
-    caching: bool = True,
-    **kwargs
+    resolver_type: str = "jinja2", caching: bool = True, **kwargs
 ) -> TemplateResolver:
     """Factory function to create template resolvers.
 

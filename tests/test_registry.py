@@ -2,7 +2,6 @@
 Tests for the ModelRegistry functionality.
 """
 
-
 import pytest
 
 from wyrdbound_model import (
@@ -44,9 +43,7 @@ class TestModelRegistry:
             id="test_model",
             name="Test Model",
             namespace="test",
-            attributes={
-                "name": AttributeDefinition(type="str", required=True)
-            }
+            attributes={"name": AttributeDefinition(type="str", required=True)},
         )
 
         # Register the model
@@ -65,10 +62,7 @@ class TestModelRegistry:
         registry = ModelRegistry()
 
         model_def = ModelDefinition(
-            id="test_model",
-            name="Test Model",
-            namespace="test",
-            attributes={}
+            id="test_model", name="Test Model", namespace="test", attributes={}
         )
 
         # Should not exist initially
@@ -85,10 +79,7 @@ class TestModelRegistry:
         registry = ModelRegistry()
 
         model_def = ModelDefinition(
-            id="test_model",
-            name="Test Model",
-            namespace="test",
-            attributes={}
+            id="test_model", name="Test Model", namespace="test", attributes={}
         )
 
         # Register the model
@@ -108,9 +99,15 @@ class TestModelRegistry:
         """Test listing models in registry."""
         registry = ModelRegistry()
 
-        model1 = ModelDefinition(id="model1", name="Model 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="model2", name="Model 2", namespace="test", attributes={})
-        model3 = ModelDefinition(id="model3", name="Model 3", namespace="other", attributes={})
+        model1 = ModelDefinition(
+            id="model1", name="Model 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="model2", name="Model 2", namespace="test", attributes={}
+        )
+        model3 = ModelDefinition(
+            id="model3", name="Model 3", namespace="other", attributes={}
+        )
 
         registry.register("test", "model1", model1)
         registry.register("test", "model2", model2)
@@ -134,8 +131,12 @@ class TestModelRegistry:
         """Test listing namespaces."""
         registry = ModelRegistry()
 
-        model1 = ModelDefinition(id="model1", name="Model 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="model2", name="Model 2", namespace="other", attributes={})
+        model1 = ModelDefinition(
+            id="model1", name="Model 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="model2", name="Model 2", namespace="other", attributes={}
+        )
 
         registry.register("test", "model1", model1)
         registry.register("other", "model2", model2)
@@ -149,9 +150,15 @@ class TestModelRegistry:
         """Test clearing a specific namespace."""
         registry = ModelRegistry()
 
-        model1 = ModelDefinition(id="model1", name="Model 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="model2", name="Model 2", namespace="test", attributes={})
-        model3 = ModelDefinition(id="model3", name="Model 3", namespace="other", attributes={})
+        model1 = ModelDefinition(
+            id="model1", name="Model 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="model2", name="Model 2", namespace="test", attributes={}
+        )
+        model3 = ModelDefinition(
+            id="model3", name="Model 3", namespace="other", attributes={}
+        )
 
         registry.register("test", "model1", model1)
         registry.register("test", "model2", model2)
@@ -168,8 +175,12 @@ class TestModelRegistry:
         """Test clearing all models from registry."""
         registry = ModelRegistry()
 
-        model1 = ModelDefinition(id="model1", name="Model 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="model2", name="Model 2", namespace="other", attributes={})
+        model1 = ModelDefinition(
+            id="model1", name="Model 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="model2", name="Model 2", namespace="other", attributes={}
+        )
 
         registry.register("test", "model1", model1)
         registry.register("other", "model2", model2)
@@ -184,8 +195,12 @@ class TestModelRegistry:
         """Test getting dictionary representation."""
         registry = ModelRegistry()
 
-        model1 = ModelDefinition(id="model1", name="Model 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="model2", name="Model 2", namespace="other", attributes={})
+        model1 = ModelDefinition(
+            id="model1", name="Model 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="model2", name="Model 2", namespace="other", attributes={}
+        )
 
         registry.register("test", "model1", model1)
         registry.register("other", "model2", model2)
@@ -208,8 +223,12 @@ class TestModelRegistry:
         """Test resolving parent model references."""
         registry = ModelRegistry()
 
-        base_model = ModelDefinition(id="base", name="Base", namespace="test", attributes={})
-        mixin_model = ModelDefinition(id="mixin", name="Mixin", namespace="test", attributes={})
+        base_model = ModelDefinition(
+            id="base", name="Base", namespace="test", attributes={}
+        )
+        mixin_model = ModelDefinition(
+            id="mixin", name="Mixin", namespace="test", attributes={}
+        )
 
         registry.register("test", "base", base_model)
         registry.register("test", "mixin", mixin_model)
@@ -224,7 +243,9 @@ class TestModelRegistry:
         """Test resolving parent models across namespaces."""
         registry = ModelRegistry()
 
-        base_model = ModelDefinition(id="base", name="Base", namespace="core", attributes={})
+        base_model = ModelDefinition(
+            id="base", name="Base", namespace="core", attributes={}
+        )
         registry.register("core", "base", base_model)
 
         # Should find model from different namespace
@@ -243,8 +264,12 @@ class TestModelRegistry:
         """Test warning when overwriting existing model."""
         registry = ModelRegistry()
 
-        model1 = ModelDefinition(id="test", name="Test 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="test", name="Test 2", namespace="test", attributes={})
+        model1 = ModelDefinition(
+            id="test", name="Test 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="test", name="Test 2", namespace="test", attributes={}
+        )
 
         registry.register("test", "test", model1)
         registry.register("test", "test", model2)  # Should warn about overwrite
@@ -256,7 +281,9 @@ class TestModelRegistry:
         """Test __contains__ method."""
         registry = ModelRegistry()
 
-        model_def = ModelDefinition(id="test", name="Test", namespace="test", attributes={})
+        model_def = ModelDefinition(
+            id="test", name="Test", namespace="test", attributes={}
+        )
         registry.register("test", "test", model_def)
 
         assert "test__test" in registry
@@ -268,8 +295,12 @@ class TestModelRegistry:
 
         assert len(registry) == 0
 
-        model1 = ModelDefinition(id="model1", name="Model 1", namespace="test", attributes={})
-        model2 = ModelDefinition(id="model2", name="Model 2", namespace="test", attributes={})
+        model1 = ModelDefinition(
+            id="model1", name="Model 1", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="model2", name="Model 2", namespace="test", attributes={}
+        )
 
         registry.register("test", "model1", model1)
         assert len(registry) == 1
@@ -281,7 +312,9 @@ class TestModelRegistry:
         """Test __repr__ method."""
         registry = ModelRegistry()
 
-        model_def = ModelDefinition(id="test", name="Test", namespace="test", attributes={})
+        model_def = ModelDefinition(
+            id="test", name="Test", namespace="test", attributes={}
+        )
         registry.register("test", "test", model_def)
 
         repr_str = repr(registry)
@@ -307,9 +340,7 @@ class TestModelDefinitionAutoRegistration:
             id="auto_test",
             name="Auto Test",
             namespace="test",
-            attributes={
-                "name": AttributeDefinition(type="str", required=True)
-            }
+            attributes={"name": AttributeDefinition(type="str", required=True)},
         )
 
         # Should be automatically registered
@@ -319,9 +350,7 @@ class TestModelDefinitionAutoRegistration:
     def test_model_default_namespace(self):
         """Test model with default namespace."""
         model_def = ModelDefinition(
-            id="default_test",
-            name="Default Test",
-            attributes={}
+            id="default_test", name="Default Test", attributes={}
         )
 
         # Should be registered in default namespace
@@ -334,7 +363,7 @@ class TestModelDefinitionAutoRegistration:
             id="custom_test",
             name="Custom Test",
             namespace="custom.namespace.test",
-            attributes={}
+            attributes={},
         )
 
         # Should be registered in custom namespace
@@ -345,16 +374,24 @@ class TestModelDefinitionAutoRegistration:
         """Test namespace validation."""
         # Valid namespaces
         ModelDefinition(id="test1", name="Test 1", namespace="valid", attributes={})
-        ModelDefinition(id="test2", name="Test 2", namespace="valid-namespace", attributes={})
-        ModelDefinition(id="test3", name="Test 3", namespace="valid_namespace", attributes={})
-        ModelDefinition(id="test4", name="Test 4", namespace="valid.namespace", attributes={})
+        ModelDefinition(
+            id="test2", name="Test 2", namespace="valid-namespace", attributes={}
+        )
+        ModelDefinition(
+            id="test3", name="Test 3", namespace="valid_namespace", attributes={}
+        )
+        ModelDefinition(
+            id="test4", name="Test 4", namespace="valid.namespace", attributes={}
+        )
 
         # Invalid namespace should raise error
         with pytest.raises(ValueError, match="Namespace cannot be empty"):
             ModelDefinition(id="test5", name="Test 5", namespace="", attributes={})
 
         with pytest.raises(ValueError, match="Namespace must contain only"):
-            ModelDefinition(id="test6", name="Test 6", namespace="invalid@namespace", attributes={})
+            ModelDefinition(
+                id="test6", name="Test 6", namespace="invalid@namespace", attributes={}
+            )
 
 
 class TestGlobalRegistryFunctions:
@@ -374,10 +411,11 @@ class TestGlobalRegistryFunctions:
             id="function_test",
             name="Function Test",
             namespace="manual",  # This will auto-register in "manual" namespace
-            attributes={}
+            attributes={},
         )
 
-        # Should be auto-registered already, but let's register manually in different namespace
+        # Should be auto-registered already, but let's register manually in
+        # different namespace
         register_model("test", model_def)
 
         # Should now be available in both namespaces
@@ -390,10 +428,7 @@ class TestGlobalRegistryFunctions:
     def test_get_model_function(self):
         """Test get_model convenience function."""
         model_def = ModelDefinition(
-            id="get_test",
-            name="Get Test",
-            namespace="test",
-            attributes={}
+            id="get_test", name="Get Test", namespace="test", attributes={}
         )
 
         # Should be auto-registered
@@ -407,10 +442,7 @@ class TestGlobalRegistryFunctions:
     def test_clear_registry_function(self):
         """Test clear_registry convenience function."""
         model_def = ModelDefinition(
-            id="clear_test",
-            name="Clear Test",
-            namespace="test",
-            attributes={}
+            id="clear_test", name="Clear Test", namespace="test", attributes={}
         )
 
         # Should be auto-registered

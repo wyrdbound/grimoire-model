@@ -16,14 +16,16 @@ class FieldValidator(ABC):
     """Abstract base class for field validators."""
 
     @abstractmethod
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate a field value.
-        
+
         Args:
             value: The value to validate
             field_name: Name of the field being validated
             attr_def: Attribute definition for the field
-        
+
         Returns:
             List of validation error messages (empty if valid)
         """
@@ -38,7 +40,9 @@ class FieldValidator(ABC):
 class TypeValidator(FieldValidator):
     """Validates field types according to attribute definitions."""
 
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate that the value matches the expected type."""
         if value is None:
             if attr_def.required and not attr_def.computed:
@@ -51,22 +55,40 @@ class TypeValidator(FieldValidator):
         # Handle basic types
         if expected_type == "int":
             if not isinstance(value, int) or isinstance(value, bool):
-                errors.append(f"Field '{field_name}' must be an integer, got {type(value).__name__}")
+                errors.append(
+                    f"Field '{field_name}' must be an integer, got "
+                    f"{type(value).__name__}"
+                )
         elif expected_type == "float":
             if not isinstance(value, (int, float)) or isinstance(value, bool):
-                errors.append(f"Field '{field_name}' must be a number, got {type(value).__name__}")
+                errors.append(
+                    f"Field '{field_name}' must be a number, got "
+                    f"{type(value).__name__}"
+                )
         elif expected_type == "str":
             if not isinstance(value, str):
-                errors.append(f"Field '{field_name}' must be a string, got {type(value).__name__}")
+                errors.append(
+                    f"Field '{field_name}' must be a string, got "
+                    f"{type(value).__name__}"
+                )
         elif expected_type == "bool":
             if not isinstance(value, bool):
-                errors.append(f"Field '{field_name}' must be a boolean, got {type(value).__name__}")
+                errors.append(
+                    f"Field '{field_name}' must be a boolean, got "
+                    f"{type(value).__name__}"
+                )
         elif expected_type == "list":
             if not isinstance(value, list):
-                errors.append(f"Field '{field_name}' must be a list, got {type(value).__name__}")
+                errors.append(
+                    f"Field '{field_name}' must be a list, got "
+                    f"{type(value).__name__}"
+                )
         elif expected_type == "dict":
             if not isinstance(value, dict):
-                errors.append(f"Field '{field_name}' must be a dictionary, got {type(value).__name__}")
+                errors.append(
+                    f"Field '{field_name}' must be a dictionary, got "
+                    f"{type(value).__name__}"
+                )
         elif expected_type == "any":
             # Any type is always valid
             pass
@@ -85,7 +107,9 @@ class TypeValidator(FieldValidator):
 class RequiredValidator(FieldValidator):
     """Validates that required fields are present and not None."""
 
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate that required fields are present."""
         if attr_def.required and not attr_def.computed:
             if value is None:
@@ -100,7 +124,9 @@ class RequiredValidator(FieldValidator):
 class RangeValidator(FieldValidator):
     """Validates numeric ranges according to attribute definitions."""
 
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate that numeric values fall within specified ranges."""
         if value is None or attr_def.range is None:
             return []
@@ -120,37 +146,60 @@ class RangeValidator(FieldValidator):
                 max_val = None if parts[1] == "" else float(parts[1])
 
                 if min_val is not None and value < min_val:
-                    errors.append(f"Field '{field_name}' value {value} is below minimum {min_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} is below minimum "
+                        f"{min_val}"
+                    )
                 if max_val is not None and value > max_val:
-                    errors.append(f"Field '{field_name}' value {value} is above maximum {max_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} is above maximum "
+                        f"{max_val}"
+                    )
 
             elif ">=" in range_spec:
                 min_val = float(range_spec.replace(">=", "").strip())
                 if value < min_val:
-                    errors.append(f"Field '{field_name}' value {value} is below minimum {min_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} is below minimum "
+                        f"{min_val}"
+                    )
 
             elif "<=" in range_spec:
                 max_val = float(range_spec.replace("<=", "").strip())
                 if value > max_val:
-                    errors.append(f"Field '{field_name}' value {value} is above maximum {max_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} is above maximum "
+                        f"{max_val}"
+                    )
 
             elif ">" in range_spec:
                 min_val = float(range_spec.replace(">", "").strip())
                 if value <= min_val:
-                    errors.append(f"Field '{field_name}' value {value} must be greater than {min_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} must be greater than "
+                        f"{min_val}"
+                    )
 
             elif "<" in range_spec:
                 max_val = float(range_spec.replace("<", "").strip())
                 if value >= max_val:
-                    errors.append(f"Field '{field_name}' value {value} must be less than {max_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} must be less than "
+                        f"{max_val}"
+                    )
 
             elif "=" in range_spec:
                 exact_val = float(range_spec.replace("=", "").strip())
                 if value != exact_val:
-                    errors.append(f"Field '{field_name}' value {value} must equal {exact_val}")
+                    errors.append(
+                        f"Field '{field_name}' value {value} must equal {exact_val}"
+                    )
 
         except (ValueError, IndexError):
-            errors.append(f"Invalid range specification for field '{field_name}': {range_spec}")
+            errors.append(
+                f"Invalid range specification for field '{field_name}': "
+                f"{range_spec}"
+            )
 
         return errors
 
@@ -162,7 +211,9 @@ class RangeValidator(FieldValidator):
 class EnumValidator(FieldValidator):
     """Validates that values are within allowed enumeration values."""
 
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate that the value is in the allowed enumeration."""
         if value is None or attr_def.enum is None:
             return []
@@ -175,7 +226,8 @@ class EnumValidator(FieldValidator):
 
         if str_value not in allowed_values:
             errors.append(
-                f"Field '{field_name}' value '{value}' is not in allowed values: {allowed_values}"
+                f"Field '{field_name}' value '{value}' is not in allowed "
+                f"values: {allowed_values}"
             )
 
         return errors
@@ -188,7 +240,9 @@ class EnumValidator(FieldValidator):
 class PatternValidator(FieldValidator):
     """Validates string patterns using regular expressions."""
 
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate that string values match the specified pattern."""
         if value is None or attr_def.pattern is None:
             return []
@@ -201,9 +255,14 @@ class PatternValidator(FieldValidator):
 
         try:
             if not re.match(pattern, value):
-                errors.append(f"Field '{field_name}' value '{value}' does not match pattern '{pattern}'")
+                errors.append(
+                    f"Field '{field_name}' value '{value}' does not match "
+                    f"pattern '{pattern}'"
+                )
         except re.error as e:
-            errors.append(f"Invalid regex pattern for field '{field_name}': {pattern} ({e})")
+            errors.append(
+                f"Invalid regex pattern for field '{field_name}': {pattern} ({e})"
+            )
 
         return errors
 
@@ -215,7 +274,9 @@ class PatternValidator(FieldValidator):
 class LengthValidator(FieldValidator):
     """Validates length constraints for strings and collections."""
 
-    def validate(self, value: Any, field_name: str, attr_def: AttributeDefinition) -> List[str]:
+    def validate(
+        self, value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
         """Validate length constraints."""
         if value is None:
             return []
@@ -238,9 +299,15 @@ class LengthValidator(FieldValidator):
                     max_len = None if parts[1] == "" else int(parts[1])
 
                     if min_len is not None and length < min_len:
-                        errors.append(f"Field '{field_name}' length {length} is below minimum {min_len}")
+                        errors.append(
+                            f"Field '{field_name}' length {length} is below "
+                            f"minimum {min_len}"
+                        )
                     if max_len is not None and length > max_len:
-                        errors.append(f"Field '{field_name}' length {length} is above maximum {max_len}")
+                        errors.append(
+                            f"Field '{field_name}' length {length} is above "
+                            f"maximum {max_len}"
+                        )
 
             except (ValueError, IndexError):
                 # Not a valid length range, skip
@@ -288,16 +355,16 @@ class ValidationEngine:
         value: Any,
         field_name: str,
         attr_def: AttributeDefinition,
-        enabled_validators: Optional[List[str]] = None
+        enabled_validators: Optional[List[str]] = None,
     ) -> List[str]:
         """Validate a single field value.
-        
+
         Args:
             value: The value to validate
             field_name: Name of the field
             attr_def: Attribute definition
             enabled_validators: List of validator names to use (None = all)
-        
+
         Returns:
             List of validation error messages
         """
@@ -316,15 +383,15 @@ class ValidationEngine:
         self,
         data: Dict[str, Any],
         attributes: Dict[str, AttributeDefinition],
-        enabled_validators: Optional[List[str]] = None
+        enabled_validators: Optional[List[str]] = None,
     ) -> List[str]:
         """Validate all fields in a data dictionary.
-        
+
         Args:
             data: The data to validate
             attributes: Attribute definitions for validation
             enabled_validators: List of validator names to use (None = all)
-        
+
         Returns:
             List of all validation error messages
         """
@@ -334,14 +401,18 @@ class ValidationEngine:
         for field_name, value in data.items():
             if field_name in attributes:
                 attr_def = attributes[field_name]
-                field_errors = self.validate_field(value, field_name, attr_def, enabled_validators)
+                field_errors = self.validate_field(
+                    value, field_name, attr_def, enabled_validators
+                )
                 all_errors.extend(field_errors)
 
         # Check for missing required fields
         for field_name, attr_def in attributes.items():
             if field_name not in data:
                 # Use None value to trigger required validation
-                field_errors = self.validate_field(None, field_name, attr_def, enabled_validators)
+                field_errors = self.validate_field(
+                    None, field_name, attr_def, enabled_validators
+                )
                 all_errors.extend(field_errors)
 
         return all_errors
@@ -360,16 +431,18 @@ def validate_field_value(
     value: Any,
     field_name: str,
     attr_def: AttributeDefinition,
-    enabled_validators: Optional[List[str]] = None
+    enabled_validators: Optional[List[str]] = None,
 ) -> List[str]:
     """Convenience function to validate a single field value."""
-    return _validation_engine.validate_field(value, field_name, attr_def, enabled_validators)
+    return _validation_engine.validate_field(
+        value, field_name, attr_def, enabled_validators
+    )
 
 
 def validate_model_data(
     data: Dict[str, Any],
     attributes: Dict[str, AttributeDefinition],
-    enabled_validators: Optional[List[str]] = None
+    enabled_validators: Optional[List[str]] = None,
 ) -> List[str]:
     """Convenience function to validate all model data."""
     return _validation_engine.validate_data(data, attributes, enabled_validators)

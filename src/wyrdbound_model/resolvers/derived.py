@@ -16,7 +16,7 @@ from ..logging import get_logger
 if TYPE_CHECKING:
     from ..core.schema import AttributeDefinition
 
-logger = get_logger('resolvers.derived')
+logger = get_logger("resolvers.derived")
 
 
 class TemplateResolver(Protocol):
@@ -38,7 +38,7 @@ class DependencyInfo:
     field_name: str
     expression: str  # The template expression
     dependencies: Set[str] = field(default_factory=set)
-    attr_def: Optional['AttributeDefinition'] = None  # For type conversion
+    attr_def: Optional["AttributeDefinition"] = None  # For type conversion
 
 
 class ObservableValue:
@@ -86,7 +86,9 @@ class DerivedFieldResolver:
 
         # Track derived fields and their dependencies
         self.derived_fields: Dict[str, DependencyInfo] = {}
-        self.dependency_graph: Dict[str, Set[str]] = defaultdict(set)  # field -> fields that depend on it
+        self.dependency_graph: Dict[str, Set[str]] = defaultdict(
+            set
+        )  # field -> fields that depend on it
         self.observable_values: Dict[str, ObservableValue] = {}
         self._computing: Set[str] = set()  # Prevent circular dependencies
 
@@ -95,14 +97,20 @@ class DerivedFieldResolver:
         self._on_field_change: Optional[Callable[[str, Any], None]] = None
 
     def set_model_data_accessor(self, model_data: Dict[str, Any]) -> None:
-        """Set the model data dictionary that this resolver will read from and write to."""
+        """Set the model data dictionary that this resolver will read from and
+        write to."""
         self._model_data = model_data
 
     def set_field_change_callback(self, callback: Callable[[str, Any], None]) -> None:
         """Set a callback that will be called when a derived field is computed."""
         self._on_field_change = callback
 
-    def register_derived_field(self, field_name: str, expression: str, attr_def: Optional['AttributeDefinition'] = None) -> None:
+    def register_derived_field(
+        self,
+        field_name: str,
+        expression: str,
+        attr_def: Optional["AttributeDefinition"] = None,
+    ) -> None:
         """Register a derived field with its expression and attribute definition."""
         logger.debug(f"Registering derived field: {field_name} = {expression}")
 
@@ -114,7 +122,7 @@ class DerivedFieldResolver:
             field_name=field_name,
             expression=expression,
             dependencies=dependencies,
-            attr_def=attr_def  # Store the attribute definition for type conversion
+            attr_def=attr_def,  # Store the attribute definition for type conversion
         )
         self.derived_fields[field_name] = dep_info
 
@@ -167,7 +175,9 @@ class DerivedFieldResolver:
             raise DependencyError(f"Derived field '{field_name}' not registered")
 
         if field_name in self._computing:
-            raise DependencyError(f"Circular dependency detected for field '{field_name}'")
+            raise DependencyError(
+                f"Circular dependency detected for field '{field_name}'"
+            )
 
         dep_info = self.derived_fields[field_name]
 
@@ -178,7 +188,9 @@ class DerivedFieldResolver:
             context = self._build_template_context()
 
             # Resolve the template expression
-            value = self.template_resolver.resolve_template(dep_info.expression, context)
+            value = self.template_resolver.resolve_template(
+                dep_info.expression, context
+            )
 
             # Apply type conversion if we have attribute definition
             if dep_info.attr_def:
@@ -209,7 +221,9 @@ class DerivedFieldResolver:
 
     def compute_all_derived_fields(self) -> None:
         """Compute all derived fields in dependency order."""
-        logger.debug(f"Computing all derived fields: {list(self.derived_fields.keys())}")
+        logger.debug(
+            f"Computing all derived fields: {list(self.derived_fields.keys())}"
+        )
 
         if not self.derived_fields:
             return
@@ -239,7 +253,7 @@ class DerivedFieldResolver:
         expression_copy = expression
         if "$." in expression:
             # Replace $.field with just field for dependency tracking
-            expression_copy = re.sub(r'\$\.([a-zA-Z_]\w*)', r'\1', expression)
+            expression_copy = re.sub(r"\$\.([a-zA-Z_]\w*)", r"\1", expression)
 
         # Extract variables using the template resolver
         template_vars = self.template_resolver.extract_variables(expression_copy)
@@ -247,7 +261,18 @@ class DerivedFieldResolver:
         # Process template variables to extract field references
         for var in template_vars:
             # Skip built-in functions and operators
-            if var in {'sum', 'max', 'min', 'len', 'abs', 'round', 'int', 'float', 'str', 'bool'}:
+            if var in {
+                "sum",
+                "max",
+                "min",
+                "len",
+                "abs",
+                "round",
+                "int",
+                "float",
+                "str",
+                "bool",
+            }:
                 continue
             # Skip the model instance reference itself
             if var == self.instance_id:
@@ -256,7 +281,7 @@ class DerivedFieldResolver:
             dependencies.add(var)
 
         # Also scan for pattern like $.field_name using regex
-        dollar_pattern = re.compile(r'\$\.([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)')
+        dollar_pattern = re.compile(r"\$\.([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)")
         for match in dollar_pattern.finditer(expression):
             field_ref = match.group(1)
             dependencies.add(field_ref)
@@ -267,7 +292,7 @@ class DerivedFieldResolver:
     def _build_template_context(self) -> Dict[str, Any]:
         """Build context for template resolution."""
         context = {
-            '$': self._model_data,  # Model data accessible as $
+            "$": self._model_data,  # Model data accessible as $
             self.instance_id: self._model_data,  # Model data accessible by instance ID
         }
 
@@ -276,8 +301,11 @@ class DerivedFieldResolver:
 
         return context
 
-    def _convert_value_to_type(self, value: Any, attr_def: 'AttributeDefinition') -> Any:
-        """Convert a template result to the proper type based on attribute definition."""
+    def _convert_value_to_type(
+        self, value: Any, attr_def: "AttributeDefinition"
+    ) -> Any:
+        """Convert a template result to the proper type based on attribute
+        definition."""
         if attr_def.type == "int":
             try:
                 if isinstance(value, str):
@@ -299,7 +327,7 @@ class DerivedFieldResolver:
         elif attr_def.type == "bool":
             # Handle string boolean conversion (we've seen this before)
             if isinstance(value, str):
-                return value.lower() in ('true', '1', 'yes', 'on')
+                return value.lower() in ("true", "1", "yes", "on")
             return bool(value)
         elif attr_def.type == "str":
             return str(value)
@@ -311,29 +339,37 @@ class DerivedFieldResolver:
         """Sort fields in dependency order using topological sort."""
         # Build a dependency graph for just the fields we need to sort
         local_deps = {}
-        for field in fields:
-            if field in self.derived_fields:
-                local_deps[field] = self.derived_fields[field].dependencies & fields
+        for field_name in fields:
+            if field_name in self.derived_fields:
+                local_deps[field_name] = (
+                    self.derived_fields[field_name].dependencies & fields
+                )
 
         # Kahn's algorithm for topological sorting
-        # in_degree[field] = number of dependencies this field has (fields it depends on)
-        in_degree = {field: 0 for field in fields}
-        for field in fields:
-            if field in local_deps:
-                in_degree[field] = len(local_deps[field])
+        # in_degree[field] = number of dependencies this field has
+        # (fields it depends on)
+        in_degree = {field_name: 0 for field_name in fields}
+        for field_name in fields:
+            if field_name in local_deps:
+                in_degree[field_name] = len(local_deps[field_name])
 
         # Start with fields that have no dependencies (in_degree = 0)
-        queue = deque([field for field in fields if in_degree[field] == 0])
+        queue = deque(
+            [field_name for field_name in fields if in_degree[field_name] == 0]
+        )
         result = []
 
         while queue:
-            field = queue.popleft()
-            result.append(field)
+            current_field = queue.popleft()
+            result.append(current_field)
 
             # For each field that depends on the current field, decrease its in_degree
-            if field in local_deps:
+            if current_field in local_deps:
                 for dependent_field in fields:
-                    if dependent_field in local_deps and field in local_deps[dependent_field]:
+                    if (
+                        dependent_field in local_deps
+                        and current_field in local_deps[dependent_field]
+                    ):
                         in_degree[dependent_field] -= 1
                         if in_degree[dependent_field] == 0:
                             queue.append(dependent_field)
@@ -367,18 +403,20 @@ class DerivedFieldResolver:
                 # its dependent fields recursively to handle dependency chains
                 self._update_dependent_fields(dependent_field)
 
-    def _on_field_updated(self, field_name: str, old_value: Any, new_value: Any) -> None:
+    def _on_field_updated(
+        self, field_name: str, old_value: Any, new_value: Any
+    ) -> None:
         """Handle field update notifications."""
         logger.debug(f"Field updated: {field_name} {old_value} -> {new_value}")
         self._update_dependent_fields(field_name)
 
     def _set_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
         """Set a nested value using dot notation."""
-        if '.' not in path:
+        if "." not in path:
             data[path] = value
             return
 
-        keys = path.split('.')
+        keys = path.split(".")
         current = data
         for key in keys[:-1]:
             if key not in current:
@@ -386,12 +424,14 @@ class DerivedFieldResolver:
             current = current[key]
         current[keys[-1]] = value
 
-    def _get_nested_value(self, data: Dict[str, Any], path: str, default: Any = None) -> Any:
+    def _get_nested_value(
+        self, data: Dict[str, Any], path: str, default: Any = None
+    ) -> Any:
         """Get a nested value using dot notation."""
-        if '.' not in path:
+        if "." not in path:
             return data.get(path, default)
 
-        keys = path.split('.')
+        keys = path.split(".")
         current = data
         for key in keys:
             if not isinstance(current, dict) or key not in current:
@@ -470,7 +510,7 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
 def create_derived_field_resolver(
     template_resolver: TemplateResolver,
     instance_id: str = "model",
-    batched: bool = False
+    batched: bool = False,
 ) -> DerivedFieldResolver:
     """Factory function to create derived field resolvers.
 

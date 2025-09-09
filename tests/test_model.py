@@ -25,8 +25,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": False, "default": 0}
-            }
+                "age": {"type": "int", "required": False, "default": 0},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -42,8 +42,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "range": "0..120"}
-            }
+                "age": {"type": "int", "range": "0..120"},
+            },
         )
 
         # Valid data
@@ -64,8 +64,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": False, "default": 0}
-            }
+                "age": {"type": "int", "required": False, "default": 0},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -97,9 +97,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -115,8 +113,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True}
-            }
+                "age": {"type": "int", "required": True},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John", "age": 30})
@@ -143,8 +141,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": False}
-            }
+                "age": {"type": "int", "required": False},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -165,8 +163,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": False},
-                "age": {"type": "int", "required": False}
-            }
+                "age": {"type": "int", "required": False},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John", "age": 30})
@@ -182,8 +180,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": False},
-                "age": {"type": "int", "required": False}
-            }
+                "age": {"type": "int", "required": False},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John", "age": 30})
@@ -206,9 +204,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": False}
-            }
+            attributes={"name": {"type": "str", "required": False}},
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -229,8 +225,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": False},
-                "age": {"type": "int", "required": False}
-            }
+                "age": {"type": "int", "required": False},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -253,8 +249,8 @@ class TestWyrdboundModel:
             attributes={
                 "first_name": {"type": "str", "required": True},
                 "last_name": {"type": "str", "required": True},
-                "full_name": {"type": "str", "derived": "{{first_name}} {{last_name}}"}
-            }
+                "full_name": {"type": "str", "derived": "{{first_name}} {{last_name}}"},
+            },
         )
 
         # Mock the template resolver
@@ -266,7 +262,7 @@ class TestWyrdboundModel:
         model = WyrdboundModel(
             model_def,
             {"first_name": "John", "last_name": "Doe"},
-            template_resolver=mock_resolver
+            template_resolver=mock_resolver,
         )
 
         # Derived field should be computed
@@ -278,9 +274,7 @@ class TestWyrdboundModel:
     def test_model_validation_rules(self):
         """Test model with validation rules."""
         validation_rule = ValidationRule(
-            expression="{{ age >= 18 }}",
-            message="Must be 18 or older",
-            fields=["age"]
+            expression="{{ age >= 18 }}", message="Must be 18 or older", fields=["age"]
         )
 
         model_def = ModelDefinition(
@@ -288,9 +282,9 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True}
+                "age": {"type": "int", "required": True},
             },
-            validations=[validation_rule]
+            validations=[validation_rule],
         )
 
         # Valid data should work
@@ -308,8 +302,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "id": {"type": "str", "readonly": True, "default": "auto-generated"},
-                "name": {"type": "str", "required": True}
-            }
+                "name": {"type": "str", "required": True},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -329,11 +323,13 @@ class TestWyrdboundModel:
             attributes={
                 "a": {"type": "str", "required": True},
                 "b": {"type": "str", "required": True},
-                "computed": {"type": "str", "derived": "{{a}} {{b}}"}
-            }
+                "computed": {"type": "str", "derived": "{{a}} {{b}}"},
+            },
         )
 
-        with patch('wyrdbound_model.core.model.create_template_resolver') as mock_resolver_creator:
+        with patch(
+            "wyrdbound_model.core.model.create_template_resolver"
+        ) as mock_resolver_creator:
             mock_resolver = Mock()
             mock_resolver.resolve_template.return_value = "value_a value_b"
             mock_resolver.extract_variables.return_value = {"a", "b"}
@@ -355,8 +351,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True}
-            }
+                "age": {"type": "int", "required": True},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John", "age": 30})
@@ -374,8 +370,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True}
-            }
+                "age": {"type": "int", "required": True},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John", "age": 30})
@@ -395,9 +391,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         model1 = WyrdboundModel(model_def, {"name": "John"})
@@ -413,9 +407,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -432,9 +424,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "age": {"type": "int", "range": "0..120"}
-            }
+            attributes={"age": {"type": "int", "range": "0..120"}},
         )
 
         model = WyrdboundModel(model_def, {"age": 30})
@@ -454,8 +444,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True}
-            }
+                "age": {"type": "int", "required": True},
+            },
         )
 
         # Missing required field should raise error
@@ -469,8 +459,8 @@ class TestWyrdboundModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True}
-            }
+                "age": {"type": "int", "required": True},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John", "age": 30})
@@ -494,8 +484,8 @@ class TestWyrdboundModel:
             attributes={
                 "name": {"type": "str", "required": True},
                 "status": {"type": "str", "default": "active"},
-                "count": {"type": "int", "default": 0}
-            }
+                "count": {"type": "int", "default": 0},
+            },
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -510,9 +500,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -531,9 +519,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -552,9 +538,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         model = WyrdboundModel(model_def, {"name": "John"})
@@ -569,9 +553,7 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="invalid_model",
             name="Invalid Model",
-            attributes={
-                "required_field": {"type": "str", "required": True}
-            }
+            attributes={"required_field": {"type": "str", "required": True}},
         )
 
         # Test exception handling
@@ -583,16 +565,12 @@ class TestWyrdboundModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={
-                "stats": {"type": "dict"},
-                "level": {"type": "int"}
-            }
+            attributes={"stats": {"type": "dict"}, "level": {"type": "int"}},
         )
 
-        model = WyrdboundModel(model_def, {
-            "stats": {"strength": 10, "dexterity": 15},
-            "level": 5
-        })
+        model = WyrdboundModel(
+            model_def, {"stats": {"strength": 10, "dexterity": 15}, "level": 5}
+        )
 
         # Test deleting nested attribute using dot notation
         del model["stats.strength"]
@@ -604,7 +582,8 @@ class TestWyrdboundModel:
         assert "level" not in model
 
     def test_model_derived_field_methods(self):
-        """Test get_derived_fields, get_field_dependencies, get_dependent_fields methods."""
+        """Test get_derived_fields, get_field_dependencies, get_dependent_fields
+        methods."""
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
@@ -613,19 +592,13 @@ class TestWyrdboundModel:
                 "strength": {"type": "int"},
                 "total_damage": {
                     "type": "int",
-                    "derived": "{{ base_damage + strength }}"
+                    "derived": "{{ base_damage + strength }}",
                 },
-                "damage_bonus": {
-                    "type": "int",
-                    "derived": "{{ strength * 2 }}"
-                }
-            }
+                "damage_bonus": {"type": "int", "derived": "{{ strength * 2 }}"},
+            },
         )
 
-        model = WyrdboundModel(model_def, {
-            "base_damage": 10,
-            "strength": 5
-        })
+        model = WyrdboundModel(model_def, {"base_damage": 10, "strength": 5})
 
         # Test get_derived_fields
         derived_fields = model.get_derived_fields()
@@ -651,10 +624,19 @@ class TestWyrdboundModel:
             attributes={
                 "strength": {"type": "int", "required": True},
                 "weapon_damage": {"type": "int", "required": True},
-                "damage_multiplier": {"type": "float", "derived": "{{ total_damage * 0.1 }}"},
-                "total_damage": {"type": "int", "derived": "{{ strength + weapon_damage }}"},
-                "final_damage": {"type": "float", "derived": "{{ total_damage * damage_multiplier }}"}
-            }
+                "damage_multiplier": {
+                    "type": "float",
+                    "derived": "{{ total_damage * 0.1 }}",
+                },
+                "total_damage": {
+                    "type": "int",
+                    "derived": "{{ strength + weapon_damage }}",
+                },
+                "final_damage": {
+                    "type": "float",
+                    "derived": "{{ total_damage * damage_multiplier }}",
+                },
+            },
         )
 
         model = WyrdboundModel(model_def, {"strength": 10, "weapon_damage": 5})
@@ -676,17 +658,15 @@ class TestWyrdboundModel:
                 "a": {"type": "int"},
                 "b": {"type": "int"},
                 "sum": {"type": "int", "derived": "{{ a + b }}"},
-                "product": {"type": "int", "derived": "{{ a * b }}"}
-            }
+                "product": {"type": "int", "derived": "{{ a * b }}"},
+            },
         )
 
         # Create model with batched resolver
         template_resolver = Jinja2TemplateResolver()
         batched_resolver = BatchedDerivedFieldResolver(template_resolver)
         model = WyrdboundModel(
-            model_def,
-            {"a": 1, "b": 2},
-            derived_field_resolver=batched_resolver
+            model_def, {"a": 1, "b": 2}, derived_field_resolver=batched_resolver
         )
 
         # Test batch update
@@ -710,14 +690,14 @@ class TestWyrdboundModel:
 
         # Test successful inheritance resolution
         # Models will auto-register when created
-        base_model_def = ModelDefinition(
+        ModelDefinition(
             id="base_character",
             name="Base Character",
             namespace="test",
             attributes={
                 "name": {"type": "str", "required": True},
-                "health": {"type": "int", "default": 100}
-            }
+                "health": {"type": "int", "default": 100},
+            },
         )
 
         child_model_def = ModelDefinition(
@@ -727,15 +707,12 @@ class TestWyrdboundModel:
             extends=["base_character"],
             attributes={
                 "strength": {"type": "int", "default": 10},
-                "weapon": {"type": "str", "default": "sword"}
-            }
+                "weapon": {"type": "str", "default": "sword"},
+            },
         )
 
         # Test successful inheritance - models auto-registered
-        model = WyrdboundModel(
-            child_model_def,
-            {"name": "Conan", "strength": 18}
-        )
+        model = WyrdboundModel(child_model_def, {"name": "Conan", "strength": 18})
 
         assert model["name"] == "Conan"
         assert model["health"] == 100  # From base model
@@ -751,16 +728,11 @@ class TestWyrdboundModel:
             name="Broken Child",
             namespace="test",
             extends=["missing_parent"],
-            attributes={
-                "strength": {"type": "int", "default": 10}
-            }
+            attributes={"strength": {"type": "int", "default": 10}},
         )
 
         with pytest.raises(InheritanceError):
-            WyrdboundModel(
-                broken_child_def,
-                {"name": "Failed"}
-            )
+            WyrdboundModel(broken_child_def, {"name": "Failed"})
 
     def test_model_delete_with_dot_path(self):
         """Test delete operation that triggers __delitem__ with dot notation path."""
@@ -770,29 +742,29 @@ class TestWyrdboundModel:
             attributes={
                 "name": {"type": "str", "required": True},
                 "stats": {"type": "dict"},
-                "config": {"type": "dict"}
-            }
+                "config": {"type": "dict"},
+            },
         )
 
         # Create model with nested data
-        model = WyrdboundModel(model_def, {
-            "name": "Test",
-            "stats": {
-                "strength": 10,
-                "agility": 8,
-                "intelligence": 12
+        model = WyrdboundModel(
+            model_def,
+            {
+                "name": "Test",
+                "stats": {"strength": 10, "agility": 8, "intelligence": 12},
+                "config": {
+                    "sound": {"volume": 0.8, "muted": False},
+                    "graphics": {"resolution": "1920x1080", "fullscreen": True},
+                },
             },
-            "config": {
-                "sound": {"volume": 0.8, "muted": False},
-                "graphics": {"resolution": "1920x1080", "fullscreen": True}
-            }
-        })
+        )
 
         # Verify initial nested data exists
         assert model["stats"]["strength"] == 10
         assert model["config"]["sound"]["volume"] == 0.8
 
-        # Test deleting nested values using dot notation (triggers __delitem__ with dot path)
+        # Test deleting nested values using dot notation
+        # (triggers __delitem__ with dot path)
         del model["stats.strength"]
         assert "strength" not in model["stats"]
         assert model["stats"]["agility"] == 8  # Other values should remain
@@ -801,7 +773,9 @@ class TestWyrdboundModel:
         del model["config.sound.volume"]
         assert "volume" not in model["config"]["sound"]
         assert model["config"]["sound"]["muted"] is False  # Other values should remain
-        assert model["config"]["graphics"]["resolution"] == "1920x1080"  # Unrelated nested data should remain
+        assert (
+            model["config"]["graphics"]["resolution"] == "1920x1080"
+        )  # Unrelated nested data should remain
 
         # Test deleting entire nested section
         del model["config.graphics"]
@@ -821,8 +795,8 @@ class TestCreateModelFactory:
             name="Test Model",
             attributes={
                 "name": {"type": "str", "required": True},
-                "age": {"type": "int", "default": 25}
-            }
+                "age": {"type": "int", "default": 25},
+            },
         )
 
         model = create_model(model_def, {"name": "Alice"})
@@ -841,8 +815,8 @@ class TestCreateModelFactory:
             name="Template Model",
             attributes={
                 "base": {"type": "int", "required": True},
-                "computed": {"type": "str", "derived": "{{ base * 2 }}"}
-            }
+                "computed": {"type": "str", "derived": "{{ base * 2 }}"},
+            },
         )
 
         # Test with jinja2 resolver (default)
@@ -850,7 +824,9 @@ class TestCreateModelFactory:
         assert model1["computed"] == "20"
 
         # Test with model_context resolver
-        model2 = create_model(model_def, {"base": 15}, template_resolver_type="model_context")
+        model2 = create_model(
+            model_def, {"base": 15}, template_resolver_type="model_context"
+        )
         assert model2["computed"] == "30"
 
     def test_create_model_with_model_registry(self):
@@ -862,8 +838,8 @@ class TestCreateModelFactory:
             name="Base Character",
             attributes={
                 "name": {"type": "str", "required": True},
-                "health": {"type": "int", "default": 100}
-            }
+                "health": {"type": "int", "default": 100},
+            },
         )
 
         child_model_def = ModelDefinition(
@@ -872,19 +848,16 @@ class TestCreateModelFactory:
             extends=["base_character"],
             attributes={
                 "strength": {"type": "int", "default": 10},
-                "weapon": {"type": "str", "default": "sword"}
-            }
+                "weapon": {"type": "str", "default": "sword"},
+            },
         )
 
-        model_registry = {
-            "base_character": base_model_def,
-            "warrior": child_model_def
-        }
+        model_registry = {"base_character": base_model_def, "warrior": child_model_def}
 
         model = create_model(
             child_model_def,
             {"name": "Conan", "strength": 18},
-            model_registry=model_registry
+            model_registry=model_registry,
         )
 
         assert model["name"] == "Conan"
@@ -901,25 +874,27 @@ class TestCreateModelFactory:
             name="Custom Template Model",
             attributes={
                 "value": {"type": "int", "required": True},
-                "result": {"type": "str", "derived": "{{ value }}"}
-            }
+                "result": {"type": "str", "derived": "{{ value }}"},
+            },
         )
 
         # Test with custom jinja2 environment kwargs
         template_resolver_kwargs = {
             "autoescape": False,  # Valid Jinja2 Environment parameter
-            "trim_blocks": False  # Override default
+            "trim_blocks": False,  # Override default
         }
 
         model = create_model(
             model_def,
             {"value": 42},
             template_resolver_type="jinja2",
-            template_resolver_kwargs=template_resolver_kwargs
+            template_resolver_kwargs=template_resolver_kwargs,
         )
 
         assert model["value"] == 42
-        assert model["result"] == "42"  # Template result converted to str type as defined
+        assert (
+            model["result"] == "42"
+        )  # Template result converted to str type as defined
 
     def test_create_model_with_derived_resolver_kwargs(self):
         """Test factory with custom derived field resolver configuration."""
@@ -932,19 +907,15 @@ class TestCreateModelFactory:
                 "a": {"type": "int", "required": True},
                 "b": {"type": "int", "required": True},
                 "sum": {"type": "str", "derived": "{{ a + b }}"},
-                "product": {"type": "str", "derived": "{{ a * b }}"}
-            }
+                "product": {"type": "str", "derived": "{{ a * b }}"},
+            },
         )
 
         # Test with batched derived field resolver
-        derived_resolver_kwargs = {
-            "batched": True
-        }
+        derived_resolver_kwargs = {"batched": True}
 
         model = create_model(
-            model_def,
-            {"a": 5, "b": 3},
-            derived_resolver_kwargs=derived_resolver_kwargs
+            model_def, {"a": 5, "b": 3}, derived_resolver_kwargs=derived_resolver_kwargs
         )
 
         assert model["a"] == 5
@@ -959,17 +930,13 @@ class TestCreateModelFactory:
         model_def = ModelDefinition(
             id="kwargs_model",
             name="Kwargs Model",
-            attributes={
-                "name": {"type": "str", "required": True}
-            }
+            attributes={"name": {"type": "str", "required": True}},
         )
 
         # Test with custom instance_id
         custom_instance_id = "custom-test-id-12345"
         model = create_model(
-            model_def,
-            {"name": "Test"},
-            instance_id=custom_instance_id
+            model_def, {"name": "Test"}, instance_id=custom_instance_id
         )
 
         assert model["name"] == "Test"
@@ -985,8 +952,8 @@ class TestCreateModelFactory:
             attributes={
                 "name": {"type": "str", "default": "Unknown"},
                 "count": {"type": "int", "default": 0},
-                "active": {"type": "bool", "default": True}
-            }
+                "active": {"type": "bool", "default": True},
+            },
         )
 
         model = create_model(model_def)  # No data provided
@@ -1003,9 +970,7 @@ class TestCreateModelFactory:
         model_def = ModelDefinition(
             id="validation_model",
             name="Validation Model",
-            attributes={
-                "required_field": {"type": "str", "required": True}
-            }
+            attributes={"required_field": {"type": "str", "required": True}},
         )
 
         # Should raise validation error for missing required field
@@ -1013,7 +978,8 @@ class TestCreateModelFactory:
             create_model(model_def, {})  # Missing required field
 
     def test_derived_field_recomputation_on_individual_updates(self):
-        """Test that derived fields are recomputed when individual base fields are updated."""
+        """Test that derived fields are recomputed when individual base fields
+        are updated."""
         from wyrdbound_model.core.model import create_model
 
         # Create a model EXACTLY like the basic usage example
@@ -1025,21 +991,23 @@ class TestCreateModelFactory:
                 "level": {"type": "int", "default": 1, "range": "1..100"},
                 "health": {"type": "int", "default": 100},
                 "mana": {"type": "int", "default": 50},
-
                 # Derived fields using templates - this is the complex chain
                 "total_resources": {"type": "int", "derived": "{{ health + mana }}"},
                 "is_powerful": {"type": "bool", "derived": "{{ level >= 10 }}"},
-                "character_summary": {"type": "str", "derived": "Level {{ level }} {{ name }} ({{ total_resources }} total resources)"}
-            }
+                "character_summary": {
+                    "type": "str",
+                    "derived": (
+                        "Level {{ level }} {{ name }} "
+                        "({{ total_resources }} total resources)"
+                    ),
+                },
+            },
         )
 
         # Create character EXACTLY like the example
-        character2 = create_model(model_def, {
-            "name": "Legolas",
-            "level": 8,
-            "health": 90,
-            "mana": 110
-        })
+        character2 = create_model(
+            model_def, {"name": "Legolas", "level": 8, "health": 90, "mana": 110}
+        )
 
         # Initial values should be correct
         assert character2["health"] == 90
@@ -1050,8 +1018,8 @@ class TestCreateModelFactory:
         assert "200 total resources" in initial_summary
 
         # Update EXACTLY like the example
-        character2['level'] = 12  # Level up!
-        character2['health'] = 95  # Slight health increase
+        character2["level"] = 12  # Level up!
+        character2["health"] = 95  # Slight health increase
 
         # CRITICAL: The derived field should automatically update
         assert character2["health"] == 95
@@ -1064,7 +1032,8 @@ class TestCreateModelFactory:
         assert "205 total resources" in updated_summary
 
     def test_validation_rules_execution_during_creation(self):
-        """Test that ValidationRule expressions are properly executed during model creation."""
+        """Test that ValidationRule expressions are properly executed during
+        model creation."""
         from wyrdbound_model.core.exceptions import ModelValidationError
         from wyrdbound_model.core.model import create_model
 
@@ -1075,52 +1044,57 @@ class TestCreateModelFactory:
             attributes={
                 "name": {"type": "str", "required": True},
                 "health": {"type": "int", "default": 100},
-                "mana": {"type": "int", "default": 50}
+                "mana": {"type": "int", "default": 50},
             },
             validations=[
                 ValidationRule(
                     expression="health > 0",
-                    message="Character must have positive health"
+                    message="Character must have positive health",
                 ),
                 ValidationRule(
                     expression="mana >= 0",
-                    message="Character cannot have negative mana"
-                )
-            ]
+                    message="Character cannot have negative mana",
+                ),
+            ],
         )
 
         # Valid character should work fine
-        valid_character = create_model(model_def, {
-            "name": "ValidChar",
-            "health": 100,
-            "mana": 50
-        })
+        valid_character = create_model(
+            model_def, {"name": "ValidChar", "health": 100, "mana": 50}
+        )
         assert valid_character["name"] == "ValidChar"
         assert valid_character["health"] == 100
 
         # Invalid character with negative health should fail validation
         with pytest.raises(ModelValidationError) as exc_info:
-            create_model(model_def, {
-                "name": "Invalid",
-                "health": -10  # This should fail validation
-            })
+            create_model(
+                model_def,
+                {
+                    "name": "Invalid",
+                    "health": -10,  # This should fail validation
+                },
+            )
 
         error = exc_info.value
         assert "Character must have positive health" in str(error)
 
         # Invalid character with negative mana should also fail
         with pytest.raises(ModelValidationError) as exc_info:
-            create_model(model_def, {
-                "name": "Invalid",
-                "health": 100,
-                "mana": -5  # This should fail validation
-            })
+            create_model(
+                model_def,
+                {
+                    "name": "Invalid",
+                    "health": 100,
+                    "mana": -5,  # This should fail validation
+                },
+            )
 
         error = exc_info.value
         assert "Character cannot have negative mana" in str(error)
 
     def test_validation_rules_with_derived_fields(self):
-        """Test that validation rules can reference derived fields during model creation."""
+        """Test that validation rules can reference derived fields during
+        model creation."""
         from wyrdbound_model.core.exceptions import ModelValidationError
         from wyrdbound_model.core.model import create_model
 
@@ -1133,36 +1107,39 @@ class TestCreateModelFactory:
                 "strength": {"type": "int", "default": 10},
                 "dexterity": {"type": "int", "default": 10},
                 "intelligence": {"type": "int", "default": 10},
-
                 # Derived field that sums the stats
-                "stat_total": {"type": "int", "derived": "{{ strength + dexterity + intelligence }}"}
+                "stat_total": {
+                    "type": "int",
+                    "derived": "{{ strength + dexterity + intelligence }}",
+                },
             },
             validations=[
                 ValidationRule(
                     expression="stat_total >= 30",
-                    message="Total stats must be at least 30"
+                    message="Total stats must be at least 30",
                 )
-            ]
+            ],
         )
 
         # Valid character with enough stats should work
-        valid_character = create_model(model_def, {
-            "name": "ValidChar",
-            "strength": 12,
-            "dexterity": 10,
-            "intelligence": 8
-        })
+        valid_character = create_model(
+            model_def,
+            {"name": "ValidChar", "strength": 12, "dexterity": 10, "intelligence": 8},
+        )
         assert valid_character["name"] == "ValidChar"
         assert valid_character["stat_total"] == 30  # 12 + 10 + 8
 
         # Invalid character with too low stats should fail validation
         with pytest.raises(ModelValidationError) as exc_info:
-            create_model(model_def, {
-                "name": "WeakChar",
-                "strength": 8,
-                "dexterity": 8,
-                "intelligence": 8  # Total = 24, less than 30
-            })
+            create_model(
+                model_def,
+                {
+                    "name": "WeakChar",
+                    "strength": 8,
+                    "dexterity": 8,
+                    "intelligence": 8,  # Total = 24, less than 30
+                },
+            )
 
         error = exc_info.value
         assert "Total stats must be at least 30" in str(error)
@@ -1179,22 +1156,17 @@ class TestCreateModelFactory:
                 "name": {"type": "str", "required": True},
                 "level": {"type": "int", "default": 1},
                 "power": {"type": "int", "default": 10},
-
                 # Using $variable syntax instead of {{ variable }}
                 "display_name": {"type": "str", "derived": "$name (Level $level)"},
-                "power_level": {"type": "str", "derived": "Power: $power"}
-            }
+                "power_level": {"type": "str", "derived": "Power: $power"},
+            },
         )
 
         # Create model with model_context template resolver
         character = create_model(
             model_def,
-            {
-                "name": "Gandalf",
-                "level": 50,
-                "power": 95
-            },
-            template_resolver_type="model_context"
+            {"name": "Gandalf", "level": 50, "power": 95},
+            template_resolver_type="model_context",
         )
 
         # The derived fields should be properly resolved
@@ -1203,5 +1175,9 @@ class TestCreateModelFactory:
         assert character["power"] == 95
 
         # These should resolve the $variable syntax correctly
-        assert character["display_name"] == "Gandalf (Level 50)", f"Got: {character['display_name']}"
-        assert character["power_level"] == "Power: 95", f"Got: {character['power_level']}"
+        assert (
+            character["display_name"] == "Gandalf (Level 50)"
+        ), f"Got: {character['display_name']}"
+        assert (
+            character["power_level"] == "Power: 95"
+        ), f"Got: {character['power_level']}"

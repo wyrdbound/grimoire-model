@@ -25,9 +25,7 @@ class TestAttributeDefinition:
     def test_derived_attribute_creation(self):
         """Test creating derived attribute definitions."""
         attr = AttributeDefinition(
-            type="int",
-            derived="{{ level * 2 }}",
-            required=False
+            type="int", derived="{{ level * 2 }}", required=False
         )
         assert attr.type == "int"
         assert attr.derived == "{{ level * 2 }}"
@@ -93,8 +91,7 @@ class TestValidationRule:
     def test_basic_validation_rule(self):
         """Test creating basic validation rules."""
         rule = ValidationRule(
-            expression="{{ level > 0 }}",
-            message="Level must be positive"
+            expression="{{ level > 0 }}", message="Level must be positive"
         )
         assert rule.expression == "{{ level > 0 }}"
         assert rule.message == "Level must be positive"
@@ -105,19 +102,13 @@ class TestValidationRule:
         # Valid severities
         for severity in ["error", "warning", "info"]:
             rule = ValidationRule(
-                expression="{{ true }}",
-                message="Test",
-                severity=severity
+                expression="{{ true }}", message="Test", severity=severity
             )
             assert rule.severity == severity
 
         # Invalid severity should raise error
         with pytest.raises(ValidationError):
-            ValidationRule(
-                expression="{{ true }}",
-                message="Test",
-                severity="invalid"
-            )
+            ValidationRule(expression="{{ true }}", message="Test", severity="invalid")
 
     def test_empty_expression_validation(self):
         """Test that empty expressions are rejected."""
@@ -133,10 +124,7 @@ class TestModelDefinition:
 
     def test_basic_model_creation(self):
         """Test creating basic model definitions."""
-        model = ModelDefinition(
-            id="test_model",
-            name="Test Model"
-        )
+        model = ModelDefinition(id="test_model", name="Test Model")
         assert model.id == "test_model"
         assert model.name == "Test Model"
         assert model.kind == "model"  # Default
@@ -152,7 +140,7 @@ class TestModelDefinition:
             attributes={
                 "name": {"type": "str", "required": True},
                 "level": {"type": "int", "default": 1},
-            }
+            },
         )
 
         assert len(model.attributes) == 2
@@ -164,9 +152,7 @@ class TestModelDefinition:
     def test_model_with_inheritance(self):
         """Test model with inheritance."""
         model = ModelDefinition(
-            id="child_model",
-            name="Child Model",
-            extends=["parent_model"]
+            id="child_model", name="Child Model", extends=["parent_model"]
         )
         assert model.extends == ["parent_model"]
         assert model.has_inheritance() is True
@@ -205,17 +191,13 @@ class TestModelDefinition:
             ModelDefinition(
                 id="self_inheriting",
                 name="Self Inheriting",
-                extends=["self_inheriting"]
+                extends=["self_inheriting"],
             )
 
     def test_duplicate_parent_validation(self):
         """Test that duplicate parents are not allowed."""
         with pytest.raises(ValidationError):
-            ModelDefinition(
-                id="test",
-                name="Test",
-                extends=["parent", "parent"]
-            )
+            ModelDefinition(id="test", name="Test", extends=["parent", "parent"])
 
     def test_get_attribute(self):
         """Test getting attribute definitions."""
@@ -224,7 +206,7 @@ class TestModelDefinition:
             name="Test",
             attributes={
                 "name": {"type": "str", "required": True},
-            }
+            },
         )
 
         attr = model.get_attribute("name")
@@ -243,7 +225,7 @@ class TestModelDefinition:
                 "required_field": {"type": "str", "required": True},
                 "optional_field": {"type": "str", "required": False},
                 "computed_field": {"type": "int", "derived": "{{ 42 }}"},
-            }
+            },
         )
 
         required_attrs = model.get_required_attributes()
@@ -258,7 +240,7 @@ class TestModelDefinition:
             attributes={
                 "normal_field": {"type": "str", "required": True},
                 "computed_field": {"type": "int", "derived": "{{ 42 }}"},
-            }
+            },
         )
 
         derived_attrs = model.get_derived_attributes()
@@ -273,7 +255,7 @@ class TestModelDefinition:
             attributes={
                 "name": {"type": "str", "required": True},
                 "level": {"type": "int", "default": 1},
-            }
+            },
         )
 
         # Convert to dict
@@ -296,5 +278,5 @@ class TestModelDefinition:
                 name="Test",
                 attributes={
                     "invalid_attr": {"invalid_field": "not_valid"}  # type: ignore
-                }
+                },
             )

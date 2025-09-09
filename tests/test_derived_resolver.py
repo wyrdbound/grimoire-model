@@ -42,10 +42,11 @@ class MockTemplateResolver:
 
         # Simple regex-based extraction for testing
         import re
+
         variables = set()
 
         # Find {{variable}} patterns
-        pattern = r'\{\{([^}]+)\}\}'
+        pattern = r"\{\{([^}]+)\}\}"
         for match in re.finditer(pattern, template_str):
             var_name = match.group(1).strip()
             variables.add(var_name)
@@ -151,12 +152,12 @@ class TestDerivedFieldResolver:
 
     def test_register_derived_field(self):
         """Test registering derived fields."""
-        variable_map = {
-            "{{first_name}} {{last_name}}": {"first_name", "last_name"}
-        }
+        variable_map = {"{{first_name}} {{last_name}}": {"first_name", "last_name"}}
         self.template_resolver.variable_map = variable_map
 
-        self.resolver.register_derived_field("full_name", "{{first_name}} {{last_name}}")
+        self.resolver.register_derived_field(
+            "full_name", "{{first_name}} {{last_name}}"
+        )
 
         assert "full_name" in self.resolver.derived_fields
         dep = self.resolver.derived_fields["full_name"]
@@ -167,31 +168,29 @@ class TestDerivedFieldResolver:
 
     def test_dependency_extraction(self):
         """Test dependency extraction from templates."""
-        variable_map = {
-            "Hello {{name}}, you are {{age}} years old": {"name", "age"}
-        }
+        variable_map = {"Hello {{name}}, you are {{age}} years old": {"name", "age"}}
         self.template_resolver.variable_map = variable_map
 
-        dependencies = self.resolver._extract_dependencies("Hello {{name}}, you are {{age}} years old")
+        dependencies = self.resolver._extract_dependencies(
+            "Hello {{name}}, you are {{age}} years old"
+        )
 
         assert "name" in dependencies
         assert "age" in dependencies
 
     def test_compute_derived_field(self):
         """Test computing derived fields."""
-        template_map = {
-            "{{first_name}} {{last_name}}": "John Doe"
-        }
-        variable_map = {
-            "{{first_name}} {{last_name}}": {"first_name", "last_name"}
-        }
+        template_map = {"{{first_name}} {{last_name}}": "John Doe"}
+        variable_map = {"{{first_name}} {{last_name}}": {"first_name", "last_name"}}
 
         self.template_resolver.template_map = template_map
         self.template_resolver.variable_map = variable_map
 
         self.test_data.update({"first_name": "John", "last_name": "Doe"})
 
-        self.resolver.register_derived_field("full_name", "{{first_name}} {{last_name}}")
+        self.resolver.register_derived_field(
+            "full_name", "{{first_name}} {{last_name}}"
+        )
         result = self.resolver.compute_derived_field("full_name")
 
         assert result == "John Doe"
@@ -201,11 +200,11 @@ class TestDerivedFieldResolver:
         """Test computing all derived fields in order."""
         template_map = {
             "{{first_name}} {{last_name}}": "John Doe",
-            "Hello {{full_name}}": "Hello John Doe"
+            "Hello {{full_name}}": "Hello John Doe",
         }
         variable_map = {
             "{{first_name}} {{last_name}}": {"first_name", "last_name"},
-            "Hello {{full_name}}": {"full_name"}
+            "Hello {{full_name}}": {"full_name"},
         }
 
         self.template_resolver.template_map = template_map
@@ -213,7 +212,9 @@ class TestDerivedFieldResolver:
 
         self.test_data.update({"first_name": "John", "last_name": "Doe"})
 
-        self.resolver.register_derived_field("full_name", "{{first_name}} {{last_name}}")
+        self.resolver.register_derived_field(
+            "full_name", "{{first_name}} {{last_name}}"
+        )
         self.resolver.register_derived_field("greeting", "Hello {{full_name}}")
 
         self.resolver.compute_all_derived_fields()
@@ -223,11 +224,7 @@ class TestDerivedFieldResolver:
 
     def test_circular_dependency_detection(self):
         """Test circular dependency detection."""
-        variable_map = {
-            "{{b}}": {"b"},
-            "{{c}}": {"c"},
-            "{{a}}": {"a"}
-        }
+        variable_map = {"{{b}}": {"b"}, "{{c}}": {"c"}, "{{a}}": {"a"}}
         self.template_resolver.variable_map = variable_map
 
         self.resolver.register_derived_field("a", "{{b}}")
@@ -241,12 +238,8 @@ class TestDerivedFieldResolver:
 
     def test_set_field_value(self):
         """Test setting field values and triggering updates."""
-        template_map = {
-            "{{first}} {{last}}": "John Doe"
-        }
-        variable_map = {
-            "{{first}} {{last}}": {"first", "last"}
-        }
+        template_map = {"{{first}} {{last}}": "John Doe"}
+        variable_map = {"{{first}} {{last}}": {"first", "last"}}
 
         self.template_resolver.template_map = template_map
         self.template_resolver.variable_map = variable_map
@@ -263,9 +256,7 @@ class TestDerivedFieldResolver:
 
     def test_unregister_derived_field(self):
         """Test unregistering derived fields."""
-        variable_map = {
-            "{{base}}": {"base"}
-        }
+        variable_map = {"{{base}}": {"base"}}
         self.template_resolver.variable_map = variable_map
 
         self.resolver.register_derived_field("computed", "{{base}}")
@@ -276,12 +267,12 @@ class TestDerivedFieldResolver:
 
     def test_get_field_dependencies(self):
         """Test getting field dependencies."""
-        variable_map = {
-            "{{first_name}} {{last_name}}": {"first_name", "last_name"}
-        }
+        variable_map = {"{{first_name}} {{last_name}}": {"first_name", "last_name"}}
         self.template_resolver.variable_map = variable_map
 
-        self.resolver.register_derived_field("full_name", "{{first_name}} {{last_name}}")
+        self.resolver.register_derived_field(
+            "full_name", "{{first_name}} {{last_name}}"
+        )
 
         deps = self.resolver.get_field_dependencies("full_name")
         assert "first_name" in deps
@@ -291,11 +282,13 @@ class TestDerivedFieldResolver:
         """Test getting dependent fields."""
         variable_map = {
             "{{first_name}} {{last_name}}": {"first_name", "last_name"},
-            "Hello {{full_name}}": {"full_name"}
+            "Hello {{full_name}}": {"full_name"},
         }
         self.template_resolver.variable_map = variable_map
 
-        self.resolver.register_derived_field("full_name", "{{first_name}} {{last_name}}")
+        self.resolver.register_derived_field(
+            "full_name", "{{first_name}} {{last_name}}"
+        )
         self.resolver.register_derived_field("greeting", "Hello {{full_name}}")
 
         dependents = self.resolver.get_dependent_fields("full_name")
@@ -322,12 +315,8 @@ class TestDerivedFieldResolver:
         callback_mock = Mock()
         self.resolver.set_field_change_callback(callback_mock)
 
-        template_map = {
-            "{{base}}": "computed_value"
-        }
-        variable_map = {
-            "{{base}}": {"base"}
-        }
+        template_map = {"{{base}}": "computed_value"}
+        variable_map = {"{{base}}": {"base"}}
 
         self.template_resolver.template_map = template_map
         self.template_resolver.variable_map = variable_map
@@ -362,12 +351,12 @@ class TestBatchedDerivedFieldResolver:
         template_map = {
             "{{a}}": "computed_a",
             "{{b}}": "computed_b",
-            "{{computed_a}} {{computed_b}}": "final_result"
+            "{{computed_a}} {{computed_b}}": "final_result",
         }
         variable_map = {
             "{{a}}": {"a"},
             "{{b}}": {"b"},
-            "{{computed_a}} {{computed_b}}": {"computed_a", "computed_b"}
+            "{{computed_a}} {{computed_b}}": {"computed_a", "computed_b"},
         }
 
         self.template_resolver = MockTemplateResolver(template_map, variable_map)

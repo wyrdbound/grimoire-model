@@ -10,13 +10,13 @@ from typing import Any, Dict, List, Optional
 
 class WyrdboundModelError(Exception):
     """Base exception for wyrdbound-model package.
-    
+
     All other exceptions in this package inherit from this base class.
     """
 
     def __init__(self, message: str, context: Optional[Dict[str, Any]] = None):
         """Initialize with message and optional context information.
-        
+
         Args:
             message: Human-readable error description
             context: Additional context information for debugging
@@ -35,7 +35,7 @@ class WyrdboundModelError(Exception):
 
 class ModelValidationError(WyrdboundModelError):
     """Raised when model validation fails.
-    
+
     This exception is raised when:
     - Required fields are missing
     - Field values don't match their defined types
@@ -52,7 +52,7 @@ class ModelValidationError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize validation error with field-specific information.
-        
+
         Args:
             message: Primary error message
             field_name: Name of the field that failed validation
@@ -88,7 +88,7 @@ class ModelValidationError(WyrdboundModelError):
 
 class TemplateResolutionError(WyrdboundModelError):
     """Raised when template resolution fails.
-    
+
     This exception is raised when:
     - Template syntax is invalid
     - Referenced variables are undefined
@@ -104,7 +104,7 @@ class TemplateResolutionError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize template resolution error.
-        
+
         Args:
             message: Primary error message
             template_str: The template string that failed to resolve
@@ -135,7 +135,7 @@ class TemplateResolutionError(WyrdboundModelError):
 
 class InheritanceError(WyrdboundModelError):
     """Raised when model inheritance resolution fails.
-    
+
     This exception is raised when:
     - Parent model definitions are not found
     - Circular inheritance dependencies are detected
@@ -152,7 +152,7 @@ class InheritanceError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize inheritance error.
-        
+
         Args:
             message: Primary error message
             model_id: ID of the model that failed inheritance resolution
@@ -189,7 +189,7 @@ class InheritanceError(WyrdboundModelError):
 
 class DependencyError(WyrdboundModelError):
     """Raised when derived field dependencies cannot be resolved.
-    
+
     This exception is raised when:
     - Circular dependencies are detected between derived fields
     - Required dependencies are missing or undefined
@@ -206,7 +206,7 @@ class DependencyError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize dependency error.
-        
+
         Args:
             message: Primary error message
             field_name: Name of the field with dependency issues
@@ -243,7 +243,7 @@ class DependencyError(WyrdboundModelError):
 
 class ConfigurationError(WyrdboundModelError):
     """Raised when configuration is invalid or incomplete.
-    
+
     This exception is raised when:
     - Required configuration parameters are missing
     - Configuration values are invalid
@@ -259,7 +259,7 @@ class ConfigurationError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize configuration error.
-        
+
         Args:
             message: Primary error message
             config_key: Configuration key that caused the error

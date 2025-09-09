@@ -54,7 +54,9 @@ class TestTypeValidator:
         errors = validator.validate(3.14, "test_field", attr_def)
         assert len(errors) == 0
 
-        errors = validator.validate(42, "test_field", attr_def)  # int should be valid for float
+        errors = validator.validate(
+            42, "test_field", attr_def
+        )  # int should be valid for float
         assert len(errors) == 0
 
         # Invalid types
@@ -159,7 +161,9 @@ class TestTypeValidator:
         assert len(errors) == 0
 
         # Computed field with None should be OK
-        computed_attr = AttributeDefinition(type="str", required=True, derived="computed_value")
+        computed_attr = AttributeDefinition(
+            type="str", required=True, derived="computed_value"
+        )
         errors = validator.validate(None, "test_field", computed_attr)
         assert len(errors) == 0
 
@@ -187,7 +191,9 @@ class TestRequiredValidator:
         assert len(errors) == 0
 
         # Computed field should pass even if required and None
-        computed_attr = AttributeDefinition(type="str", required=True, derived="computed_value")
+        computed_attr = AttributeDefinition(
+            type="str", required=True, derived="computed_value"
+        )
         errors = validator.validate(None, "test_field", computed_attr)
         assert len(errors) == 0
 
@@ -264,11 +270,11 @@ class TestRangeValidator:
 
     def test_invalid_range_specification(self):
         """Test handling of invalid range specifications."""
-        validator = RangeValidator()
+        RangeValidator()
 
         # Invalid range should be caught at AttributeDefinition creation
         with pytest.raises(ValidationError):
-            attr_def = AttributeDefinition(type="int", range="invalid_range")
+            AttributeDefinition(type="int", range="invalid_range")
 
 
 class TestEnumValidator:
