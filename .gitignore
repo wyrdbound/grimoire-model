@@ -17,3 +17,6 @@ src/*.egg-info/
 *.bak
 *.backup
 wyrdbound_model_plan.md
+
+# Code quality files
+.coverage

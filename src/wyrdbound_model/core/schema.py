@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .exceptions import ConfigurationError, ModelValidationError
+from .exceptions import ConfigurationError
 
 
 class ValidationRule(BaseModel):
@@ -102,11 +102,11 @@ class AttributeDefinition(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         """Post-initialization processing."""
         super().model_post_init(__context)
-        
+
         # Set computed flag for derived attributes
         if self.derived is not None:
             self.computed = True
-        
+
         # Handle optional override of required
         if self.optional is not None:
             self.required = not self.optional
@@ -127,11 +127,11 @@ class AttributeDefinition(BaseModel):
         """Validate range constraint format."""
         if v is None:
             return v
-        
+
         # Basic validation for range format
         if not any(pattern in v for pattern in ["..", ">=", "<=", ">", "<", "="]):
             raise ValueError(f"Invalid range format '{v}': must contain comparison operators")
-        
+
         return v
 
     @model_validator(mode="after")
@@ -139,14 +139,14 @@ class AttributeDefinition(BaseModel):
         """Validate computed/derived attribute constraints."""
         if self.computed and self.derived is None:
             raise ValueError("Computed attributes must have a derived expression")
-        
+
         if self.derived is not None and not self.computed:
             # Auto-set computed for derived fields
             self.computed = True
-        
+
         if self.readonly and self.default is None and not self.computed:
             raise ValueError("Readonly attributes must have a default value or be computed")
-        
+
         return self
 
 
@@ -154,7 +154,8 @@ class ModelDefinition(BaseModel):
     """Complete model definition following GRIMOIRE specification.
     
     Defines a complete model schema including metadata, inheritance relationships,
-    attributes, and validation rules.
+    attributes, and validation rules. Automatically registers itself in the global
+    model registry upon creation.
     """
 
     id: str = Field(..., description="Unique model identifier")
@@ -162,6 +163,7 @@ class ModelDefinition(BaseModel):
     kind: str = Field(default="model", description="Model kind/type")
     description: Optional[str] = Field(default=None, description="Model description")
     version: int = Field(default=1, description="Model schema version")
+    namespace: str = Field(default="default", description="Model namespace for registry organization")
 
     # Inheritance
     extends: List[str] = Field(
@@ -192,9 +194,9 @@ class ModelDefinition(BaseModel):
     )
 
     def model_post_init(self, __context: Any) -> None:
-        """Convert dict attributes to AttributeDefinition objects."""
+        """Convert dict attributes to AttributeDefinition objects and register model."""
         super().model_post_init(__context)
-        
+
         # Convert dict attributes to AttributeDefinition objects
         converted_attributes = {}
         for key, value in self.attributes.items():
@@ -215,8 +217,12 @@ class ModelDefinition(BaseModel):
                     config_key=key,
                     config_value=value,
                 )
-        
+
         self.attributes = converted_attributes
+
+        # Register this model in the global registry
+        from .registry import register_model
+        register_model(self.namespace, self)
 
     @field_validator("id")
     @classmethod
@@ -224,10 +230,10 @@ class ModelDefinition(BaseModel):
         """Validate model ID format."""
         if not v:
             raise ValueError("Model ID cannot be empty")
-        
+
         if not v.replace("_", "").replace("-", "").isalnum():
             raise ValueError("Model ID must contain only alphanumeric characters, underscores, and hyphens")
-        
+
         return v
 
     @field_validator("kind")
@@ -239,7 +245,7 @@ class ModelDefinition(BaseModel):
             # Allow custom kinds but validate format
             if not v.replace("_", "").replace("-", "").isalnum():
                 raise ValueError("Model kind must be alphanumeric with underscores/hyphens")
-        
+
         return v
 
     @field_validator("version")
@@ -250,17 +256,29 @@ class ModelDefinition(BaseModel):
             raise ValueError("Version must be a positive integer")
         return v
 
+    @field_validator("namespace")
+    @classmethod
+    def validate_namespace(cls, v: str) -> str:
+        """Validate namespace format."""
+        if not v:
+            raise ValueError("Namespace cannot be empty")
+
+        if not v.replace("_", "").replace("-", "").replace(".", "").isalnum():
+            raise ValueError("Namespace must contain only alphanumeric characters, underscores, hyphens, and dots")
+
+        return v
+
     @model_validator(mode="after")
     def validate_inheritance_chain(self) -> "ModelDefinition":
         """Validate inheritance doesn't reference self."""
         if self.id in self.extends:
             raise ValueError(f"Model '{self.id}' cannot extend itself")
-        
+
         # Check for duplicate parents
         if len(self.extends) != len(set(self.extends)):
             duplicates = [parent for parent in self.extends if self.extends.count(parent) > 1]
             raise ValueError(f"Duplicate parent models: {duplicates}")
-        
+
         return self
 
     def get_attribute(self, name: str) -> Optional[AttributeDefinition]:
@@ -295,13 +313,13 @@ class ModelDefinition(BaseModel):
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         result = self.model_dump()
-        
+
         # Convert AttributeDefinition objects back to dicts
         result["attributes"] = {
             name: attr.model_dump() if isinstance(attr, AttributeDefinition) else attr
             for name, attr in self.attributes.items()
         }
-        
+
         return result
 
     @classmethod

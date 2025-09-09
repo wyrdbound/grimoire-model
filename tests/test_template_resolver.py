@@ -2,13 +2,13 @@
 
 import pytest
 
+from wyrdbound_model.core.exceptions import TemplateResolutionError
 from wyrdbound_model.resolvers.template import (
+    CachingTemplateResolver,
     Jinja2TemplateResolver,
     ModelContextTemplateResolver,
-    CachingTemplateResolver,
     create_template_resolver,
 )
-from wyrdbound_model.core.exceptions import TemplateResolutionError
 
 
 class TestJinja2TemplateResolver:
@@ -17,21 +17,21 @@ class TestJinja2TemplateResolver:
     def test_basic_template_resolution(self):
         """Test basic template resolution."""
         resolver = Jinja2TemplateResolver()
-        
+
         result = resolver.resolve_template("Hello {{ name }}", {"name": "World"})
         assert result == "Hello World"
 
     def test_non_template_string(self):
         """Test that non-template strings are returned as-is."""
         resolver = Jinja2TemplateResolver()
-        
+
         result = resolver.resolve_template("Just a string", {})
         assert result == "Just a string"
 
     def test_is_template_detection(self):
         """Test template detection."""
         resolver = Jinja2TemplateResolver()
-        
+
         assert resolver.is_template("{{ variable }}") is True
         assert resolver.is_template("{% if condition %}") is True
         assert resolver.is_template("{# comment #}") is True
@@ -41,34 +41,34 @@ class TestJinja2TemplateResolver:
     def test_extract_variables(self):
         """Test variable extraction from templates."""
         resolver = Jinja2TemplateResolver()
-        
+
         variables = resolver.extract_variables("{{ name }} and {{ age }}")
         assert variables == {"name", "age"}
-        
+
         variables = resolver.extract_variables("{{ user.name }} is {{ user.age }} years old")
         assert variables == {"user"}
-        
+
         variables = resolver.extract_variables("No variables here")
         assert len(variables) == 0
 
     def test_simple_variable_reference(self):
         """Test simple variable reference optimization."""
         resolver = Jinja2TemplateResolver()
-        
+
         # Simple variable reference should return the value directly
         result = resolver.resolve_template("{{ value }}", {"value": 42})
         assert result == 42
-        
+
         result = resolver.resolve_template("{{ data }}", {"data": {"key": "value"}})
         assert result == {"key": "value"}
 
     def test_arithmetic_operations(self):
         """Test arithmetic operations in templates."""
         resolver = Jinja2TemplateResolver()
-        
+
         result = resolver.resolve_template("{{ level * 8 }}", {"level": 5})
         assert result == "40"  # Jinja2 renders as string
-        
+
         # Test with enhanced context functions
         result = resolver.resolve_template("{{ max(a, b) }}", {"a": 10, "b": 15})
         assert result == "15"
@@ -76,7 +76,7 @@ class TestJinja2TemplateResolver:
     def test_structured_data_parsing(self):
         """Test parsing of structured data from templates."""
         resolver = Jinja2TemplateResolver()
-        
+
         # JSON-like output should be parsed
         result = resolver.resolve_template('{{ data | tojson }}', {"data": {"key": "value"}})
         # This should be parsed back to dict if it looks like JSON
@@ -87,11 +87,11 @@ class TestJinja2TemplateResolver:
     def test_template_error_handling(self):
         """Test template error handling."""
         resolver = Jinja2TemplateResolver()
-        
+
         # Undefined variable should raise TemplateResolutionError
         with pytest.raises(TemplateResolutionError):
             resolver.resolve_template("{{ undefined_var }}", {})
-        
+
         # Invalid template syntax should raise TemplateResolutionError
         with pytest.raises(TemplateResolutionError):
             resolver.resolve_template("{{ invalid syntax }}", {})
@@ -99,26 +99,26 @@ class TestJinja2TemplateResolver:
     def test_context_enhancement(self):
         """Test that context is enhanced with utility functions."""
         resolver = Jinja2TemplateResolver()
-        
+
         # Test built-in functions are available
         result = resolver.resolve_template("{{ sum([1, 2, 3]) }}", {})
         assert result == "6"
-        
+
         result = resolver.resolve_template("{{ len('hello') }}", {})
         assert result == "5"
 
     def test_non_string_input(self):
         """Test handling of non-string input."""
         resolver = Jinja2TemplateResolver()
-        
+
         # The actual resolver expects strings, but the implementation
         # handles non-strings by returning them as-is
         # We need to test this through the actual resolve_template method
-        
+
         # Test empty string
         result = resolver.resolve_template("", {})
         assert result == ""
-        
+
         # Test string that's not a template
         result = resolver.resolve_template("plain string", {})
         assert result == "plain string"
@@ -130,9 +130,9 @@ class TestModelContextTemplateResolver:
     def test_model_context_resolution(self):
         """Test template resolution with model context."""
         resolver = ModelContextTemplateResolver()
-        
+
         model_data = {"name": "Aragorn", "level": 5, "strength": 16}
-        
+
         result = resolver.resolve_with_model_context(
             "{{ name }} is level {{ level }}",
             model_data
@@ -156,10 +156,10 @@ class TestModelContextTemplateResolver:
     def test_additional_context(self):
         """Test additional context alongside model data."""
         resolver = ModelContextTemplateResolver()
-        
+
         model_data = {"level": 5}
         additional_context = {"multiplier": 8}
-        
+
         result = resolver.resolve_with_model_context(
             "{{ level * multiplier }}",
             model_data,
@@ -175,11 +175,11 @@ class TestCachingTemplateResolver:
         """Test that template detection results are cached."""
         base_resolver = Jinja2TemplateResolver()
         resolver = CachingTemplateResolver(base_resolver, max_cache_size=10)
-        
+
         # First call
         result1 = resolver.is_template("{{ variable }}")
         assert result1 is True
-        
+
         # Second call should use cache
         result2 = resolver.is_template("{{ variable }}")
         assert result2 is True
@@ -188,13 +188,13 @@ class TestCachingTemplateResolver:
         """Test that variable extraction results are cached."""
         base_resolver = Jinja2TemplateResolver()
         resolver = CachingTemplateResolver(base_resolver, max_cache_size=10)
-        
+
         template = "{{ name }} and {{ age }}"
-        
+
         # First call
         vars1 = resolver.extract_variables(template)
         assert vars1 == {"name", "age"}
-        
+
         # Second call should use cache
         vars2 = resolver.extract_variables(template)
         assert vars2 == {"name", "age"}
@@ -203,12 +203,12 @@ class TestCachingTemplateResolver:
         """Test that cache respects size limits."""
         base_resolver = Jinja2TemplateResolver()
         resolver = CachingTemplateResolver(base_resolver, max_cache_size=2)
-        
+
         # Fill cache beyond limit
         resolver.is_template("template1")
         resolver.is_template("template2")
         resolver.is_template("template3")  # Should evict oldest
-        
+
         # Cache should still work
         assert resolver.is_template("template2") is False
         assert resolver.is_template("template3") is False
@@ -217,7 +217,7 @@ class TestCachingTemplateResolver:
         """Test that template resolution passes through to base resolver."""
         base_resolver = Jinja2TemplateResolver()
         resolver = CachingTemplateResolver(base_resolver)
-        
+
         result = resolver.resolve_template("Hello {{ name }}", {"name": "World"})
         assert result == "Hello World"
 

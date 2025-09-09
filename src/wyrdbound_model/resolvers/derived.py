@@ -5,19 +5,18 @@ Manages derived fields and their dependencies using the Observer pattern with
 topological sorting for correct evaluation order.
 """
 
-import logging
 import re
-from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Protocol, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Set
 
 from ..core.exceptions import DependencyError, TemplateResolutionError
+from ..logging import get_logger
 
 if TYPE_CHECKING:
     from ..core.schema import AttributeDefinition
 
-logger = logging.getLogger(__name__)
+logger = get_logger('resolvers.derived')
 
 
 class TemplateResolver(Protocol):
@@ -364,7 +363,7 @@ class DerivedFieldResolver:
             if dependent_field in self.derived_fields:
                 logger.debug(f"Computing derived field: {dependent_field}")
                 self.compute_derived_field(dependent_field)
-                # CRITICAL FIX: After recomputing a derived field, we need to update 
+                # CRITICAL FIX: After recomputing a derived field, we need to update
                 # its dependent fields recursively to handle dependency chains
                 self._update_dependent_fields(dependent_field)
 

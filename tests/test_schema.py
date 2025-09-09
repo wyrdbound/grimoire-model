@@ -3,8 +3,12 @@
 import pytest
 from pydantic import ValidationError
 
-from wyrdbound_model.core.schema import AttributeDefinition, ModelDefinition, ValidationRule
 from wyrdbound_model.core.exceptions import ConfigurationError
+from wyrdbound_model.core.schema import (
+    AttributeDefinition,
+    ModelDefinition,
+    ValidationRule,
+)
 
 
 class TestAttributeDefinition:
@@ -150,7 +154,7 @@ class TestModelDefinition:
                 "level": {"type": "int", "default": 1},
             }
         )
-        
+
         assert len(model.attributes) == 2
         assert isinstance(model.attributes["name"], AttributeDefinition)
         assert isinstance(model.attributes["level"], AttributeDefinition)
@@ -222,11 +226,11 @@ class TestModelDefinition:
                 "name": {"type": "str", "required": True},
             }
         )
-        
+
         attr = model.get_attribute("name")
         assert attr is not None
         assert attr.type == "str"
-        
+
         missing_attr = model.get_attribute("missing")
         assert missing_attr is None
 
@@ -241,7 +245,7 @@ class TestModelDefinition:
                 "computed_field": {"type": "int", "derived": "{{ 42 }}"},
             }
         )
-        
+
         required_attrs = model.get_required_attributes()
         assert len(required_attrs) == 1
         assert "required_field" in required_attrs
@@ -256,7 +260,7 @@ class TestModelDefinition:
                 "computed_field": {"type": "int", "derived": "{{ 42 }}"},
             }
         )
-        
+
         derived_attrs = model.get_derived_attributes()
         assert len(derived_attrs) == 1
         assert "computed_field" in derived_attrs
@@ -271,13 +275,13 @@ class TestModelDefinition:
                 "level": {"type": "int", "default": 1},
             }
         )
-        
+
         # Convert to dict
         model_dict = original_model.to_dict()
         assert isinstance(model_dict, dict)
         assert model_dict["id"] == "test"
         assert model_dict["name"] == "Test Model"
-        
+
         # Convert back from dict
         restored_model = ModelDefinition.from_dict(model_dict)
         assert restored_model.id == original_model.id

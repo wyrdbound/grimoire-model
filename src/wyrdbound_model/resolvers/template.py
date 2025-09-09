@@ -7,17 +7,16 @@ contexts, variable extraction, and caching.
 
 import ast
 import json
-import logging
 import re
-from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Protocol, Set
 
 import jinja2
 from jinja2 import BaseLoader, Environment, TemplateError, meta
 
 from ..core.exceptions import TemplateResolutionError
+from ..logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger('resolvers.template')
 
 
 class TemplateResolver(Protocol):
@@ -144,11 +143,11 @@ class Jinja2TemplateResolver:
     def _enhance_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """Enhance context with additional utility variables."""
         enhanced = context.copy()
-        
+
         # Add underscore-prefixed dollar access since $ can't start Jinja2 variables
         if "$" in enhanced:
             enhanced["_dollar"] = enhanced["$"]
-        
+
         # Add Python built-ins that are commonly needed
         import builtins
         enhanced.update({
@@ -159,7 +158,7 @@ class Jinja2TemplateResolver:
             'abs': builtins.abs,
             'round': builtins.round,
         })
-            
+
         return enhanced
 
     def _check_simple_variable(self, template_str: str, context: Dict[str, Any]) -> Any:
@@ -216,7 +215,7 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
             "get_field": self._template_get_field,
             "has_field": self._template_has_field,
         })
-        
+
         # Add pattern for $variable syntax
         self._model_context_pattern = re.compile(r'\$\w+')
 
@@ -228,7 +227,7 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
         # Check for Jinja2 syntax first
         if super().is_template(value):
             return True
-            
+
         # Check for $variable syntax
         return bool(self._model_context_pattern.search(value))
 
@@ -266,13 +265,13 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
     def _resolve_model_context_template(self, template_str: str, context: Dict[str, Any]) -> str:
         """Resolve $variable syntax in template strings."""
         result = template_str
-        
+
         # Find all $variable references
         variables = self._model_context_pattern.findall(template_str)
-        
+
         for var_match in variables:
             var_name = var_match[1:]  # Remove the $ prefix
-            
+
             # Look up the variable in context
             if var_name in context:
                 value = context[var_name]
@@ -280,7 +279,7 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
                 result = result.replace(var_match, str(value))
             else:
                 raise KeyError(f"'{var_name}' is undefined")
-                
+
         return result
 
     def resolve_with_model_context(

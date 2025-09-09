@@ -1,13 +1,12 @@
 """Tests for exception functionality."""
 
-import pytest
 
 from wyrdbound_model.core.exceptions import (
-    WyrdboundModelError,
+    DependencyError,
+    InheritanceError,
     ModelValidationError,
     TemplateResolutionError,
-    InheritanceError,
-    DependencyError,
+    WyrdboundModelError,
 )
 
 

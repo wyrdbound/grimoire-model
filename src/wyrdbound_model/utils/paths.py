@@ -5,12 +5,12 @@ Provides functions for getting, setting, and manipulating nested values
 using dot notation paths (e.g., "character.stats.strength").
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 
 def get_nested_value(
-    data: Dict[str, Any], 
-    path: str, 
+    data: Dict[str, Any],
+    path: str,
     default: Any = None,
     separator: str = "."
 ) -> Any:
@@ -34,24 +34,24 @@ def get_nested_value(
     """
     if not path:
         return data
-    
+
     if separator not in path:
         return data.get(path, default)
-    
+
     keys = path.split(separator)
     current = data
-    
+
     for key in keys:
         if not isinstance(current, dict) or key not in current:
             return default
         current = current[key]
-    
+
     return current
 
 
 def set_nested_value(
-    data: Dict[str, Any], 
-    path: str, 
+    data: Dict[str, Any],
+    path: str,
     value: Any,
     separator: str = ".",
     create_missing: bool = True
@@ -77,14 +77,14 @@ def set_nested_value(
     """
     if not path:
         raise ValueError("Path cannot be empty")
-    
+
     if separator not in path:
         data[path] = value
         return
-    
+
     keys = path.split(separator)
     current = data
-    
+
     # Navigate to the parent of the target key
     for key in keys[:-1]:
         if key not in current:
@@ -92,18 +92,18 @@ def set_nested_value(
                 current[key] = {}
             else:
                 raise KeyError(f"Missing intermediate key: {key}")
-        
+
         if not isinstance(current[key], dict):
             raise TypeError(f"Cannot access key '{key}': value is not a dictionary")
-        
+
         current = current[key]
-    
+
     # Set the final value
     current[keys[-1]] = value
 
 
 def has_nested_value(
-    data: Dict[str, Any], 
+    data: Dict[str, Any],
     path: str,
     separator: str = "."
 ) -> bool:
@@ -126,23 +126,23 @@ def has_nested_value(
     """
     if not path:
         return True
-    
+
     if separator not in path:
         return path in data
-    
+
     keys = path.split(separator)
     current = data
-    
+
     for key in keys:
         if not isinstance(current, dict) or key not in current:
             return False
         current = current[key]
-    
+
     return True
 
 
 def delete_nested_value(
-    data: Dict[str, Any], 
+    data: Dict[str, Any],
     path: str,
     separator: str = "."
 ) -> bool:
@@ -165,33 +165,33 @@ def delete_nested_value(
     """
     if not path:
         return False
-    
+
     if separator not in path:
         if path in data:
             del data[path]
             return True
         return False
-    
+
     keys = path.split(separator)
     current = data
-    
+
     # Navigate to the parent of the target key
     for key in keys[:-1]:
         if not isinstance(current, dict) or key not in current:
             return False
         current = current[key]
-    
+
     # Delete the final key if it exists
     final_key = keys[-1]
     if isinstance(current, dict) and final_key in current:
         del current[final_key]
         return True
-    
+
     return False
 
 
 def flatten_dict(
-    data: Dict[str, Any], 
+    data: Dict[str, Any],
     separator: str = ".",
     prefix: str = ""
 ) -> Dict[str, Any]:
@@ -211,20 +211,20 @@ def flatten_dict(
         {'stats.strength': 15, 'stats.dex': 12}
     """
     result = {}
-    
+
     for key, value in data.items():
         new_key = f"{prefix}{separator}{key}" if prefix else key
-        
+
         if isinstance(value, dict):
             result.update(flatten_dict(value, separator, new_key))
         else:
             result[new_key] = value
-    
+
     return result
 
 
 def unflatten_dict(
-    data: Dict[str, Any], 
+    data: Dict[str, Any],
     separator: str = "."
 ) -> Dict[str, Any]:
     """Unflatten a dictionary with dot-notation keys into nested structure.
@@ -242,15 +242,15 @@ def unflatten_dict(
         {'stats': {'strength': 15, 'dex': 12}}
     """
     result = {}
-    
+
     for key, value in data.items():
         set_nested_value(result, key, value, separator)
-    
+
     return result
 
 
 def merge_nested_dicts(
-    target: Dict[str, Any], 
+    target: Dict[str, Any],
     source: Dict[str, Any],
     overwrite: bool = True
 ) -> Dict[str, Any]:
@@ -277,12 +277,12 @@ def merge_nested_dicts(
         elif overwrite or key not in target:
             # Set the value (overwrite or new key)
             target[key] = value
-    
+
     return target
 
 
 def get_nested_paths(
-    data: Dict[str, Any], 
+    data: Dict[str, Any],
     separator: str = ".",
     include_intermediate: bool = False
 ) -> List[str]:
@@ -304,24 +304,24 @@ def get_nested_paths(
         ['stats', 'stats.strength', 'stats.dex']
     """
     paths = []
-    
+
     def _collect_paths(current_data: Dict[str, Any], prefix: str = "") -> None:
         for key, value in current_data.items():
             current_path = f"{prefix}{separator}{key}" if prefix else key
-            
+
             if isinstance(value, dict):
                 if include_intermediate:
                     paths.append(current_path)
                 _collect_paths(value, current_path)
             else:
                 paths.append(current_path)
-    
+
     _collect_paths(data)
     return sorted(paths)
 
 
 def filter_dict_by_paths(
-    data: Dict[str, Any], 
+    data: Dict[str, Any],
     paths: List[str],
     separator: str = "."
 ) -> Dict[str, Any]:
@@ -341,10 +341,10 @@ def filter_dict_by_paths(
         {'stats': {'strength': 15}, 'name': 'Hero'}
     """
     result = {}
-    
+
     for path in paths:
         if has_nested_value(data, path, separator):
             value = get_nested_value(data, path, separator=separator)
             set_nested_value(result, path, value, separator)
-    
+
     return result

@@ -7,9 +7,8 @@ data types and constraints, plus support for custom validation rules.
 
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-from ..core.exceptions import ModelValidationError
 from ..core.schema import AttributeDefinition
 
 
@@ -150,7 +149,7 @@ class RangeValidator(FieldValidator):
                 if value != exact_val:
                     errors.append(f"Field '{field_name}' value {value} must equal {exact_val}")
 
-        except (ValueError, IndexError) as e:
+        except (ValueError, IndexError):
             errors.append(f"Invalid range specification for field '{field_name}': {range_spec}")
 
         return errors

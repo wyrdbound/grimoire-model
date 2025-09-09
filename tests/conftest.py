@@ -1,9 +1,9 @@
 """Test fixtures and utilities for wyrdbound-model tests."""
 
-import pytest
-from typing import Dict, Any
 
-from wyrdbound_model import ModelDefinition, AttributeDefinition, ValidationRule
+import pytest
+
+from wyrdbound_model import AttributeDefinition, ModelDefinition, ValidationRule
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def character_model_def():
             "constitution": AttributeDefinition(type="int", default=10, range="3..18"),
             "hit_points": AttributeDefinition(type="int", default=8),
             "max_hit_points": AttributeDefinition(
-                type="int", 
+                type="int",
                 derived="{{ level * 8 + (constitution - 10) * level // 2 }}",
                 computed=True
             ),
