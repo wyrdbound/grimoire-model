@@ -1,0 +1,19 @@
+# Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python virtual environments
+.venv/
+.tool-versions
+src/*.egg-info/
+
+# MacOS system files
+.DS_Store
+
+# Unnecessary files
+*.log
+*.tmp
+*.bak
+*.backup
+wyrdbound_model_plan.md
