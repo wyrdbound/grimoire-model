@@ -502,7 +502,7 @@ class TestLoggingIntegration:
             handler = logging.StreamHandler(log_stream)
             handler.setLevel(config["level"])
 
-            test_logger = logging.getLogger(f'wyrdbound_model.test_{config["level"]}')
+            test_logger = logging.getLogger(f"wyrdbound_model.test_{config['level']}")
             test_logger.setLevel(config["level"])
             test_logger.addHandler(handler)
             test_logger.propagate = False

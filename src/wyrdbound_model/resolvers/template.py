@@ -156,16 +156,14 @@ class Jinja2TemplateResolver:
         # Add Python built-ins that are commonly needed
         import builtins
 
-        enhanced.update(
-            {
-                "max": builtins.max,
-                "min": builtins.min,
-                "sum": builtins.sum,
-                "len": builtins.len,
-                "abs": builtins.abs,
-                "round": builtins.round,
-            }
-        )
+        enhanced.update({
+            "max": builtins.max,
+            "min": builtins.min,
+            "sum": builtins.sum,
+            "len": builtins.len,
+            "abs": builtins.abs,
+            "round": builtins.round,
+        })
 
         return enhanced
 
@@ -222,12 +220,10 @@ class ModelContextTemplateResolver(Jinja2TemplateResolver):
         super().__init__(**jinja_kwargs)
 
         # Add model-specific functions to the environment
-        self.env.globals.update(
-            {
-                "get_field": self._template_get_field,
-                "has_field": self._template_has_field,
-            }
-        )
+        self.env.globals.update({
+            "get_field": self._template_get_field,
+            "has_field": self._template_has_field,
+        })
 
         # Add pattern for $variable syntax
         self._model_context_pattern = re.compile(r"\$\w+")

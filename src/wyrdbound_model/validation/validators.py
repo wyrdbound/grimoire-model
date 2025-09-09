@@ -62,14 +62,12 @@ class TypeValidator(FieldValidator):
         elif expected_type == "float":
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 errors.append(
-                    f"Field '{field_name}' must be a number, got "
-                    f"{type(value).__name__}"
+                    f"Field '{field_name}' must be a number, got {type(value).__name__}"
                 )
         elif expected_type == "str":
             if not isinstance(value, str):
                 errors.append(
-                    f"Field '{field_name}' must be a string, got "
-                    f"{type(value).__name__}"
+                    f"Field '{field_name}' must be a string, got {type(value).__name__}"
                 )
         elif expected_type == "bool":
             if not isinstance(value, bool):
@@ -80,8 +78,7 @@ class TypeValidator(FieldValidator):
         elif expected_type == "list":
             if not isinstance(value, list):
                 errors.append(
-                    f"Field '{field_name}' must be a list, got "
-                    f"{type(value).__name__}"
+                    f"Field '{field_name}' must be a list, got {type(value).__name__}"
                 )
         elif expected_type == "dict":
             if not isinstance(value, dict):
@@ -147,29 +144,25 @@ class RangeValidator(FieldValidator):
 
                 if min_val is not None and value < min_val:
                     errors.append(
-                        f"Field '{field_name}' value {value} is below minimum "
-                        f"{min_val}"
+                        f"Field '{field_name}' value {value} is below minimum {min_val}"
                     )
                 if max_val is not None and value > max_val:
                     errors.append(
-                        f"Field '{field_name}' value {value} is above maximum "
-                        f"{max_val}"
+                        f"Field '{field_name}' value {value} is above maximum {max_val}"
                     )
 
             elif ">=" in range_spec:
                 min_val = float(range_spec.replace(">=", "").strip())
                 if value < min_val:
                     errors.append(
-                        f"Field '{field_name}' value {value} is below minimum "
-                        f"{min_val}"
+                        f"Field '{field_name}' value {value} is below minimum {min_val}"
                     )
 
             elif "<=" in range_spec:
                 max_val = float(range_spec.replace("<=", "").strip())
                 if value > max_val:
                     errors.append(
-                        f"Field '{field_name}' value {value} is above maximum "
-                        f"{max_val}"
+                        f"Field '{field_name}' value {value} is above maximum {max_val}"
                     )
 
             elif ">" in range_spec:
@@ -197,8 +190,7 @@ class RangeValidator(FieldValidator):
 
         except (ValueError, IndexError):
             errors.append(
-                f"Invalid range specification for field '{field_name}': "
-                f"{range_spec}"
+                f"Invalid range specification for field '{field_name}': {range_spec}"
             )
 
         return errors

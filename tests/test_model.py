@@ -1175,9 +1175,9 @@ class TestCreateModelFactory:
         assert character["power"] == 95
 
         # These should resolve the $variable syntax correctly
-        assert (
-            character["display_name"] == "Gandalf (Level 50)"
-        ), f"Got: {character['display_name']}"
-        assert (
-            character["power_level"] == "Power: 95"
-        ), f"Got: {character['power_level']}"
+        assert character["display_name"] == "Gandalf (Level 50)", (
+            f"Got: {character['display_name']}"
+        )
+        assert character["power_level"] == "Power: 95", (
+            f"Got: {character['power_level']}"
+        )

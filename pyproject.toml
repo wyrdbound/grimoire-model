@@ -73,6 +73,7 @@ addopts = "--cov=wyrdbound_model --cov-report=term-missing --cov-report=html"
 [tool.ruff]
 target-version = "py38"
 line-length = 88
+preview = true
 
 [tool.ruff.lint]
 select = [

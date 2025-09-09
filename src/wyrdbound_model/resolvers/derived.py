@@ -348,15 +348,15 @@ class DerivedFieldResolver:
         # Kahn's algorithm for topological sorting
         # in_degree[field] = number of dependencies this field has
         # (fields it depends on)
-        in_degree = {field_name: 0 for field_name in fields}
+        in_degree = dict.fromkeys(fields, 0)
         for field_name in fields:
             if field_name in local_deps:
                 in_degree[field_name] = len(local_deps[field_name])
 
         # Start with fields that have no dependencies (in_degree = 0)
-        queue = deque(
-            [field_name for field_name in fields if in_degree[field_name] == 0]
-        )
+        queue = deque([
+            field_name for field_name in fields if in_degree[field_name] == 0
+        ])
         result = []
 
         while queue:
