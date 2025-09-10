@@ -44,7 +44,7 @@ This example showcases advanced features for complex applications:
 
 - **Model Inheritance**: Creating hierarchical model definitions
 - **Complex Derived Fields**: Multi-level dependencies between computed fields
-- **Model Registry**: Managing related models for inheritance resolution
+- **Namespace Organization**: Using namespaces for automatic model organization and inheritance resolution
 - **Batch Updates**: Efficient bulk field updates
 - **Alternative Template Resolvers**: Using different template syntaxes
 - **Complex Validation**: Multi-field validation rules
@@ -54,7 +54,7 @@ This example showcases advanced features for complex applications:
 
 - Model inheritance with `extends` property
 - Derived field dependency chains
-- `model_registry` for inheritance resolution
+- `namespace` parameter for automatic model registration and inheritance resolution
 - `batch_update()` for performance optimization
 - Model context resolver with `$variable` syntax
 - Nested attribute access patterns
@@ -109,6 +109,7 @@ from wyrdbound_model import ModelDefinition, AttributeDefinition, ValidationRule
 model_def = ModelDefinition(
     id="my_model",
     name="My Model",
+    namespace="my_app",  # Organize models in namespaces
     attributes={
         "field1": AttributeDefinition(type="str", required=True),
         "field2": AttributeDefinition(type="int", default=0),
@@ -135,11 +136,10 @@ model = create_model(
     derived_resolver_kwargs={"batched": True}
 )
 
-# With inheritance
+# With inheritance (auto-resolved via namespaces)
 model = create_model(
-    child_model_def,
-    {"field1": "value"},
-    model_registry={"parent": parent_def, "child": child_def}
+    child_model_def,  # Inherits from parent automatically
+    {"field1": "value"}
 )
 ```
 
@@ -154,20 +154,45 @@ model.batch_update({
 })
 ```
 
+### Global Registry and Namespace Pattern
+
+```python
+from wyrdbound_model import get_model, clear_registry
+
+# Models automatically register when created with namespaces
+character_def = ModelDefinition(
+    id="character",
+    namespace="rpg",  # Registered in "rpg" namespace
+    attributes={...}
+)
+
+# Retrieve models from global registry
+retrieved_def = get_model("rpg", "character")
+
+# Use retrieved model definition
+character = create_model(retrieved_def, {"name": "Hero"})
+
+# Clear namespace for testing or reset
+clear_registry()  # Clear all namespaces
+# Or clear specific namespace (not shown - would be clear_namespace("rpg"))
+```
+
 ### Inheritance Pattern
 
 ```python
-# Parent model
+# Parent model (auto-registered in namespace)
 parent_def = ModelDefinition(
     id="parent",
+    namespace="my_app",
     attributes={
         "common_field": AttributeDefinition(type="str", required=True)
     }
 )
 
-# Child model
+# Child model (automatically finds parent in same namespace)
 child_def = ModelDefinition(
     id="child",
+    namespace="my_app",  # Same namespace for inheritance resolution
     extends=["parent"],
     attributes={
         "specific_field": AttributeDefinition(type="int", default=0)
@@ -195,6 +220,7 @@ Based on the inheritance polymorphism example, consider these design patterns:
 # Base entity (common properties)
 base_def = ModelDefinition(
     id="base_entity",
+    namespace="game",  # Organize in namespace
     attributes={
         "id": AttributeDefinition(type="str", required=True),
         "name": AttributeDefinition(type="str", required=True)
@@ -204,6 +230,7 @@ base_def = ModelDefinition(
 # Intermediate level (shared domain concepts)
 item_def = ModelDefinition(
     id="item",
+    namespace="game",  # Same namespace for inheritance
     extends=["base_entity"],
     attributes={
         "value": AttributeDefinition(type="int", default=0),
@@ -214,6 +241,7 @@ item_def = ModelDefinition(
 # Specific implementation (specialized behavior)
 weapon_def = ModelDefinition(
     id="weapon",
+    namespace="game",  # Same namespace for inheritance
     extends=["item"],
     attributes={
         "damage": AttributeDefinition(type="int", required=True),
@@ -225,7 +253,7 @@ weapon_def = ModelDefinition(
 ### Polymorphic Usage Pattern
 
 ```python
-# Create specialized instance
+# Create specialized instance (inheritance auto-resolved)
 weapon = create_model(weapon_def, {
     "id": "sword_001",
     "name": "Excalibur",
@@ -233,7 +261,7 @@ weapon = create_model(weapon_def, {
     "weight": 3.0,
     "damage": 25,
     "weapon_type": "sword"
-}, model_registry=registry)
+})
 
 # Use polymorphically as item
 def process_item(item_data):
@@ -245,7 +273,7 @@ def process_item(item_data):
 process_item(weapon)  # Works seamlessly
 
 # Convert back to specialized type when needed
-restored_weapon = create_model(weapon_def, dict(weapon), model_registry=registry)
+restored_weapon = create_model(weapon_def, dict(weapon))
 ```
 
 ### Factory Pattern for Character Generation
@@ -304,10 +332,10 @@ benchmark_operation("Batched resolver", lambda: create_model(
 For optimal performance with complex inheritance and polymorphism:
 
 1. **Use Batched Resolver**: For models with many derived fields
-2. **Cache Model Definitions**: Reuse definitions across instances
+2. **Organize with Namespaces**: Use meaningful namespaces to organize related models
 3. **Strategic Inheritance**: Design inheritance chains to minimize deep nesting
 4. **Batch Updates**: When updating multiple related fields
-5. **Registry Management**: Keep model registries organized and focused
+5. **Global Registry**: Leverage automatic registration for model reuse across your application
 
 ## Integration with Other Systems
 

@@ -1,13 +1,11 @@
 """Tests for exception functionality."""
 
-import pytest
-
 from wyrdbound_model.core.exceptions import (
-    WyrdboundModelError,
+    DependencyError,
+    InheritanceError,
     ModelValidationError,
     TemplateResolutionError,
-    InheritanceError,
-    DependencyError,
+    WyrdboundModelError,
 )
 
 
@@ -49,7 +47,7 @@ class TestModelValidationError:
             "Field validation failed",
             field_name="age",
             field_value=15,
-            validation_errors=["Must be 18 or older"]
+            validation_errors=["Must be 18 or older"],
         )
         assert error.field_name == "age"
         assert error.field_value == 15
@@ -60,7 +58,7 @@ class TestModelValidationError:
         error = ModelValidationError(
             "Validation failed",
             field_name="test_field",
-            validation_errors=["error1", "error2"]
+            validation_errors=["error1", "error2"],
         )
         error_str = str(error)
         assert "Validation failed" in error_str
@@ -81,7 +79,7 @@ class TestTemplateResolutionError:
             "Template resolution failed",
             template_str="{{ invalid }}",
             template_variables=["invalid"],
-            context={"available": ["valid"]}
+            context={"available": ["valid"]},
         )
         assert error.template_str == "{{ invalid }}"
         assert error.template_variables == ["invalid"]
@@ -90,9 +88,7 @@ class TestTemplateResolutionError:
     def test_template_error_str_representation(self):
         """Test template error string representation."""
         error = TemplateResolutionError(
-            "Template failed",
-            template_str="{{ test }}",
-            template_variables=["test"]
+            "Template failed", template_str="{{ test }}", template_variables=["test"]
         )
         error_str = str(error)
         assert "Template failed" in error_str
@@ -112,10 +108,15 @@ class TestInheritanceError:
         error = InheritanceError(
             "Circular dependency",
             model_id="test_model",
-            inheritance_chain=["test_model", "parent1", "parent2", "test_model"]
+            inheritance_chain=["test_model", "parent1", "parent2", "test_model"],
         )
         assert error.model_id == "test_model"
-        assert error.inheritance_chain == ["test_model", "parent1", "parent2", "test_model"]
+        assert error.inheritance_chain == [
+            "test_model",
+            "parent1",
+            "parent2",
+            "test_model",
+        ]
 
 
 class TestDependencyError:
@@ -132,7 +133,7 @@ class TestDependencyError:
             "Circular dependency in derived fields",
             field_name="computed_field",
             dependencies=["field1", "field2"],
-            dependency_chain=["computed_field", "field1", "computed_field"]
+            dependency_chain=["computed_field", "field1", "computed_field"],
         )
         assert error.field_name == "computed_field"
         assert error.dependencies == ["field1", "field2"]
@@ -146,9 +147,7 @@ class TestExceptionStringRepresentations:
         """Test that error messages format correctly."""
         # Test with context
         error = ModelValidationError(
-            "Test error",
-            field_name="test",
-            validation_errors=["error1", "error2"]
+            "Test error", field_name="test", validation_errors=["error1", "error2"]
         )
         error_str = str(error)
         assert "Test error" in error_str
@@ -161,7 +160,7 @@ class TestExceptionStringRepresentations:
             "Template failed",
             template_str="{{ bad }}",
             template_variables=["bad"],
-            context={"good": "value"}
+            context={"good": "value"},
         )
         error_str = str(error)
         assert "Template failed" in error_str

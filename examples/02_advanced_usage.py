@@ -14,7 +14,8 @@ from wyrdbound_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel
+    WyrdboundModel,
+    clear_registry
 )
 from wyrdbound_model.core.model import create_model
 
@@ -25,10 +26,14 @@ def main():
     # 1. Create base model definitions for inheritance
     print("1. Creating Inheritance Hierarchy")
     
+    # Clear registry to start fresh
+    clear_registry()
+    
     # Base Entity model
     base_entity_def = ModelDefinition(
         id="base_entity",
         name="Base Entity",
+        namespace="game",  # Using namespace for organization
         description="Base entity with common properties",
         attributes={
             "id": AttributeDefinition(type="str", required=True),
@@ -43,6 +48,7 @@ def main():
     character_def = ModelDefinition(
         id="character",
         name="Character",
+        namespace="game",  # Same namespace for easy reference
         description="RPG character extending base entity",
         extends=["base_entity"],
         attributes={
@@ -110,6 +116,7 @@ def main():
     weapon_def = ModelDefinition(
         id="weapon",
         name="Weapon",
+        namespace="game",  # All models in same namespace
         description="Weapon item",
         extends=["base_entity"],
         attributes={
@@ -129,13 +136,10 @@ def main():
         }
     )
     
-    # 2. Create model registry for inheritance resolution
-    print("2. Setting up Model Registry")
-    model_registry = {
-        "base_entity": base_entity_def,
-        "character": character_def,
-        "weapon": weapon_def
-    }
+    # 2. Models automatically registered with namespace "game"
+    print("2. Models Auto-Registered")
+    print("   Models are automatically registered in the 'game' namespace")
+    print("   This enables inheritance resolution without manual registry management")
     
     # 3. Create instances with inheritance
     print("3. Creating Instances with Inheritance")
@@ -153,8 +157,7 @@ def main():
             "intelligence": 12,
             "experience": 15000,
             "tags": ["dwarf", "king", "warrior"]
-        },
-        model_registry=model_registry
+        }
     )
     
     print("Character created with inheritance:")
@@ -180,8 +183,7 @@ def main():
             "damage": 25,
             "weapon_type": "sword",
             "rarity": "legendary"
-        },
-        model_registry=model_registry
+        }
     )
     
     print("Weapon created:")
@@ -267,8 +269,7 @@ def main():
                 "dexterity": 12,
                 "intelligence": 8,  # Total stats = 35, which is >= 30
                 "experience": 5000
-            },
-            model_registry=model_registry
+            }
         )
         print(f"✓ Valid character created: {valid_character['name']}")
         print(f"  Stat total: {valid_character['stat_total']} (passes validation)")
@@ -287,8 +288,7 @@ def main():
                 "dexterity": 5,
                 "intelligence": 5,  # Total stats = 15, which is < 30
                 "experience": 5000
-            },
-            model_registry=model_registry
+            }
         )
         print(f"✗ Invalid character should not have been created: {invalid_character['name']}")
     except Exception as e:
@@ -317,8 +317,6 @@ def main():
         ]
     }
 
-    breakpoint()
-    
     print("Equipment added:")
     print(f"  Weapon: {character['equipment']['weapon']['name']}")
     print(f"  Armor: {character['equipment']['armor']['name']}")
@@ -337,6 +335,7 @@ def main():
     item_def = ModelDefinition(
         id="item",
         name="Item",
+        namespace="game",  # Same namespace for inheritance resolution
         description="Base item type that extends entity",
         extends=["base_entity"],
         attributes={
@@ -371,6 +370,7 @@ def main():
     enhanced_weapon_def = ModelDefinition(
         id="enhanced_weapon",
         name="Enhanced Weapon",
+        namespace="game",  # Same namespace for inheritance resolution
         description="Weapon that extends item",
         extends=["item"],  # Now extends item instead of base_entity
         attributes={
@@ -405,16 +405,9 @@ def main():
         ]
     )
     
-    # Update model registry with the new definitions
-    enhanced_registry = {
-        "base_entity": base_entity_def,
-        "item": item_def,
-        "enhanced_weapon": enhanced_weapon_def,
-        "character": character_def,
-        "weapon": weapon_def
-    }
-    
+    # All models automatically registered in "game" namespace for inheritance resolution
     print("Created inheritance chain: base_entity -> item -> enhanced_weapon")
+    print("  All models auto-registered in 'game' namespace")
     
     # Create a weapon instance with full weapon data
     print("\nCreating a weapon...")
@@ -438,8 +431,7 @@ def main():
             "weapon_type": "sword", 
             "attack_speed": 1.2,
             "critical_chance": 0.15
-        },
-        model_registry=enhanced_registry
+        }
     )
     
     print(f"Weapon created: {excalibur['weapon_summary']}")
@@ -451,10 +443,10 @@ def main():
     # Now demonstrate polymorphism: treat weapon as an item
     print("\nPolymorphism: Treating weapon as item...")
     
-    def process_item_inventory(item_data, item_model_def, registry):
+    def process_item_inventory(item_data, item_model_def):
         """Function that expects an item but can handle any item subtype."""
         # Create item instance from the data - this validates as an item
-        item_instance = create_model(item_model_def, item_data, model_registry=registry)
+        item_instance = create_model(item_model_def, item_data)
         
         print(f"  Processing item: {item_instance['name']}")
         print(f"    Value per weight: {item_instance['value_per_weight']:.2f} gold/lb")
@@ -468,7 +460,7 @@ def main():
     print(f"  Raw weapon data has {len(weapon_raw_data)} fields: {list(weapon_raw_data.keys())}")
     
     # Process it as an item (polymorphism in action)
-    item_view = process_item_inventory(weapon_raw_data, item_def, enhanced_registry)
+    item_view = process_item_inventory(weapon_raw_data, item_def)
     
     # The item view has item properties but the underlying data retains weapon info
     print(f"  Item view shows: {item_view['name']} worth {item_view['value']} gold")
@@ -476,7 +468,7 @@ def main():
     
     # Convert back to weapon - all weapon features are preserved!
     print("\nConverting back to weapon...")
-    restored_weapon = create_model(enhanced_weapon_def, weapon_raw_data, model_registry=enhanced_registry)
+    restored_weapon = create_model(enhanced_weapon_def, weapon_raw_data)
     
     print(f"Restored weapon: {restored_weapon['weapon_summary']}")
     print(f"  All weapon features preserved: damage={restored_weapon['damage']}, DPS={restored_weapon['dps']}")
@@ -492,7 +484,7 @@ def main():
             "name": "Bad Item", 
             "weight": -1.0,  # Invalid!
             "value": 100
-        }, model_registry=enhanced_registry)
+        })
     except Exception as e:
         print(f"  ✓ Item validation caught negative weight: {str(e).split('|')[1].split(']')[0]}]")
     
@@ -504,7 +496,7 @@ def main():
             "weight": 2.0,
             "value": 100, 
             "damage": -5  # Invalid!
-        }, model_registry=enhanced_registry)
+        })
     except Exception as e:
         print(f"  ✓ Weapon validation caught negative damage: {str(e).split('|')[1].split(']')[0]}]")
     

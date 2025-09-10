@@ -13,7 +13,8 @@ from wyrdbound_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel
+    WyrdboundModel,
+    clear_registry
 )
 from wyrdbound_model.core.model import create_model
 
@@ -24,10 +25,14 @@ def main():
     # 1. Create inheritance chain: base_entity → item → weapon
     print("1. Creating Multi-Level Inheritance Chain")
     
+    # Clear registry for clean start
+    clear_registry()
+    
     # Base Entity model (root of hierarchy)
     base_entity_def = ModelDefinition(
         id="base_entity",
         name="Base Entity",
+        namespace="demo",  # Using demo namespace
         description="Base entity with common properties",
         attributes={
             "id": AttributeDefinition(type="str", required=True),
@@ -41,6 +46,7 @@ def main():
     item_def = ModelDefinition(
         id="item",
         name="Item",
+        namespace="demo",  # Same namespace for inheritance
         description="Generic item extending base entity",
         extends=["base_entity"],
         attributes={
@@ -76,6 +82,7 @@ def main():
     weapon_def = ModelDefinition(
         id="weapon",
         name="Weapon",
+        namespace="demo",  # Same namespace for inheritance
         description="Weapon extending item",
         extends=["item"],
         attributes={
@@ -115,14 +122,9 @@ def main():
     print(f"Created inheritance chain: {base_entity_def.id} → {item_def.id} → {weapon_def.id}")
     print()
     
-    # 2. Create model registry for inheritance resolution
-    print("2. Setting up Model Registry")
-    model_registry = {
-        "base_entity": base_entity_def,
-        "item": item_def,
-        "weapon": weapon_def
-    }
-    print("Model registry configured with all inheritance levels")
+    # 2. Models auto-registered in namespace
+    print("2. Models Auto-Registered")
+    print("All models automatically registered in 'demo' namespace for inheritance resolution")
     print()
     
     # 3. Create a weapon instance (full inheritance)
@@ -148,7 +150,7 @@ def main():
         "weapon_type": "sword"
     }
     
-    excalibur_weapon = create_model(weapon_def, excalibur_data, model_registry=model_registry)
+    excalibur_weapon = create_model(weapon_def, excalibur_data)
     
     print("Weapon created with full inheritance:")
     print(f"  Name: {excalibur_weapon['name']} (from base_entity)")
@@ -166,12 +168,8 @@ def main():
     weapon_data = dict(excalibur_weapon)
     
     # Create an item model from the weapon data (upcast)
-    excalibur_as_item = create_model(item_def, weapon_data, model_registry=model_registry)
+    excalibur_as_item = create_model(item_def, weapon_data)
 
-    excalibur_as_item_data = dict(excalibur_as_item)
-
-    breakpoint()
-    
     print("Weapon treated as Item:")
     print(f"  Name: {excalibur_as_item['name']}")
     print(f"  Value: {excalibur_as_item['value']}gp")
@@ -196,10 +194,9 @@ def main():
         invalid_item_data = weapon_data.copy()
         invalid_item_data["weight"] = -1.0  # Invalid weight
         
-        create_model(item_def, invalid_item_data, model_registry=model_registry)
+        create_model(item_def, invalid_item_data)
         print("  ✗ Validation should have failed!")
     except Exception as e:
-        breakpoint()
         print(f"  ✓ Item validation correctly failed: {str(e).split('|')[1].strip()}")
     
     # Test weapon-level validation  
@@ -208,7 +205,7 @@ def main():
         invalid_weapon_data = weapon_data.copy()
         invalid_weapon_data["damage"] = 0  # Invalid damage
         
-        create_model(weapon_def, invalid_weapon_data, model_registry=model_registry)
+        create_model(weapon_def, invalid_weapon_data)
         print("  ✗ Validation should have failed!")
     except Exception as e:
         print(f"  ✓ Weapon validation correctly failed: {str(e).split('|')[1].strip()}")
@@ -221,7 +218,7 @@ def main():
     item_data = dict(excalibur_as_item)
     
     # The data still contains all weapon fields, so we can recreate the weapon
-    restored_weapon = create_model(weapon_def, item_data, model_registry=model_registry)
+    restored_weapon = create_model(weapon_def, item_data)
     
     print("Restored weapon from item data:")
     print(f"  Name: {restored_weapon['name']}")
@@ -278,15 +275,15 @@ def main():
     }
     
     # Create instances
-    potion = create_model(item_def, potion_data, model_registry=model_registry)
-    ring = create_model(item_def, ring_data, model_registry=model_registry)
-    dagger_weapon = create_model(weapon_def, dagger_data, model_registry=model_registry)
+    potion = create_model(item_def, potion_data)
+    ring = create_model(item_def, ring_data)
+    dagger_weapon = create_model(weapon_def, dagger_data)
     
     # Treat everything as items in an inventory
     inventory_items = [
-        create_model(item_def, dict(potion), model_registry=model_registry),
-        create_model(item_def, dict(ring), model_registry=model_registry), 
-        create_model(item_def, dict(dagger_weapon), model_registry=model_registry)  # Weapon treated as item
+        create_model(item_def, dict(potion)),
+        create_model(item_def, dict(ring)), 
+        create_model(item_def, dict(dagger_weapon))  # Weapon treated as item
     ]
     
     print("Inventory (all treated as items):")
@@ -311,7 +308,7 @@ def main():
     print(f"  Weapon Type: {dagger_data_preserved.get('weapon_type', 'N/A')}")
     
     # Can be converted back to weapon for combat
-    combat_dagger = create_model(weapon_def, dagger_data_preserved, model_registry=model_registry)
+    combat_dagger = create_model(weapon_def, dagger_data_preserved)
     print(f"  Converted back for combat: {combat_dagger['weapon_summary']}")
 
 

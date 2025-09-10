@@ -1,9 +1,8 @@
 """Test fixtures and utilities for wyrdbound-model tests."""
 
 import pytest
-from typing import Dict, Any
 
-from wyrdbound_model import ModelDefinition, AttributeDefinition, ValidationRule
+from wyrdbound_model import AttributeDefinition, ModelDefinition, ValidationRule
 
 
 @pytest.fixture
@@ -17,7 +16,7 @@ def simple_model_def():
             "level": AttributeDefinition(type="int", default=1),
             "score": AttributeDefinition(type="float", default=0.0),
             "active": AttributeDefinition(type="bool", default=True),
-        }
+        },
     )
 
 
@@ -35,22 +34,20 @@ def character_model_def():
             "constitution": AttributeDefinition(type="int", default=10, range="3..18"),
             "hit_points": AttributeDefinition(type="int", default=8),
             "max_hit_points": AttributeDefinition(
-                type="int", 
+                type="int",
                 derived="{{ level * 8 + (constitution - 10) * level // 2 }}",
-                computed=True
+                computed=True,
             ),
             "armor_class": AttributeDefinition(
-                type="int",
-                derived="{{ 10 + (dexterity - 10) // 2 }}",
-                computed=True
+                type="int", derived="{{ 10 + (dexterity - 10) // 2 }}", computed=True
             ),
         },
         validations=[
             ValidationRule(
                 expression="{{ hit_points <= max_hit_points }}",
-                message="Hit points cannot exceed maximum hit points"
+                message="Hit points cannot exceed maximum hit points",
             )
-        ]
+        ],
     )
 
 
@@ -65,7 +62,7 @@ def inheritance_parent_model():
             "name": AttributeDefinition(type="str", required=True),
             "description": AttributeDefinition(type="str", default=""),
             "created_at": AttributeDefinition(type="str", default=""),
-        }
+        },
     )
 
 
@@ -80,12 +77,14 @@ def inheritance_child_model():
             "level": AttributeDefinition(type="int", default=1),
             "experience": AttributeDefinition(type="int", default=0),
             "class_name": AttributeDefinition(type="str", default="fighter"),
-        }
+        },
     )
 
 
 @pytest.fixture
-def model_registry(inheritance_parent_model, inheritance_child_model, character_model_def):
+def model_registry(
+    inheritance_parent_model, inheritance_child_model, character_model_def
+):
     """Model registry for inheritance testing."""
     return {
         "base_entity": inheritance_parent_model,
@@ -116,15 +115,25 @@ def enum_model_def():
         attributes={
             "alignment": AttributeDefinition(
                 type="str",
-                enum=["lawful_good", "chaotic_good", "neutral_good", "lawful_neutral", "true_neutral", "chaotic_neutral", "lawful_evil", "neutral_evil", "chaotic_evil"],
-                default="true_neutral"
+                enum=[
+                    "lawful_good",
+                    "chaotic_good",
+                    "neutral_good",
+                    "lawful_neutral",
+                    "true_neutral",
+                    "chaotic_neutral",
+                    "lawful_evil",
+                    "neutral_evil",
+                    "chaotic_evil",
+                ],
+                default="true_neutral",
             ),
             "size": AttributeDefinition(
                 type="str",
                 enum=["tiny", "small", "medium", "large", "huge", "gargantuan"],
-                default="medium"
+                default="medium",
             ),
-        }
+        },
     )
 
 
@@ -138,12 +147,12 @@ def pattern_model_def():
             "email": AttributeDefinition(
                 type="str",
                 pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-                required=True
+                required=True,
             ),
             "phone": AttributeDefinition(
                 type="str",
                 pattern=r"^\+?1?-?\.?\s?\(?(\d{3})\)?[-\.\s]?(\d{3})[-\.\s]?(\d{4})$",
-                required=False
+                required=False,
             ),
-        }
+        },
     )

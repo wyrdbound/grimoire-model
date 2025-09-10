@@ -13,7 +13,9 @@ from wyrdbound_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel
+    WyrdboundModel,
+    get_model,
+    clear_registry
 )
 from wyrdbound_model.core.model import create_model
 
@@ -26,6 +28,7 @@ def main():
     character_def = ModelDefinition(
         id="character",
         name="Character",
+        namespace="rpg",  # Organize models in namespaces
         description="A basic RPG character",
         attributes={
             "name": AttributeDefinition(type="str", required=True),
@@ -144,6 +147,27 @@ def main():
     print(f"Model data as dict: {dict(character1)}")
     print(f"Character 1 == Character 1: {character1 == character1}")
     print(f"Character 1 == Character 2: {character1 == character2}")
+    print()
+    
+    # 8. Demonstrate global registry and namespaces
+    print("8. Global Registry and Namespaces")
+    print("Models are automatically registered when created with namespaces!")
+    
+    # Retrieve model from global registry
+    retrieved_model = get_model("rpg", "character")
+    if retrieved_model:
+        print(f"Retrieved from registry: {retrieved_model.name}")
+        print(f"Same model definition: {retrieved_model is character_def}")
+        
+        # Show that you can now reference models across your application
+        another_character = create_model(retrieved_model, {
+            "name": "Boromir",
+            "level": 10
+        })
+        print(f"Created using retrieved model: {another_character['name']}")
+        print(f"Summary: {another_character['character_summary']}")
+    else:
+        print("Model not found in registry (this shouldn't happen!)")
 
 
 if __name__ == "__main__":

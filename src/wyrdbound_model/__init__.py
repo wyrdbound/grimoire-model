@@ -5,7 +5,7 @@ A dict-like model system with schema validation, derived fields, and inheritance
 designed for integration with wyrdbound-context.
 
 Key Features:
-- Dict-like interface (MutableMapping) 
+- Dict-like interface (MutableMapping)
 - Schema validation with Pydantic
 - Reactive derived fields with dependency tracking
 - Model inheritance support
@@ -15,7 +15,7 @@ Key Features:
 
 Example Usage:
     from wyrdbound_model import WyrdboundModel, ModelDefinition, create_model
-    
+
     # Define model schema
     character_def = ModelDefinition(
         id="character",
@@ -27,14 +27,14 @@ Example Usage:
             "max_hp": {"type": "int", "derived": "{{ level * 8 }}"}
         }
     )
-    
+
     # Create model instance
     character = create_model(character_def, {"name": "Aragorn", "level": 5})
-    
+
     # Use as dict
     character['level'] = 6  # Automatically updates max_hp derived field
     print(character['max_hp'])  # 48
-    
+
     # Works with wyrdbound-context
     from wyrdbound_context import WyrdboundContext
     context = WyrdboundContext({'character': character})
@@ -46,110 +46,123 @@ __author__ = "The Wyrd One"
 __email__ = "wyrdbound@proton.me"
 
 # Core exports
+from .core.exceptions import (
+    ConfigurationError,
+    DependencyError,
+    InheritanceError,
+    ModelValidationError,
+    TemplateResolutionError,
+    WyrdboundModelError,
+)
 from .core.model import (
     WyrdboundModel,
     create_model,
 )
-
+from .core.registry import (
+    ModelRegistry,
+    clear_registry,
+    get_default_registry,
+    get_model,
+    get_model_registry,  # Kept for backward compatibility
+    register_model,
+)
 from .core.schema import (
-    ModelDefinition,
     AttributeDefinition,
+    ModelDefinition,
     ValidationRule,
 )
 
-from .core.exceptions import (
-    WyrdboundModelError,
-    ModelValidationError,
-    TemplateResolutionError,
-    InheritanceError,
-    DependencyError,
-    ConfigurationError,
+# Logging configuration
+from .logging import get_logger, logger
+from .resolvers.derived import (
+    BatchedDerivedFieldResolver,
+    DependencyInfo,
+    DerivedFieldResolver,
+    ObservableValue,
+    create_derived_field_resolver,
 )
 
-# Resolver exports  
+# Resolver exports
 from .resolvers.template import (
-    TemplateResolver,
+    CachingTemplateResolver,
     Jinja2TemplateResolver,
     ModelContextTemplateResolver,
-    CachingTemplateResolver,
+    TemplateResolver,
     create_template_resolver,
-)
-
-from .resolvers.derived import (
-    DerivedFieldResolver,
-    BatchedDerivedFieldResolver,
-    ObservableValue,
-    DependencyInfo,
-    create_derived_field_resolver,
 )
 
 # Utility exports
 from .utils.inheritance import resolve_model_inheritance
 from .utils.paths import (
-    get_nested_value,
-    set_nested_value,
-    has_nested_value,
     delete_nested_value,
     flatten_dict,
+    get_nested_value,
+    has_nested_value,
+    set_nested_value,
     unflatten_dict,
 )
 
 # Validation exports
 from .validation.validators import (
-    TypeValidator,
-    RangeValidator,
     EnumValidator,
-    RequiredValidator,
-    PatternValidator,
     LengthValidator,
+    PatternValidator,
+    RangeValidator,
+    RequiredValidator,
+    TypeValidator,
     ValidationEngine,
+    get_validation_engine,
     validate_field_value,
     validate_model_data,
-    get_validation_engine,
 )
 
 __all__ = [
     # Core classes
     "WyrdboundModel",
-    "ModelDefinition", 
+    "ModelDefinition",
     "AttributeDefinition",
     "ValidationRule",
-    
     # Factory functions
     "create_model",
     "create_template_resolver",
     "create_derived_field_resolver",
-    
+    # Registry
+    "ModelRegistry",
+    "get_default_registry",
+    "get_model_registry",  # Backward compatibility
+    "clear_registry",
+    "register_model",
+    "get_model",
+    # Logging
+    "logger",
+    "get_logger",
     # Exceptions
     "WyrdboundModelError",
-    "ModelValidationError", 
+    "ModelValidationError",
     "TemplateResolutionError",
     "InheritanceError",
     "DependencyError",
     "ConfigurationError",
-    
     # Resolvers
     "TemplateResolver",
     "Jinja2TemplateResolver",
-    "ModelContextTemplateResolver", 
+    "ModelContextTemplateResolver",
     "CachingTemplateResolver",
     "DerivedFieldResolver",
     "BatchedDerivedFieldResolver",
     "ObservableValue",
     "DependencyInfo",
-    
     # Utilities
     "resolve_model_inheritance",
     "get_nested_value",
-    "set_nested_value", 
+    "set_nested_value",
     "has_nested_value",
     "delete_nested_value",
     "flatten_dict",
     "unflatten_dict",
-    
     # Validators
     "TypeValidator",
-    "RangeValidator", 
+    "RangeValidator",
     "EnumValidator",
     "RequiredValidator",
     "PatternValidator",
@@ -161,10 +174,12 @@ __all__ = [
 ]
 
 # Package metadata
-__pkg_info__ = {
+__meta__ = {
     "name": "wyrdbound-model",
     "version": __version__,
-    "description": "Dict-like model system with validation and derived fields for Wyrdbound",
+    "description": (
+        "Dict-like model system with validation and derived fields for Wyrdbound"
+    ),
     "long_description": __doc__,
     "author": __author__,
     "author_email": __email__,
@@ -176,7 +191,7 @@ __pkg_info__ = {
         "License :: Other/Proprietary License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9", 
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -187,7 +202,7 @@ __pkg_info__ = {
     "python_requires": ">=3.8",
     "install_requires": [
         "pydantic>=2.0.0",
-        "pyrsistent>=0.19.0", 
+        "pyrsistent>=0.19.0",
         "jinja2>=3.1.0",
         "pyyaml>=6.0",
     ],
@@ -206,31 +221,33 @@ __pkg_info__ = {
         ],
         "test": [
             "pytest>=7.0.0",
-            "pytest-cov>=4.0.0", 
+            "pytest-cov>=4.0.0",
             "pytest-mock>=3.0.0",
             "hypothesis>=6.0.0",
         ],
     },
 }
 
+
 # Integration helpers for wyrdbound-context
 def register_with_wyrdbound_context():
     """Register WyrdboundModel as a compatible value type with wyrdbound-context.
-    
+
     This function should be called if you want seamless integration between
     wyrdbound-model and wyrdbound-context packages.
     """
     try:
-        from wyrdbound_context import WyrdboundContext
-        
+        from wyrdbound_context import WyrdboundContext  # type: ignore[import-not-found]
+
         # Register our model as a compatible dict-like type
-        if hasattr(WyrdboundContext, 'register_dict_like_type'):
+        if hasattr(WyrdboundContext, "register_dict_like_type"):
             WyrdboundContext.register_dict_like_type(WyrdboundModel)  # type: ignore
-        
+
         return True
     except ImportError:
         # wyrdbound-context not available
         return False
+
 
 # Optional auto-registration
 try:

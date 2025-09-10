@@ -10,13 +10,13 @@ from typing import Any, Dict, List, Optional
 
 class WyrdboundModelError(Exception):
     """Base exception for wyrdbound-model package.
-    
+
     All other exceptions in this package inherit from this base class.
     """
 
     def __init__(self, message: str, context: Optional[Dict[str, Any]] = None):
         """Initialize with message and optional context information.
-        
+
         Args:
             message: Human-readable error description
             context: Additional context information for debugging
@@ -35,7 +35,7 @@ class WyrdboundModelError(Exception):
 
 class ModelValidationError(WyrdboundModelError):
     """Raised when model validation fails.
-    
+
     This exception is raised when:
     - Required fields are missing
     - Field values don't match their defined types
@@ -52,7 +52,7 @@ class ModelValidationError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize validation error with field-specific information.
-        
+
         Args:
             message: Primary error message
             field_name: Name of the field that failed validation
@@ -68,27 +68,27 @@ class ModelValidationError(WyrdboundModelError):
     def __str__(self) -> str:
         """Return detailed string representation including field information."""
         parts = [self.message]
-        
+
         if self.field_name:
             parts.append(f"field: {self.field_name}")
-        
+
         if self.field_value is not None:
             parts.append(f"value: {self.field_value}")
-        
+
         if self.validation_errors:
             error_list = ", ".join(self.validation_errors)
             parts.append(f"errors: [{error_list}]")
-        
+
         if self.context:
             context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
             parts.append(f"context: {context_str}")
-        
+
         return " | ".join(parts)
 
 
 class TemplateResolutionError(WyrdboundModelError):
     """Raised when template resolution fails.
-    
+
     This exception is raised when:
     - Template syntax is invalid
     - Referenced variables are undefined
@@ -104,7 +104,7 @@ class TemplateResolutionError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize template resolution error.
-        
+
         Args:
             message: Primary error message
             template_str: The template string that failed to resolve
@@ -118,24 +118,24 @@ class TemplateResolutionError(WyrdboundModelError):
     def __str__(self) -> str:
         """Return detailed string representation including template information."""
         parts = [self.message]
-        
+
         if self.template_str:
             parts.append(f"template: {self.template_str}")
-        
+
         if self.template_variables:
             vars_str = ", ".join(self.template_variables)
             parts.append(f"variables: [{vars_str}]")
-        
+
         if self.context:
             context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
             parts.append(f"context: {context_str}")
-        
+
         return " | ".join(parts)
 
 
 class InheritanceError(WyrdboundModelError):
     """Raised when model inheritance resolution fails.
-    
+
     This exception is raised when:
     - Parent model definitions are not found
     - Circular inheritance dependencies are detected
@@ -152,7 +152,7 @@ class InheritanceError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize inheritance error.
-        
+
         Args:
             message: Primary error message
             model_id: ID of the model that failed inheritance resolution
@@ -168,28 +168,28 @@ class InheritanceError(WyrdboundModelError):
     def __str__(self) -> str:
         """Return detailed string representation including inheritance information."""
         parts = [self.message]
-        
+
         if self.model_id:
             parts.append(f"model: {self.model_id}")
-        
+
         if self.parent_ids:
             parents_str = ", ".join(self.parent_ids)
             parts.append(f"parents: [{parents_str}]")
-        
+
         if self.inheritance_chain:
             chain_str = " -> ".join(self.inheritance_chain)
             parts.append(f"chain: {chain_str}")
-        
+
         if self.context:
             context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
             parts.append(f"context: {context_str}")
-        
+
         return " | ".join(parts)
 
 
 class DependencyError(WyrdboundModelError):
     """Raised when derived field dependencies cannot be resolved.
-    
+
     This exception is raised when:
     - Circular dependencies are detected between derived fields
     - Required dependencies are missing or undefined
@@ -206,7 +206,7 @@ class DependencyError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize dependency error.
-        
+
         Args:
             message: Primary error message
             field_name: Name of the field with dependency issues
@@ -222,28 +222,28 @@ class DependencyError(WyrdboundModelError):
     def __str__(self) -> str:
         """Return detailed string representation including dependency information."""
         parts = [self.message]
-        
+
         if self.field_name:
             parts.append(f"field: {self.field_name}")
-        
+
         if self.dependencies:
             deps_str = ", ".join(self.dependencies)
             parts.append(f"deps: [{deps_str}]")
-        
+
         if self.dependency_chain:
             chain_str = " -> ".join(self.dependency_chain)
             parts.append(f"chain: {chain_str}")
-        
+
         if self.context:
             context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
             parts.append(f"context: {context_str}")
-        
+
         return " | ".join(parts)
 
 
 class ConfigurationError(WyrdboundModelError):
     """Raised when configuration is invalid or incomplete.
-    
+
     This exception is raised when:
     - Required configuration parameters are missing
     - Configuration values are invalid
@@ -259,7 +259,7 @@ class ConfigurationError(WyrdboundModelError):
         context: Optional[Dict[str, Any]] = None,
     ):
         """Initialize configuration error.
-        
+
         Args:
             message: Primary error message
             config_key: Configuration key that caused the error
@@ -273,15 +273,15 @@ class ConfigurationError(WyrdboundModelError):
     def __str__(self) -> str:
         """Return detailed string representation including configuration information."""
         parts = [self.message]
-        
+
         if self.config_key:
             parts.append(f"key: {self.config_key}")
-        
+
         if self.config_value is not None:
             parts.append(f"value: {self.config_value}")
-        
+
         if self.context:
             context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
             parts.append(f"context: {context_str}")
-        
+
         return " | ".join(parts)

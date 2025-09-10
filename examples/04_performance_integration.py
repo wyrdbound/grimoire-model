@@ -16,7 +16,8 @@ from wyrdbound_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel
+    WyrdboundModel,
+    clear_registry
 )
 from wyrdbound_model.core.model import create_model
 
@@ -38,6 +39,7 @@ def create_complex_game_model():
     return ModelDefinition(
         id="game_character",
         name="Game Character",
+        namespace="performance",  # Use namespace for organization
         description="Complex game character with many derived fields",
         attributes={
             # Basic info
@@ -124,6 +126,9 @@ def create_complex_game_model():
 
 def main():
     print("=== Wyrdbound Model - Performance and Integration Example ===\n")
+    
+    # Clear registry for clean benchmarks
+    clear_registry()
     
     # 1. Create model definition
     print("1. Creating Complex Model Definition")
