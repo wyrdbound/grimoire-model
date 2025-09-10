@@ -194,6 +194,31 @@ class ModelDefinition(BaseModel):
         description="Model attributes definition",
     )
 
+    @field_validator("attributes", mode="before")
+    @classmethod
+    def validate_attributes(cls, v: Any) -> Dict[str, Any]:
+        """Validate and convert attribute definitions."""
+        if not isinstance(v, dict):
+            return v
+
+        converted_attributes = {}
+        for key, value in v.items():
+            if isinstance(value, dict):
+                try:
+                    # Try to create AttributeDefinition to validate
+                    AttributeDefinition(**value)
+                    converted_attributes[key] = value
+                except Exception as e:
+                    raise ConfigurationError(
+                        f"Invalid attribute definition for '{key}': {e}",
+                        config_key=key,
+                        config_value=value,
+                    ) from e
+            else:
+                converted_attributes[key] = value
+
+        return converted_attributes
+
     # Validation
     validations: List[ValidationRule] = Field(
         default_factory=list,
@@ -211,32 +236,8 @@ class ModelDefinition(BaseModel):
     )
 
     def model_post_init(self, __context: Any) -> None:
-        """Convert dict attributes to AttributeDefinition objects and register model."""
+        """Register model after validation."""
         super().model_post_init(__context)
-
-        # Convert dict attributes to AttributeDefinition objects
-        converted_attributes = {}
-        for key, value in self.attributes.items():
-            if isinstance(value, dict):
-                try:
-                    converted_attributes[key] = AttributeDefinition(**value)
-                except Exception as e:
-                    raise ConfigurationError(
-                        f"Invalid attribute definition for '{key}': {e}",
-                        config_key=key,
-                        config_value=value,
-                    ) from e
-            elif isinstance(value, AttributeDefinition):
-                converted_attributes[key] = value
-            else:
-                raise ConfigurationError(
-                    f"Invalid attribute definition type for '{key}': "
-                    f"expected dict or AttributeDefinition, got {type(value)}",
-                    config_key=key,
-                    config_value=value,
-                )
-
-        self.attributes = converted_attributes
 
         # Register this model in the global registry
         from .registry import register_model

@@ -20,3 +20,6 @@ wyrdbound_model_plan.md
 
 # Code quality files
 .coverage
+coverage.html
+coverage.xml
+htmlcov/
