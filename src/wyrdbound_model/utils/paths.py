@@ -5,7 +5,11 @@ Provides functions for getting, setting, and manipulating nested values
 using dot notation paths (e.g., "character.stats.strength").
 """
 
-from typing import Any, Dict, List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 
 def get_nested_value(
@@ -225,7 +229,7 @@ def unflatten_dict(data: Dict[str, Any], separator: str = ".") -> Dict[str, Any]
         >>> unflatten_dict(data)
         {'stats': {'strength': 15, 'dex': 12}}
     """
-    result = {}
+    result: Dict[str, Any] = {}
 
     for key, value in data.items():
         set_nested_value(result, key, value, separator)
@@ -318,7 +322,7 @@ def filter_dict_by_paths(
         >>> filter_dict_by_paths(data, ["stats.strength", "name"])
         {'stats': {'strength': 15}, 'name': 'Hero'}
     """
-    result = {}
+    result: Dict[str, Any] = {}
 
     for path in paths:
         if has_nested_value(data, path, separator):

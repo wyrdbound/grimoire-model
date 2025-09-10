@@ -8,7 +8,7 @@ contexts, variable extraction, and caching.
 import ast
 import json
 import re
-from typing import Any, Dict, Optional, Protocol, Set
+from typing import Any, Dict, Optional, Protocol, Set, cast
 
 import jinja2
 from jinja2 import BaseLoader, Environment, TemplateError, meta
@@ -69,7 +69,7 @@ class Jinja2TemplateResolver:
         }
         env_kwargs.update(jinja_kwargs)
 
-        self.env = Environment(**env_kwargs)
+        self.env = Environment(**cast(Any, env_kwargs))
         self.loader = loader
 
         # Template detection patterns
@@ -388,6 +388,7 @@ def create_template_resolver(
     Raises:
         ValueError: If resolver_type is not supported
     """
+    resolver: TemplateResolver
     if resolver_type == "jinja2":
         resolver = Jinja2TemplateResolver(**kwargs)
     elif resolver_type == "model_context":
@@ -396,6 +397,6 @@ def create_template_resolver(
         raise ValueError(f"Unknown resolver type: {resolver_type}")
 
     if caching:
-        resolver = CachingTemplateResolver(resolver)
+        resolver = cast(TemplateResolver, CachingTemplateResolver(resolver))
 
     return resolver

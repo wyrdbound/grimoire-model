@@ -6,6 +6,7 @@ Applications can configure this logger using the standard Python logging configu
 """
 
 import logging
+from typing import Optional
 
 # Library-wide logger
 logger = logging.getLogger("wyrdbound_model")
@@ -19,7 +20,7 @@ if not logger.handlers:
     logger.addHandler(logging.NullHandler())
 
 
-def get_logger(name: str | None = None) -> logging.Logger:
+def get_logger(name: Optional[str] = None) -> logging.Logger:
     """
     Get a logger for the wyrdbound-model library.
 

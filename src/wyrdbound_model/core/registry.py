@@ -271,6 +271,8 @@ class ModelRegistry:
                             f"namespace '{namespace}' or any other namespace"
                         )
 
+                # At this point parent_def is guaranteed to be not None
+                assert parent_def is not None
                 resolved.append(parent_def)
 
         return resolved

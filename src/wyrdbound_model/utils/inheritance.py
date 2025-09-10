@@ -8,7 +8,7 @@ inheritance, and merging attribute definitions from parent models.
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from ..core.exceptions import InheritanceError
 from ..core.schema import AttributeDefinition, ModelDefinition, ValidationRule
@@ -103,10 +103,8 @@ def resolve_model_inheritance(
     resolved_validations = _resolve_validations(inheritance_chain, registry_dict)
 
     # Create resolved model definition
-    # Create a properly typed attributes dict
-    attributes_union: dict[str, AttributeDefinition | dict[str, Any]] = {}
-    for name, attr_def in resolved_attributes.items():
-        attributes_union[name] = attr_def
+    # Use resolved_attributes directly since it contains AttributeDefinition objects
+    attributes_union: dict[str, AttributeDefinition] = resolved_attributes
 
     resolved_model = ModelDefinition(
         id=model_def.id,
@@ -300,7 +298,7 @@ def check_inheritance_conflicts(
     Returns:
         List of conflict descriptions (empty if no conflicts)
     """
-    conflicts = []
+    conflicts: list[str] = []
 
     if not model_def.has_inheritance():
         return conflicts
@@ -314,7 +312,8 @@ def check_inheritance_conflicts(
         return conflicts
 
     # Check for attribute type conflicts
-    attribute_sources = {}  # attr_name -> [(model_id, attr_def), ...]
+    # attr_name -> [(model_id, attr_def), ...]
+    attribute_sources: dict[str, list[tuple[str, AttributeDefinition]]] = {}
 
     for model_id in reversed(inheritance_chain):
         model = model_registry[model_id]
@@ -357,7 +356,9 @@ def build_inheritance_graph(
     Returns:
         Dictionary mapping model IDs to their direct children
     """
-    inheritance_graph = {model_id: set() for model_id in model_registry}
+    inheritance_graph: dict[str, set[str]] = {
+        model_id: set() for model_id in model_registry
+    }
 
     for model_id, model_def in model_registry.items():
         for parent_id in model_def.extends:

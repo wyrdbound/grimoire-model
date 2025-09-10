@@ -189,7 +189,7 @@ class ModelDefinition(BaseModel):
     )
 
     # Attributes
-    attributes: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = Field(
+    attributes: Dict[str, AttributeDefinition] = Field(
         default_factory=dict,
         description="Model attributes definition",
     )

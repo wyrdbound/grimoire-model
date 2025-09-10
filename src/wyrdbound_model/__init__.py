@@ -237,7 +237,7 @@ def register_with_wyrdbound_context():
     wyrdbound-model and wyrdbound-context packages.
     """
     try:
-        from wyrdbound_context import WyrdboundContext
+        from wyrdbound_context import WyrdboundContext  # type: ignore[import-not-found]
 
         # Register our model as a compatible dict-like type
         if hasattr(WyrdboundContext, "register_dict_like_type"):
