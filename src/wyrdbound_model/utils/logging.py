@@ -8,7 +8,7 @@ allowing users to provide their own logger implementations or use the default.
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol
+from typing import Any, Optional, Protocol
 
 
 class LoggerProtocol(Protocol):
@@ -42,7 +42,7 @@ class StandardLogger:
     """
 
     def __init__(
-        self, logger: logging.Logger | None = None, name: str = "wyrdbound_model"
+        self, logger: Optional[logging.Logger] = None, name: str = "wyrdbound_model"
     ) -> None:
         """Initialize with an optional Python logger.
 

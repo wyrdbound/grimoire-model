@@ -8,7 +8,7 @@ inheritance, and merging attribute definitions from parent models.
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 from ..core.exceptions import InheritanceError
 from ..core.schema import AttributeDefinition, ModelDefinition, ValidationRule
@@ -21,7 +21,7 @@ logger = get_logger("utils.inheritance")
 
 
 def _normalize_registry(
-    model_registry: dict[str, ModelDefinition] | ModelRegistry,
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
 ) -> dict[str, ModelDefinition]:
     """Normalize a model registry to dict format.
 
@@ -43,7 +43,7 @@ def _normalize_registry(
 
 def _find_model_in_registry(
     model_id: str, model_registry: dict[str, ModelDefinition]
-) -> ModelDefinition | None:
+) -> Optional[ModelDefinition]:
     """Find a model in the registry by ID, handling both direct and namespaced keys.
 
     Args:
@@ -67,7 +67,7 @@ def _find_model_in_registry(
 
 def resolve_model_inheritance(
     model_def: ModelDefinition,
-    model_registry: dict[str, ModelDefinition] | ModelRegistry,
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
     max_depth: int = 10,
 ) -> ModelDefinition:
     """Resolve inheritance for a model definition.

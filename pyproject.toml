@@ -85,7 +85,10 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
-ignore = []
+ignore = [
+    "UP007",  # Use `X | Y` for type annotations (requires Python 3.10+)
+    "UP045",  # Use `X | None` for type annotations (requires Python 3.10+)
+]
 
 [tool.ruff.format]
 # Use Ruff's formatter instead of Black

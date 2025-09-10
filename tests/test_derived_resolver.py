@@ -1,5 +1,6 @@
 """Tests for derived field dependency management."""
 
+from typing import Set
 from unittest.mock import Mock
 
 import pytest
@@ -35,7 +36,7 @@ class MockTemplateResolver:
             result = result.replace(f"{{{{{key}}}}}", str(value))
         return result
 
-    def extract_variables(self, template_str: str) -> set[str]:
+    def extract_variables(self, template_str: str) -> Set[str]:
         """Extract variable names from template."""
         if template_str in self.variable_map:
             return self.variable_map[template_str]

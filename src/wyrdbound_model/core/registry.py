@@ -5,6 +5,7 @@ Model registry for managing ModelDefinition instances.
 from __future__ import annotations
 
 import threading
+from typing import Optional
 
 from ..logging import get_logger
 from .schema import ModelDefinition
@@ -60,7 +61,7 @@ class ModelRegistry:
 
         logger.debug(f"Registered model '{model_id}' in namespace '{namespace}'")
 
-    def get(self, namespace: str, model_id: str) -> ModelDefinition | None:
+    def get(self, namespace: str, model_id: str) -> Optional[ModelDefinition]:
         """Get a model definition by namespace and ID.
 
         Args:
@@ -73,7 +74,7 @@ class ModelRegistry:
         key = f"{namespace}__{model_id}"
         return self.get_by_key(key)
 
-    def get_by_key(self, key: str) -> ModelDefinition | None:
+    def get_by_key(self, key: str) -> Optional[ModelDefinition]:
         """Get a model definition by its full namespaced key.
 
         Args:
@@ -139,7 +140,7 @@ class ModelRegistry:
                 return True
             return False
 
-    def list_models(self, namespace: str | None = None) -> list[str]:
+    def list_models(self, namespace: Optional[str] = None) -> list[str]:
         """List all model keys, optionally filtered by namespace.
 
         Args:
@@ -206,7 +207,7 @@ class ModelRegistry:
             return count
 
     def get_registry_dict(
-        self, namespace: str | None = None
+        self, namespace: Optional[str] = None
     ) -> dict[str, ModelDefinition]:
         """Get a dictionary representation of the registry.
 
@@ -297,7 +298,7 @@ class ModelRegistry:
 
 # Private module-level registry with thread-safe lazy initialization
 _registry_lock = threading.Lock()
-_default_registry: ModelRegistry | None = None
+_default_registry: Optional[ModelRegistry] = None
 
 
 def get_default_registry() -> ModelRegistry:
@@ -329,7 +330,7 @@ def get_model_registry() -> ModelRegistry:
     return get_default_registry()
 
 
-def clear_registry(registry: ModelRegistry | None = None) -> int:
+def clear_registry(registry: Optional[ModelRegistry] = None) -> int:
     """Clear all models from the registry.
 
     This is primarily useful for testing.
@@ -348,7 +349,7 @@ def clear_registry(registry: ModelRegistry | None = None) -> int:
 def register_model(
     namespace: str,
     model_definition: ModelDefinition,
-    registry: ModelRegistry | None = None,
+    registry: Optional[ModelRegistry] = None,
 ) -> None:
     """Register a model definition in the registry.
 
@@ -363,8 +364,8 @@ def register_model(
 
 
 def get_model(
-    namespace: str, model_id: str, registry: ModelRegistry | None = None
-) -> ModelDefinition | None:
+    namespace: str, model_id: str, registry: Optional[ModelRegistry] = None
+) -> Optional[ModelDefinition]:
     """Get a model from the registry.
 
     Args:
