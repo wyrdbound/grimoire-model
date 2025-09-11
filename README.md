@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/wyrdbound/grimoire-model/workflows/Tests/badge.svg)](https://github.com/wyrdbound/grimoire-model/actions)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-88%25-green.svg)](htmlcov/index.html)
 
 **Dict-like model system with schema validation, derived fields, and inheritance for the Grimoire tabletop RPG engine.**
@@ -587,17 +587,13 @@ combat_def = ModelDefinition(
 
 ## 📄 License
 
-This project is proprietary software. All rights reserved to The Wyrd One.
-
-No part of this software may be reproduced, distributed, or transmitted without prior written permission. See the [LICENSE](LICENSE) file for complete terms and conditions.
-
-For licensing inquiries, please contact: wyrdbound@proton.me
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for complete terms and conditions.
 
 ## 🤝 Contributing
 
-This is a private, proprietary project. Contributions are currently limited to authorized collaborators only.
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-If you're interested in collaborating or have questions about the project, please contact: wyrdbound@proton.me
+If you have questions about the project, please contact: wyrdbound@proton.me
 
 ---
 
