@@ -3,8 +3,8 @@
 import pytest
 from pydantic import ValidationError
 
-from wyrdbound_model.core.exceptions import ConfigurationError
-from wyrdbound_model.core.schema import (
+from grimoire_model.core.exceptions import ConfigurationError
+from grimoire_model.core.schema import (
     AttributeDefinition,
     ModelDefinition,
     ValidationRule,

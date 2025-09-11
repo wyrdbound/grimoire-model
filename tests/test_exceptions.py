@@ -1,20 +1,20 @@
 """Tests for exception functionality."""
 
-from wyrdbound_model.core.exceptions import (
+from grimoire_model.core.exceptions import (
     DependencyError,
+    GrimoireModelError,
     InheritanceError,
     ModelValidationError,
     TemplateResolutionError,
-    WyrdboundModelError,
 )
 
 
-class TestWyrdboundModelError:
+class TestGrimoireModelError:
     """Test base exception class."""
 
     def test_basic_exception(self):
         """Test basic exception creation."""
-        error = WyrdboundModelError("Test error")
+        error = GrimoireModelError("Test error")
         assert str(error) == "Test error"
         assert error.message == "Test error"
         assert error.context == {}
@@ -22,14 +22,14 @@ class TestWyrdboundModelError:
     def test_exception_with_context(self):
         """Test exception with context."""
         context = {"model_id": "test", "field": "name"}
-        error = WyrdboundModelError("Test error", context=context)
+        error = GrimoireModelError("Test error", context=context)
         assert error.context == context
         expected_str = "Test error (context: model_id=test, field=name)"
         assert str(error) == expected_str
 
     def test_exception_inheritance(self):
         """Test exception inheritance."""
-        error = WyrdboundModelError("Test")
+        error = GrimoireModelError("Test")
         assert isinstance(error, Exception)
 
 

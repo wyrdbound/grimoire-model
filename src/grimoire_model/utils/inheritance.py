@@ -1,5 +1,5 @@
 """
-Model inheritance resolution for wyrdbound-model package.
+Model inheritance resolution for grimoire-model package.
 
 Provides functions for resolving model inheritance chains, handling multiple
 inheritance, and merging attribute definitions from parent models.

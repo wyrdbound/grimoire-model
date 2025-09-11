@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wyrdbound-model"
+name = "grimoire-model"
 version = "0.1.0"
-description = "Dict-like model system with schema validation, derived fields, and inheritance for Wyrdbound"
+description = "Dict-like model system with schema validation, derived fields, and inheritance for Grimoire"
 authors = [{name = "The Wyrd One", email = "wyrdbound@proton.me"}]
 license = {text = "Proprietary"}
 readme = "README.md"
@@ -53,9 +53,9 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/wyrdbound/wyrdbound-model"
-Repository = "https://github.com/wyrdbound/wyrdbound-model"
-Issues = "https://github.com/wyrdbound/wyrdbound-model/issues"
+Homepage = "https://github.com/wyrdbound/grimoire-model"
+Repository = "https://github.com/wyrdbound/grimoire-model"
+Issues = "https://github.com/wyrdbound/grimoire-model/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -68,7 +68,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=wyrdbound_model --cov-report=term-missing --cov-report=html"
+addopts = "--cov=grimoire_model --cov-report=term-missing --cov-report=html"
 
 [tool.ruff]
 target-version = "py38"
@@ -87,7 +87,6 @@ select = [
 ]
 ignore = [
     "UP007",  # Use `X | Y` for type annotations (requires Python 3.10+)
-    "UP045",  # Use `X | None` for type annotations (requires Python 3.10+)
 ]
 
 [tool.ruff.format]
@@ -113,7 +112,7 @@ warn_unreachable = false
 strict_equality = true
 
 [tool.coverage.run]
-source = ["src/wyrdbound_model"]
+source = ["src/grimoire_model"]
 
 [tool.coverage.report]
 exclude_lines = [

@@ -1,5 +1,5 @@
 """
-Field validators and validation rules for wyrdbound-model package.
+Field validators and validation rules for grimoire-model package.
 
 Provides a comprehensive validation system with built-in validators for common
 data types and constraints, plus support for custom validation rules.

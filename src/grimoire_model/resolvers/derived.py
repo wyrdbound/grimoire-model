@@ -1,5 +1,5 @@
 """
-Derived field resolution for wyrdbound-model package.
+Derived field resolution for grimoire-model package.
 
 Manages derived fields and their dependencies using the Observer pattern with
 topological sorting for correct evaluation order.

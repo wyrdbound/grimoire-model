@@ -1,8 +1,8 @@
 """
-Core WyrdboundModel implementation.
+Core GrimoireModel implementation.
 
 Combines schema validation, template resolution, and derived field management
-into a dict-like model class that integrates with wyrdbound-context.
+into a dict-like model class that integrates with grimoire-context.
 """
 
 import uuid
@@ -31,10 +31,10 @@ from .schema import AttributeDefinition, ModelDefinition
 logger = get_logger("core.model")
 
 
-class WyrdboundModel(MutableMapping):
+class GrimoireModel(MutableMapping):
     """A dict-like model with validation, derived fields, and inheritance support.
 
-    Integrates with wyrdbound-context as a value in the context dictionary.
+    Integrates with grimoire-context as a value in the context dictionary.
     """
 
     def __init__(
@@ -46,7 +46,7 @@ class WyrdboundModel(MutableMapping):
         instance_id: Optional[str] = None,
         **kwargs,
     ):
-        """Initialize WyrdboundModel with dependency injection.
+        """Initialize GrimoireModel with dependency injection.
 
         Args:
             model_definition: The model schema definition
@@ -103,12 +103,12 @@ class WyrdboundModel(MutableMapping):
         """Get the instance ID."""
         return self._instance_id
 
-    def copy(self, **overrides) -> "WyrdboundModel":
+    def copy(self, **overrides) -> "GrimoireModel":
         """Create a copy of this model with optional data overrides."""
         new_data = dict(self._data)
         new_data.update(overrides)
 
-        return WyrdboundModel(
+        return GrimoireModel(
             model_definition=self._model_def,
             data=new_data,
             template_resolver=self._template_resolver,
@@ -155,7 +155,7 @@ class WyrdboundModel(MutableMapping):
 
     def __repr__(self) -> str:
         """String representation."""
-        return f"WyrdboundModel(id={self._model_def.id}, data={dict(self._data)})"
+        return f"GrimoireModel(id={self._model_def.id}, data={dict(self._data)})"
 
     # Extended interface for model-specific operations
     def get_attribute_definition(self, attr_name: str) -> Optional[AttributeDefinition]:
@@ -421,14 +421,14 @@ class WyrdboundModel(MutableMapping):
 
     def __eq__(self, other: Any) -> bool:
         """Test equality with another object."""
-        if not isinstance(other, WyrdboundModel):
+        if not isinstance(other, GrimoireModel):
             return False
         return self._model_def == other._model_def and dict(self._data) == dict(
             other._data
         )
 
     def __hash__(self) -> int:
-        """Make WyrdboundModel hashable."""
+        """Make GrimoireModel hashable."""
         return hash((self._model_def.id, tuple(sorted(dict(self._data).items()))))
 
 
@@ -438,8 +438,8 @@ def create_model(
     data: Optional[Dict[str, Any]] = None,
     template_resolver_type: str = "jinja2",
     **kwargs,
-) -> WyrdboundModel:
-    """Factory function to create WyrdboundModel instances.
+) -> GrimoireModel:
+    """Factory function to create GrimoireModel instances.
 
     Args:
         model_definition: The model schema definition
@@ -448,7 +448,7 @@ def create_model(
         **kwargs: Additional configuration options
 
     Returns:
-        Configured WyrdboundModel instance
+        Configured GrimoireModel instance
     """
     template_resolver = create_template_resolver(
         resolver_type=template_resolver_type,
@@ -459,7 +459,7 @@ def create_model(
         template_resolver=template_resolver, **kwargs.pop("derived_resolver_kwargs", {})
     )
 
-    return WyrdboundModel(
+    return GrimoireModel(
         model_definition=model_definition,
         data=data,
         template_resolver=template_resolver,

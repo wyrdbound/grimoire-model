@@ -1,8 +1,8 @@
 """
-Wyrdbound Model Package
+Grimoire Model Package
 
 A dict-like model system with schema validation, derived fields, and inheritance
-designed for integration with wyrdbound-context.
+designed for integration with grimoire-context.
 
 Key Features:
 - Dict-like interface (MutableMapping)
@@ -14,7 +14,7 @@ Key Features:
 - Dependency injection for extensibility
 
 Example Usage:
-    from wyrdbound_model import WyrdboundModel, ModelDefinition, create_model
+    from grimoire_model import GrimoireModel, ModelDefinition, create_model
 
     # Define model schema
     character_def = ModelDefinition(
@@ -35,9 +35,9 @@ Example Usage:
     character['level'] = 6  # Automatically updates max_hp derived field
     print(character['max_hp'])  # 48
 
-    # Works with wyrdbound-context
-    from wyrdbound_context import WyrdboundContext
-    context = WyrdboundContext({'character': character})
+    # Works with grimoire-context
+    from grimoire_context import GrimoireContext
+    context = GrimoireContext({'character': character})
     context.set_variable('character.level', 7)
 """
 
@@ -49,13 +49,13 @@ __email__ = "wyrdbound@proton.me"
 from .core.exceptions import (
     ConfigurationError,
     DependencyError,
+    GrimoireModelError,
     InheritanceError,
     ModelValidationError,
     TemplateResolutionError,
-    WyrdboundModelError,
 )
 from .core.model import (
-    WyrdboundModel,
+    GrimoireModel,
     create_model,
 )
 from .core.registry import (
@@ -118,7 +118,7 @@ from .validation.validators import (
 
 __all__ = [
     # Core classes
-    "WyrdboundModel",
+    "GrimoireModel",
     "ModelDefinition",
     "AttributeDefinition",
     "ValidationRule",
@@ -137,7 +137,7 @@ __all__ = [
     "logger",
     "get_logger",
     # Exceptions
-    "WyrdboundModelError",
+    "GrimoireModelError",
     "ModelValidationError",
     "TemplateResolutionError",
     "InheritanceError",
@@ -175,16 +175,16 @@ __all__ = [
 
 # Package metadata
 __meta__ = {
-    "name": "wyrdbound-model",
+    "name": "grimoire-model",
     "version": __version__,
     "description": (
-        "Dict-like model system with validation and derived fields for Wyrdbound"
+        "Dict-like model system with validation and derived fields for Grimoire"
     ),
     "long_description": __doc__,
     "author": __author__,
     "author_email": __email__,
     "license": "Proprietary",
-    "url": "https://github.com/wyrdbound/wyrdbound-model",
+    "url": "https://github.com/wyrdbound/grimoire-model",
     "classifiers": [
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -229,30 +229,30 @@ __meta__ = {
 }
 
 
-# Integration helpers for wyrdbound-context
-def register_with_wyrdbound_context():
-    """Register WyrdboundModel as a compatible value type with wyrdbound-context.
+# Integration helpers for grimoire-context
+def register_with_grimoire_context():
+    """Register GrimoireModel as a compatible value type with grimoire-context.
 
     This function should be called if you want seamless integration between
-    wyrdbound-model and wyrdbound-context packages.
+    grimoire-model and grimoire-context packages.
     """
     try:
-        from wyrdbound_context import WyrdboundContext  # type: ignore[import-not-found]
+        from grimoire_context import GrimoireContext  # type: ignore[import-not-found]
 
         # Register our model as a compatible dict-like type
-        if hasattr(WyrdboundContext, "register_dict_like_type"):
-            WyrdboundContext.register_dict_like_type(WyrdboundModel)  # type: ignore
+        if hasattr(GrimoireContext, "register_dict_like_type"):
+            GrimoireContext.register_dict_like_type(GrimoireModel)  # type: ignore
 
         return True
     except ImportError:
-        # wyrdbound-context not available
+        # grimoire-context not available
         return False
 
 
 # Optional auto-registration
 try:
-    # Try to register automatically if wyrdbound-context is available
-    register_with_wyrdbound_context()
+    # Try to register automatically if grimoire-context is available
+    register_with_grimoire_context()
 except Exception:
     # Silently ignore registration failures
     pass

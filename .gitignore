@@ -16,7 +16,7 @@ src/*.egg-info/
 *.tmp
 *.bak
 *.backup
-wyrdbound_model_plan.md
+grimoire_model_plan.md
 
 # Code quality files
 .coverage

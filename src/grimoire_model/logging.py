@@ -1,7 +1,7 @@
 """
-Logging utilities for wyrdbound-model.
+Logging utilities for grimoire-model.
 
-This module provides a centralized logger for the wyrdbound-model library.
+This module provides a centralized logger for the grimoire-model library.
 Applications can configure this logger using the standard Python logging configuration.
 """
 
@@ -9,7 +9,7 @@ import logging
 from typing import Optional
 
 # Library-wide logger
-logger = logging.getLogger("wyrdbound_model")
+logger = logging.getLogger("grimoire_model")
 
 # Set a default level, but applications should configure this
 logger.setLevel(logging.INFO)
@@ -22,15 +22,15 @@ if not logger.handlers:
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:
     """
-    Get a logger for the wyrdbound-model library.
+    Get a logger for the grimoire-model library.
 
     Args:
         name: Optional name to append to the base logger name.
-              If provided, creates a child logger like 'wyrdbound_model.core.registry'
+              If provided, creates a child logger like 'grimoire_model.core.registry'
 
     Returns:
         A logger instance that applications can configure.
     """
     if name:
-        return logging.getLogger(f"wyrdbound_model.{name}")
+        return logging.getLogger(f"grimoire_model.{name}")
     return logger

@@ -1,1 +1,1 @@
-"""Test fixtures and utilities for wyrdbound-model tests."""
+"""Test fixtures and utilities for grimoire-model tests."""

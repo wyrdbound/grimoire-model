@@ -1,5 +1,5 @@
 """
-Tests for wyrdbound-model logging functionality.
+Tests for grimoire-model logging functionality.
 
 Tests the centralized logging system, logger configuration,
 and integration with Python's standard logging module.
@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
-from wyrdbound_model import ModelDefinition, create_model, get_logger, logger
-from wyrdbound_model.core.registry import (
+from grimoire_model import ModelDefinition, create_model, get_logger, logger
+from grimoire_model.core.registry import (
     ModelRegistry,
     register_model,
 )
@@ -24,7 +24,7 @@ class TestLoggingModule:
     def test_logger_exists(self):
         """Test that the main logger exists and is correctly named."""
         assert logger is not None
-        assert logger.name == "wyrdbound_model"
+        assert logger.name == "grimoire_model"
         assert isinstance(logger, logging.Logger)
 
     def test_logger_default_level(self):
@@ -35,12 +35,12 @@ class TestLoggingModule:
         """Test get_logger returns the main logger when no name provided."""
         result = get_logger()
         assert result is logger
-        assert result.name == "wyrdbound_model"
+        assert result.name == "grimoire_model"
 
     def test_get_logger_with_name(self):
         """Test get_logger creates child loggers with correct names."""
         child_logger = get_logger("test.child")
-        assert child_logger.name == "wyrdbound_model.test.child"
+        assert child_logger.name == "grimoire_model.test.child"
         assert isinstance(child_logger, logging.Logger)
 
     def test_logger_hierarchy(self):
@@ -50,7 +50,7 @@ class TestLoggingModule:
 
         # Child should inherit from parent in the hierarchy
         assert child.parent is not None
-        assert child.parent.name == "wyrdbound_model.parent"
+        assert child.parent.name == "grimoire_model.parent"
 
 
 class TestRegistryLogging:
@@ -68,14 +68,14 @@ class TestRegistryLogging:
         self.handler.setFormatter(formatter)
 
         # Configure the registry logger
-        registry_logger = logging.getLogger("wyrdbound_model.core.registry")
+        registry_logger = logging.getLogger("grimoire_model.core.registry")
         registry_logger.setLevel(logging.DEBUG)
         registry_logger.addHandler(self.handler)
         registry_logger.propagate = False  # Don't propagate to avoid interference
 
     def teardown_method(self):
         """Clean up logging configuration."""
-        registry_logger = logging.getLogger("wyrdbound_model.core.registry")
+        registry_logger = logging.getLogger("grimoire_model.core.registry")
         registry_logger.removeHandler(self.handler)
         registry_logger.propagate = True
         self.handler.close()
@@ -199,20 +199,20 @@ class TestGlobalRegistryLogging:
         self.handler.setLevel(logging.WARNING)
 
         # Configure the registry logger
-        registry_logger = logging.getLogger("wyrdbound_model.core.registry")
+        registry_logger = logging.getLogger("grimoire_model.core.registry")
         registry_logger.setLevel(logging.WARNING)
         registry_logger.addHandler(self.handler)
         registry_logger.propagate = False
 
     def teardown_method(self):
         """Clean up logging and registry."""
-        registry_logger = logging.getLogger("wyrdbound_model.core.registry")
+        registry_logger = logging.getLogger("grimoire_model.core.registry")
         registry_logger.removeHandler(self.handler)
         registry_logger.propagate = True
         self.handler.close()
 
         # Clear global registry
-        from wyrdbound_model import clear_registry
+        from grimoire_model import clear_registry
 
         clear_registry()
 
@@ -256,14 +256,14 @@ class TestModelLogging:
         self.handler.setLevel(logging.DEBUG)
 
         # Configure the model logger
-        model_logger = logging.getLogger("wyrdbound_model.core.model")
+        model_logger = logging.getLogger("grimoire_model.core.model")
         model_logger.setLevel(logging.DEBUG)
         model_logger.addHandler(self.handler)
         model_logger.propagate = False
 
     def teardown_method(self):
         """Clean up logging configuration."""
-        model_logger = logging.getLogger("wyrdbound_model.core.model")
+        model_logger = logging.getLogger("grimoire_model.core.model")
         model_logger.removeHandler(self.handler)
         model_logger.propagate = True
         self.handler.close()
@@ -328,9 +328,9 @@ class TestLoggerConfiguration:
 
         # Test hierarchy
         assert child_logger.parent is not None
-        assert child_logger.parent.name == "wyrdbound_model.parent"
+        assert child_logger.parent.name == "grimoire_model.parent"
         assert grandchild_logger.parent is not None
-        assert grandchild_logger.parent.name == "wyrdbound_model.parent.child"
+        assert grandchild_logger.parent.name == "grimoire_model.parent.child"
 
         # Test propagation
         assert child_logger.propagate is True
@@ -353,18 +353,18 @@ class TestLoggerConfiguration:
             lib_logger.warning("Test warning message")
 
             output = mock_stdout.getvalue()
-            assert "wyrdbound_model - WARNING - Test warning message" in output
+            assert "grimoire_model - WARNING - Test warning message" in output
 
     def test_null_handler_default(self):
         """Test that logger has null handler by default to prevent warnings."""
         # Fresh logger should have null handler if no other handlers configured
-        logging.getLogger("wyrdbound_model.fresh.test")
+        logging.getLogger("grimoire_model.fresh.test")
 
         # Should have at least the null handler from the parent
-        root_wyrdbound_logger = logging.getLogger("wyrdbound_model")
+        root_grimoire_logger = logging.getLogger("grimoire_model")
 
         # Check if null handler is present (may be inherited)
-        handlers = root_wyrdbound_logger.handlers
+        handlers = root_grimoire_logger.handlers
         has_null_handler = any(isinstance(h, logging.NullHandler) for h in handlers)
 
         # Should have a null handler to prevent "No handlers found" warnings
@@ -383,14 +383,14 @@ class TestLoggingInheritanceResolution:
         self.handler.setLevel(logging.DEBUG)
 
         # Configure the inheritance logger
-        inheritance_logger = logging.getLogger("wyrdbound_model.utils.inheritance")
+        inheritance_logger = logging.getLogger("grimoire_model.utils.inheritance")
         inheritance_logger.setLevel(logging.DEBUG)
         inheritance_logger.addHandler(self.handler)
         inheritance_logger.propagate = False
 
     def teardown_method(self):
         """Clean up logging configuration."""
-        inheritance_logger = logging.getLogger("wyrdbound_model.utils.inheritance")
+        inheritance_logger = logging.getLogger("grimoire_model.utils.inheritance")
         inheritance_logger.removeHandler(self.handler)
         inheritance_logger.propagate = True
         self.handler.close()
@@ -402,8 +402,8 @@ class TestLoggingInheritanceResolution:
 
     def test_inheritance_resolution_logging(self):
         """Test that inheritance resolution generates debug logs."""
-        from wyrdbound_model.core.registry import ModelRegistry
-        from wyrdbound_model.utils.inheritance import resolve_model_inheritance
+        from grimoire_model.core.registry import ModelRegistry
+        from grimoire_model.utils.inheritance import resolve_model_inheritance
 
         # Create test models with inheritance
         base_def = ModelDefinition(
@@ -441,12 +441,12 @@ class TestLoggingIntegration:
 
     def test_end_to_end_logging_scenario(self):
         """Test logging in a complete model creation and usage scenario."""
-        # Capture all wyrdbound-model logs
+        # Capture all grimoire-model logs
         log_stream = io.StringIO()
         handler = logging.StreamHandler(log_stream)
         handler.setLevel(logging.WARNING)
 
-        root_logger = logging.getLogger("wyrdbound_model")
+        root_logger = logging.getLogger("grimoire_model")
         root_logger.setLevel(logging.WARNING)
         root_logger.addHandler(handler)
         root_logger.propagate = False
@@ -483,7 +483,7 @@ class TestLoggingIntegration:
             handler.close()
 
             # Clear registry
-            from wyrdbound_model import clear_registry
+            from grimoire_model import clear_registry
 
             clear_registry()
 
@@ -502,7 +502,7 @@ class TestLoggingIntegration:
             handler = logging.StreamHandler(log_stream)
             handler.setLevel(config["level"])
 
-            test_logger = logging.getLogger(f"wyrdbound_model.test_{config['level']}")
+            test_logger = logging.getLogger(f"grimoire_model.test_{config['level']}")
             test_logger.setLevel(config["level"])
             test_logger.addHandler(handler)
             test_logger.propagate = False

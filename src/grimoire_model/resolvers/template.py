@@ -1,5 +1,5 @@
 """
-Template resolution for wyrdbound-model package.
+Template resolution for grimoire-model package.
 
 Provides template resolution capabilities using Jinja2 with support for model
 contexts, variable extraction, and caching.

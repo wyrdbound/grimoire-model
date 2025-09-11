@@ -1,5 +1,5 @@
 """
-Core exceptions for wyrdbound-model package.
+Core exceptions for grimoire-model package.
 
 Provides a hierarchy of exceptions for different error conditions that can occur
 during model operations, validation, template resolution, and inheritance processing.
@@ -8,8 +8,8 @@ during model operations, validation, template resolution, and inheritance proces
 from typing import Any, Dict, List, Optional
 
 
-class WyrdboundModelError(Exception):
-    """Base exception for wyrdbound-model package.
+class GrimoireModelError(Exception):
+    """Base exception for grimoire-model package.
 
     All other exceptions in this package inherit from this base class.
     """
@@ -33,7 +33,7 @@ class WyrdboundModelError(Exception):
         return self.message
 
 
-class ModelValidationError(WyrdboundModelError):
+class ModelValidationError(GrimoireModelError):
     """Raised when model validation fails.
 
     This exception is raised when:
@@ -86,7 +86,7 @@ class ModelValidationError(WyrdboundModelError):
         return " | ".join(parts)
 
 
-class TemplateResolutionError(WyrdboundModelError):
+class TemplateResolutionError(GrimoireModelError):
     """Raised when template resolution fails.
 
     This exception is raised when:
@@ -133,7 +133,7 @@ class TemplateResolutionError(WyrdboundModelError):
         return " | ".join(parts)
 
 
-class InheritanceError(WyrdboundModelError):
+class InheritanceError(GrimoireModelError):
     """Raised when model inheritance resolution fails.
 
     This exception is raised when:
@@ -187,7 +187,7 @@ class InheritanceError(WyrdboundModelError):
         return " | ".join(parts)
 
 
-class DependencyError(WyrdboundModelError):
+class DependencyError(GrimoireModelError):
     """Raised when derived field dependencies cannot be resolved.
 
     This exception is raised when:
@@ -241,7 +241,7 @@ class DependencyError(WyrdboundModelError):
         return " | ".join(parts)
 
 
-class ConfigurationError(WyrdboundModelError):
+class ConfigurationError(GrimoireModelError):
     """Raised when configuration is invalid or incomplete.
 
     This exception is raised when:
