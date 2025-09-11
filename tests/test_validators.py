@@ -3,8 +3,8 @@
 import pytest
 from pydantic import ValidationError
 
-from wyrdbound_model.core.schema import AttributeDefinition
-from wyrdbound_model.validation.validators import (
+from grimoire_model.core.schema import AttributeDefinition
+from grimoire_model.validation.validators import (
     EnumValidator,
     LengthValidator,
     PatternValidator,
@@ -437,7 +437,7 @@ class TestValidationEngine:
 
     def test_validator_registration(self):
         """Test custom validator registration."""
-        from wyrdbound_model.validation.validators import FieldValidator
+        from grimoire_model.validation.validators import FieldValidator
 
         engine = ValidationEngine()
 

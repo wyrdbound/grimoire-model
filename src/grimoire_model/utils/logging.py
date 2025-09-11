@@ -1,5 +1,5 @@
 """
-Injectable logging utilities for wyrdbound-model.
+Injectable logging utilities for grimoire-model.
 
 This module provides a logger interface that can be injected into components,
 allowing users to provide their own logger implementations or use the default.
@@ -8,11 +8,11 @@ allowing users to provide their own logger implementations or use the default.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 
 class LoggerProtocol(Protocol):
-    """Protocol defining the logger interface for wyrdbound-model components."""
+    """Protocol defining the logger interface for grimoire-model components."""
 
     def debug(self, message: str, *args: Any, **kwargs: Any) -> None:
         """Log a debug message."""
@@ -38,11 +38,11 @@ class LoggerProtocol(Protocol):
 class StandardLogger:
     """Default logger implementation using Python's standard logging module.
 
-    This adapter allows any Python logger to be used with wyrdbound-model components.
+    This adapter allows any Python logger to be used with grimoire-model components.
     """
 
     def __init__(
-        self, logger: Optional[logging.Logger] = None, name: str = "wyrdbound_model"
+        self, logger: logging.Logger | None = None, name: str = "grimoire_model"
     ) -> None:
         """Initialize with an optional Python logger.
 
@@ -101,7 +101,7 @@ class NullLogger:
         pass
 
 
-def create_default_logger(name: str = "wyrdbound_model") -> LoggerProtocol:
+def create_default_logger(name: str = "grimoire_model") -> LoggerProtocol:
     """Create a default logger instance.
 
     Args:

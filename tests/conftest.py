@@ -1,8 +1,8 @@
-"""Test fixtures and utilities for wyrdbound-model tests."""
+"""Test fixtures and utilities for grimoire-model tests."""
 
 import pytest
 
-from wyrdbound_model import AttributeDefinition, ModelDefinition, ValidationRule
+from grimoire_model import AttributeDefinition, ModelDefinition, ValidationRule
 
 
 @pytest.fixture

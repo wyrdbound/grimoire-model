@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 """
-Basic Usage Example for Wyrdbound Model
+Basic Usage Example for Grimoire Model
 
-This example demonstrates the fundamental features of the wyrdbound-model package:
+This example demonstrates the fundamental features of the grimoire-model package:
 - Creating model definitions
 - Instantiating models with validation
 - Working with derived fields
 - Using the factory function
 """
 
-from wyrdbound_model import (
+from grimoire_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel,
+    GrimoireModel,
     get_model,
     clear_registry
 )
-from wyrdbound_model.core.model import create_model
+from grimoire_model.core.model import create_model
 
 
 def main():
-    print("=== Wyrdbound Model - Basic Usage Example ===\n")
+    print("=== Grimoire Model - Basic Usage Example ===\n")
     
     # 1. Define a simple character model
     print("1. Creating a Character Model Definition")
@@ -70,7 +70,7 @@ def main():
     print("2. Creating Character Instances")
     
     # Using the constructor directly
-    character1 = WyrdboundModel(character_def, {
+    character1 = GrimoireModel(character_def, {
         "name": "Aragorn",
         "level": 15,
         "health": 120,

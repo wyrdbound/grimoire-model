@@ -4,7 +4,7 @@ Tests for the ModelRegistry functionality.
 
 import pytest
 
-from wyrdbound_model import (
+from grimoire_model import (
     AttributeDefinition,
     ModelDefinition,
     ModelRegistry,

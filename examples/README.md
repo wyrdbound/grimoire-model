@@ -1,10 +1,10 @@
-# Wyrdbound Model Examples
+# Grimoire Model Examples
 
-This directory contains comprehensive examples demonstrating the capabilities of the wyrdbound-model package, from basic usage to advanced inheritance and polymorphism patterns.
+This directory contains comprehensive examples demonstrating the capabilities of the grimoire-model package, from basic usage to advanced inheritance and polymorphism patterns.
 
 ## Running the Examples
 
-Make sure you have the wyrdbound-model package installed and its dependencies:
+Make sure you have the grimoire-model package installed and its dependencies:
 
 ```bash
 # Install the package in development mode
@@ -21,7 +21,7 @@ python examples/04_performance_integration.py
 
 ### 1. Basic Usage (`01_basic_usage.py`)
 
-This example covers the fundamental features of wyrdbound-model:
+This example covers the fundamental features of grimoire-model:
 
 - **Model Definition Creation**: Defining models with attributes, types, defaults, and validation
 - **Basic Derived Fields**: Simple template-based computed fields
@@ -88,7 +88,7 @@ This example focuses on performance considerations and real-world integration pa
 - **Complex Model Analysis**: Understanding model structure and dependency relationships
 - **Serialization Patterns**: JSON serialization and deserialization for data persistence
 - **Factory Patterns**: Creating reusable model templates and character generators
-- **Integration Strategies**: Best practices for using wyrdbound-model in larger applications
+- **Integration Strategies**: Best practices for using grimoire-model in larger applications
 
 **Key Concepts Demonstrated:**
 
@@ -104,7 +104,7 @@ This example focuses on performance considerations and real-world integration pa
 ### Model Definition Pattern
 
 ```python
-from wyrdbound_model import ModelDefinition, AttributeDefinition, ValidationRule
+from grimoire_model import ModelDefinition, AttributeDefinition, ValidationRule
 
 model_def = ModelDefinition(
     id="my_model",
@@ -124,7 +124,7 @@ model_def = ModelDefinition(
 ### Factory Function Pattern
 
 ```python
-from wyrdbound_model.core.model import create_model
+from grimoire_model.core.model import create_model
 
 # Basic usage
 model = create_model(model_def, {"field1": "value"})
@@ -157,7 +157,7 @@ model.batch_update({
 ### Global Registry and Namespace Pattern
 
 ```python
-from wyrdbound_model import get_model, clear_registry
+from grimoire_model import get_model, clear_registry
 
 # Models automatically register when created with namespaces
 character_def = ModelDefinition(
@@ -339,7 +339,7 @@ For optimal performance with complex inheritance and polymorphism:
 
 ## Integration with Other Systems
 
-These examples show patterns for integrating wyrdbound-model with:
+These examples show patterns for integrating grimoire-model with:
 
 - **JSON APIs**: Serialization and deserialization patterns
 - **Database Systems**: Data modeling and validation with inheritance

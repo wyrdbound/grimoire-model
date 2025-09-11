@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Performance and Integration Example for Wyrdbound Model
+Performance and Integration Example for Grimoire Model
 
 This example demonstrates:
 - Performance considerations
@@ -12,14 +12,14 @@ This example demonstrates:
 import time
 import json
 from typing import Dict, Any, List
-from wyrdbound_model import (
+from grimoire_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel,
+    GrimoireModel,
     clear_registry
 )
-from wyrdbound_model.core.model import create_model
+from grimoire_model.core.model import create_model
 
 
 def benchmark_operation(name: str, operation, iterations: int = 1000):
@@ -125,7 +125,7 @@ def create_complex_game_model():
 
 
 def main():
-    print("=== Wyrdbound Model - Performance and Integration Example ===\n")
+    print("=== Grimoire Model - Performance and Integration Example ===\n")
     
     # Clear registry for clean benchmarks
     clear_registry()
@@ -286,7 +286,7 @@ def main():
         }
     }
     
-    def create_character_by_class(name: str, character_class: str, level: int = 1) -> WyrdboundModel:
+    def create_character_by_class(name: str, character_class: str, level: int = 1) -> GrimoireModel:
         """Factory function to create characters by class."""
         if character_class not in character_templates:
             raise ValueError(f"Unknown character class: {character_class}")

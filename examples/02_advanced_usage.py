@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced Usage Example for Wyrdbound Model
+Advanced Usage Example for Grimoire Model
 
 This example demonstrates advanced features including:
 - Model inheritance
@@ -10,18 +10,18 @@ This example demonstrates advanced features including:
 - Custom validation rules
 """
 
-from wyrdbound_model import (
+from grimoire_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel,
+    GrimoireModel,
     clear_registry
 )
-from wyrdbound_model.core.model import create_model
+from grimoire_model.core.model import create_model
 
 
 def main():
-    print("=== Wyrdbound Model - Advanced Usage Example ===\n")
+    print("=== Grimoire Model - Advanced Usage Example ===\n")
     
     # 1. Create base model definitions for inheritance
     print("1. Creating Inheritance Hierarchy")

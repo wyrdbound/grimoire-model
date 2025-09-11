@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from wyrdbound_model.core.exceptions import DependencyError, TemplateResolutionError
-from wyrdbound_model.resolvers.derived import (
+from grimoire_model.core.exceptions import DependencyError, TemplateResolutionError
+from grimoire_model.resolvers.derived import (
     BatchedDerivedFieldResolver,
     DependencyInfo,
     DerivedFieldResolver,

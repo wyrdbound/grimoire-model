@@ -2,8 +2,8 @@
 
 import pytest
 
-from wyrdbound_model.core.exceptions import TemplateResolutionError
-from wyrdbound_model.resolvers.template import (
+from grimoire_model.core.exceptions import TemplateResolutionError
+from grimoire_model.resolvers.template import (
     CachingTemplateResolver,
     Jinja2TemplateResolver,
     ModelContextTemplateResolver,

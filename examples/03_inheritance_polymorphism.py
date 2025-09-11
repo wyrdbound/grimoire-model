@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Inheritance Polymorphism Example for Wyrdbound Model
+Inheritance Polymorphism Example for Grimoire Model
 
 This example demonstrates advanced inheritance and polymorphism features:
 - Multi-level inheritance chains (base_entity → item → weapon)
@@ -9,18 +9,18 @@ This example demonstrates advanced inheritance and polymorphism features:
 - Validation at different inheritance levels
 """
 
-from wyrdbound_model import (
+from grimoire_model import (
     ModelDefinition, 
     AttributeDefinition, 
     ValidationRule,
-    WyrdboundModel,
+    GrimoireModel,
     clear_registry
 )
-from wyrdbound_model.core.model import create_model
+from grimoire_model.core.model import create_model
 
 
 def main():
-    print("=== Wyrdbound Model - Inheritance Polymorphism Example ===\n")
+    print("=== Grimoire Model - Inheritance Polymorphism Example ===\n")
     
     # 1. Create inheritance chain: base_entity → item → weapon
     print("1. Creating Multi-Level Inheritance Chain")

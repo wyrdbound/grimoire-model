@@ -1,5 +1,5 @@
 """
-Core schema definitions for wyrdbound-model package.
+Core schema definitions for grimoire-model package.
 
 Provides Pydantic-based model and attribute definitions that follow the GRIMOIRE
 specification for tabletop gaming model schemas.

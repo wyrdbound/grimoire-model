@@ -29,7 +29,7 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          python -m pytest tests/ -v --tb=short --cov=wyrdbound_model --cov-report=xml
+          python -m pytest tests/ -v --tb=short --cov=grimoire_model --cov-report=xml
 
   code-quality:
     runs-on: ubuntu-latest
@@ -73,4 +73,4 @@ jobs:
 
       - name: Test basic import
         run: |
-          python -c "from wyrdbound_model import WyrdboundModel, ModelDefinition, create_model; print('Import successful')"
+          python -c "from grimoire_model import GrimoireModel, ModelDefinition, create_model; print('Import successful')"

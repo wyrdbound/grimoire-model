@@ -1,13 +1,13 @@
-# Wyrdbound Model
+# Grimoire Model
 
-[![Tests](https://github.com/wyrdbound/wyrdbound-model/workflows/Tests/badge.svg)](https://github.com/wyrdbound/wyrdbound-model/actions)
+[![Tests](https://github.com/wyrdbound/grimoire-model/workflows/Tests/badge.svg)](https://github.com/wyrdbound/grimoire-model/actions)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-88%25-green.svg)](htmlcov/index.html)
 
-**Dict-like model system with schema validation, derived fields, and inheritance for the Wyrdbound tabletop RPG engine.**
+**Dict-like model system with schema validation, derived fields, and inheritance for the Grimoire tabletop RPG engine.**
 
-Wyrdbound Model provides a sophisticated, schema-driven model system that combines the familiar dict-like interface with powerful features like automatic field derivation, template-based expressions, model inheritance, and comprehensive validation. Designed to integrate seamlessly with `wyrdbound-context` for complete game state management.
+Grimoire Model provides a sophisticated, schema-driven model system that combines the familiar dict-like interface with powerful features like automatic field derivation, template-based expressions, model inheritance, and comprehensive validation. Designed to integrate seamlessly with `grimoire-context` for complete game state management.
 
 ## ✨ Features
 
@@ -19,20 +19,20 @@ Wyrdbound Model provides a sophisticated, schema-driven model system that combin
 - **🛡️ Schema Validation**: Pydantic-based type checking and custom validation rules
 - **🔧 Dependency Injection**: Pluggable resolvers for extensibility
 - **⚡ Performance Optimized**: Efficient batch updates and lazy evaluation
-- **🎯 wyrdbound-context Integration**: Seamless interoperability with context management
+- **🎯 grimoire-context Integration**: Seamless interoperability with context management
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-pip install wyrdbound-model
+pip install grimoire-model
 ```
 
 ### Basic Usage
 
 ```python
-from wyrdbound_model import ModelDefinition, AttributeDefinition, create_model
+from grimoire_model import ModelDefinition, AttributeDefinition, create_model
 
 # Define a character model schema
 character_def = ModelDefinition(
@@ -80,7 +80,7 @@ print(character['max_hp'])            # 280 (20 * 8 + 120, automatically updated
 Models are automatically registered in a global registry using namespaces:
 
 ```python
-from wyrdbound_model import get_model
+from grimoire_model import get_model
 
 # Models auto-register when created
 character_def = ModelDefinition(
@@ -102,7 +102,7 @@ child_def = ModelDefinition(id="child", namespace="rpg", extends=["base"], ...)
 ### Model Inheritance with Namespaces
 
 ```python
-from wyrdbound_model import get_model, clear_registry
+from grimoire_model import get_model, clear_registry
 
 # Base entity definition (auto-registered in namespace)
 base_entity_def = ModelDefinition(
@@ -156,13 +156,13 @@ another_character = create_model(retrieved_char_def, {
 })
 ```
 
-### Integration with wyrdbound-context
+### Integration with grimoire-context
 
 ```python
-from wyrdbound_context import WyrdboundContext
+from grimoire_context import GrimoireContext
 
 # Create context with character model
-context = WyrdboundContext({
+context = GrimoireContext({
     'party': {
         'leader': character,
         'members': 4
@@ -294,10 +294,10 @@ AttributeDefinition(
 )
 ```
 
-#### WyrdboundModel
+#### GrimoireModel
 
 ```python
-class WyrdboundModel(MutableMapping):
+class GrimoireModel(MutableMapping):
     def __init__(
         self,
         model_definition: ModelDefinition,
@@ -336,7 +336,7 @@ def create_model(
     template_resolver_type: str = "jinja2",
     derived_field_resolver_type: str = "batched",
     **kwargs
-) -> WyrdboundModel
+) -> GrimoireModel
 ```
 
 Creates a model instance with default resolvers. Inheritance is automatically resolved from the global model registry using namespaces.
@@ -344,7 +344,7 @@ Creates a model instance with default resolvers. Inheritance is automatically re
 ### Global Registry Functions
 
 ```python
-from wyrdbound_model import register_model, get_model, clear_registry
+from grimoire_model import register_model, get_model, clear_registry
 
 # Register model manually (usually automatic)
 register_model("my_namespace", "my_model", model_definition)
@@ -356,7 +356,7 @@ model_def = get_model("my_namespace", "my_model")
 clear_registry()
 
 # Access registry directly for advanced operations
-from wyrdbound_model import get_model_registry
+from grimoire_model import get_model_registry
 registry = get_model_registry()
 registry_dict = registry.get_registry_dict()
 all_namespaces = registry.list_namespaces()
@@ -378,8 +378,8 @@ all_namespaces = registry.list_namespaces()
 ### Setup
 
 ```bash
-git clone https://github.com/wyrdbound/wyrdbound-model.git
-cd wyrdbound-model
+git clone https://github.com/wyrdbound/grimoire-model.git
+cd grimoire-model
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
@@ -389,16 +389,16 @@ pip install -e ".[dev]"
 
 ```bash
 # Run all tests with coverage
-/Users/justingaylor/src/wyrdbound-model/.venv/bin/python -m pytest --cov=wyrdbound_model --cov-report=term
+/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest --cov=grimoire_model --cov-report=term
 
 # Run specific test file
-/Users/justingaylor/src/wyrdbound-model/.venv/bin/python -m pytest tests/test_model.py
+/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest tests/test_model.py
 
 # Run with verbose output
-/Users/justingaylor/src/wyrdbound-model/.venv/bin/python -m pytest -v
+/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest -v
 
 # Generate HTML coverage report
-/Users/justingaylor/src/wyrdbound-model/.venv/bin/python -m pytest --cov=wyrdbound_model --cov-report=html
+/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest --cov=grimoire_model --cov-report=html
 # Open htmlcov/index.html in browser
 ```
 
@@ -415,10 +415,10 @@ source .venv/bin/activate && ruff check .
 source .venv/bin/activate && ruff format .
 
 # Type checking
-source .venv/bin/activate && mypy src/wyrdbound_model/
+source .venv/bin/activate && mypy src/grimoire_model/
 
 # Run all quality checks
-source .venv/bin/activate && ruff check . && mypy src/wyrdbound_model/
+source .venv/bin/activate && ruff check . && mypy src/grimoire_model/
 ```
 
 ### Running Examples
@@ -456,7 +456,7 @@ source .venv/bin/activate && python examples/04_performance_integration.py
 
 ## 🎯 Use Cases
 
-Wyrdbound Model excels in scenarios requiring structured, validated data with complex relationships:
+Grimoire Model excels in scenarios requiring structured, validated data with complex relationships:
 
 - **RPG Character Systems**: Stats, levels, equipment with derived values
 - **Game Item Management**: Equipment, inventory, crafting systems
@@ -468,11 +468,11 @@ Wyrdbound Model excels in scenarios requiring structured, validated data with co
 
 The package follows clean architecture principles with clear separation of concerns:
 
-- **Core Layer**: Model definitions, schemas, and the main WyrdboundModel class
+- **Core Layer**: Model definitions, schemas, and the main GrimoireModel class
 - **Resolver Layer**: Pluggable template and derived field resolution systems
 - **Validation Layer**: Type checking, constraints, and custom validation rules
 - **Utils Layer**: Inheritance resolution, path utilities, and helper functions
-- **Integration Layer**: wyrdbound-context compatibility and factory functions
+- **Integration Layer**: grimoire-context compatibility and factory functions
 
 ### Key Design Principles
 
@@ -493,17 +493,17 @@ Current benchmarks (86% test coverage, 184 tests passing):
 - **Memory Usage**: ~50KB per model instance (excluding data)
 - **Template Resolution**: Cached compilation provides 10x speed improvement
 
-## 🔄 Integration with wyrdbound-context
+## 🔄 Integration with grimoire-context
 
 Seamless integration is automatically enabled when both packages are installed:
 
 ```python
-from wyrdbound_model import create_model, ModelDefinition, AttributeDefinition
-from wyrdbound_context import WyrdboundContext
+from grimoire_model import create_model, ModelDefinition, AttributeDefinition
+from grimoire_context import GrimoireContext
 
 # Models work naturally in contexts
 character = create_model(character_def, character_data)
-context = WyrdboundContext({'player': character})
+context = GrimoireContext({'player': character})
 
 # Context operations automatically handle model updates
 updated_context = context.set_variable('player.level', 25)
@@ -518,8 +518,8 @@ print(updated_character['max_hp'])  # Recalculated based on new level
 The package provides a comprehensive exception hierarchy:
 
 ```python
-from wyrdbound_model import (
-    WyrdboundModelError,           # Base exception
+from grimoire_model import (
+    GrimoireModelError,           # Base exception
     ModelValidationError,          # Validation failures
     TemplateResolutionError,       # Template processing errors
     InheritanceError,              # Model inheritance issues
@@ -541,7 +541,7 @@ except ModelValidationError as e:
 ### Custom Template Resolvers
 
 ```python
-from wyrdbound_model.resolvers.template import TemplateResolver
+from grimoire_model.resolvers.template import TemplateResolver
 
 class CustomTemplateResolver(TemplateResolver):
     def resolve_template(self, template: str, context: dict) -> str:
@@ -549,7 +549,7 @@ class CustomTemplateResolver(TemplateResolver):
         return processed_template
 
 # Use custom resolver
-model = WyrdboundModel(
+model = GrimoireModel(
     model_def,
     data,
     template_resolver=CustomTemplateResolver()
@@ -559,7 +559,7 @@ model = WyrdboundModel(
 ### Custom Validators
 
 ```python
-from wyrdbound_model.validation.validators import ValidationEngine
+from grimoire_model.validation.validators import ValidationEngine
 
 def custom_validator(value, rule_params):
     # Custom validation logic

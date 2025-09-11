@@ -2,16 +2,16 @@
 
 import pytest
 
-from wyrdbound_model.core.exceptions import InheritanceError
-from wyrdbound_model.core.schema import AttributeDefinition, ModelDefinition
-from wyrdbound_model.utils.inheritance import (
+from grimoire_model.core.exceptions import InheritanceError
+from grimoire_model.core.schema import AttributeDefinition, ModelDefinition
+from grimoire_model.utils.inheritance import (
     build_inheritance_graph,
     check_inheritance_conflicts,
     find_inheritance_cycles,
     resolve_model_inheritance,
     validate_model_registry,
 )
-from wyrdbound_model.utils.paths import (
+from grimoire_model.utils.paths import (
     delete_nested_value,
     flatten_dict,
     get_nested_value,

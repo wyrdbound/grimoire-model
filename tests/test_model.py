@@ -1,22 +1,22 @@
-"""Tests for the core WyrdboundModel class."""
+"""Tests for the core GrimoireModel class."""
 
 from unittest.mock import Mock, patch
 
 import pytest
 
-from wyrdbound_model.core.exceptions import (
+from grimoire_model.core.exceptions import (
     InheritanceError,
     ModelValidationError,
 )
-from wyrdbound_model.core.model import WyrdboundModel
-from wyrdbound_model.core.schema import (
+from grimoire_model.core.model import GrimoireModel
+from grimoire_model.core.schema import (
     ModelDefinition,
     ValidationRule,
 )
 
 
-class TestWyrdboundModel:
-    """Test WyrdboundModel class."""
+class TestGrimoireModel:
+    """Test GrimoireModel class."""
 
     def test_model_creation_simple(self):
         """Test creating a simple model."""
@@ -29,7 +29,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         assert model["name"] == "John"
         assert model["age"] == 0  # Default value
@@ -47,7 +47,7 @@ class TestWyrdboundModel:
         )
 
         # Valid data
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
         assert model["name"] == "John"
         assert model["age"] == 30
 
@@ -68,7 +68,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Test __getitem__
         assert model["name"] == "John"
@@ -100,7 +100,7 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": True}},
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         assert model.get("name") == "John"
         assert model.get("missing") is None
@@ -117,7 +117,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
 
         # Test keys
         keys = list(model.keys())
@@ -145,7 +145,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Update with dict
         model.update({"age": 30, "name": "Jane"})
@@ -167,7 +167,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
         assert len(model) == 2
 
         model.clear()
@@ -184,7 +184,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
 
         # Pop existing key
         age = model.pop("age")
@@ -207,7 +207,7 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": False}},
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         key, value = model.popitem()
         assert key == "name"
@@ -229,7 +229,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # setdefault on existing key
         result = model.setdefault("name", "Jane")
@@ -259,7 +259,7 @@ class TestWyrdboundModel:
         mock_resolver.extract_variables.return_value = {"first_name", "last_name"}
 
         # Create model with mocked template resolver
-        model = WyrdboundModel(
+        model = GrimoireModel(
             model_def,
             {"first_name": "John", "last_name": "Doe"},
             template_resolver=mock_resolver,
@@ -288,12 +288,12 @@ class TestWyrdboundModel:
         )
 
         # Valid data should work
-        model = WyrdboundModel(model_def, {"name": "John", "age": 25})
+        model = GrimoireModel(model_def, {"name": "John", "age": 25})
         assert model["age"] == 25
 
         # Invalid data should raise validation error
         with pytest.raises(ModelValidationError):
-            WyrdboundModel(model_def, {"name": "John", "age": 16})
+            GrimoireModel(model_def, {"name": "John", "age": 16})
 
     def test_model_readonly_attributes(self):
         """Test model with readonly attributes."""
@@ -306,7 +306,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Readonly field should have default value
         assert model["id"] == "auto-generated"
@@ -328,14 +328,14 @@ class TestWyrdboundModel:
         )
 
         with patch(
-            "wyrdbound_model.core.model.create_template_resolver"
+            "grimoire_model.core.model.create_template_resolver"
         ) as mock_resolver_creator:
             mock_resolver = Mock()
             mock_resolver.resolve_template.return_value = "value_a value_b"
             mock_resolver.extract_variables.return_value = {"a", "b"}
             mock_resolver_creator.return_value = mock_resolver
 
-            model = WyrdboundModel(model_def, {"a": "value_a", "b": "value_b"})
+            model = GrimoireModel(model_def, {"a": "value_a", "b": "value_b"})
 
             # Use batch update to minimize recomputation
             model.batch_update({"a": "new_a", "b": "new_b"})
@@ -355,7 +355,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
 
         # Convert to dict using dict() constructor
         data_dict = dict(model)
@@ -374,7 +374,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
 
         # Test shallow copy
         copied_model = model.copy()
@@ -394,9 +394,9 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": True}},
         )
 
-        model1 = WyrdboundModel(model_def, {"name": "John"})
-        model2 = WyrdboundModel(model_def, {"name": "John"})
-        model3 = WyrdboundModel(model_def, {"name": "Jane"})
+        model1 = GrimoireModel(model_def, {"name": "John"})
+        model2 = GrimoireModel(model_def, {"name": "John"})
+        model3 = GrimoireModel(model_def, {"name": "Jane"})
 
         assert model1 == model2
         assert model1 != model3
@@ -410,14 +410,14 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": True}},
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         str_repr = str(model)
         assert "test_model" in str_repr
         assert "John" in str_repr
 
         repr_str = repr(model)
-        assert "WyrdboundModel" in repr_str
+        assert "GrimoireModel" in repr_str
 
     def test_model_validation_on_field_set(self):
         """Test that validation occurs when setting fields."""
@@ -427,7 +427,7 @@ class TestWyrdboundModel:
             attributes={"age": {"type": "int", "range": "0..120"}},
         )
 
-        model = WyrdboundModel(model_def, {"age": 30})
+        model = GrimoireModel(model_def, {"age": 30})
 
         # Valid update should work
         model["age"] = 25
@@ -450,7 +450,7 @@ class TestWyrdboundModel:
 
         # Missing required field should raise error
         with pytest.raises(ModelValidationError):
-            WyrdboundModel(model_def, {"name": "John"})  # Missing age
+            GrimoireModel(model_def, {"name": "John"})  # Missing age
 
     def test_model_type_validation(self):
         """Test type validation on field assignment."""
@@ -463,7 +463,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John", "age": 30})
+        model = GrimoireModel(model_def, {"name": "John", "age": 30})
 
         # Valid type assignment
         model["name"] = "Jane"
@@ -488,7 +488,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Default values should be set
         assert model["name"] == "John"
@@ -503,7 +503,7 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": True}},
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Change field value
         old_value = model["name"]
@@ -522,7 +522,7 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": True}},
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Test model properties and accessors
         assert model.model_definition.id == "test_model"
@@ -541,7 +541,7 @@ class TestWyrdboundModel:
             attributes={"name": {"type": "str", "required": True}},
         )
 
-        model = WyrdboundModel(model_def, {"name": "John"})
+        model = GrimoireModel(model_def, {"name": "John"})
 
         # Test model properties and accessors
         assert model.model_definition.id == "test_model"
@@ -558,7 +558,7 @@ class TestWyrdboundModel:
 
         # Test exception handling
         with pytest.raises(ModelValidationError):
-            WyrdboundModel(model_def, {})
+            GrimoireModel(model_def, {})
 
     def test_delitem_with_dot_path(self):
         """Test __delitem__ with a dot path notation."""
@@ -568,7 +568,7 @@ class TestWyrdboundModel:
             attributes={"stats": {"type": "dict"}, "level": {"type": "int"}},
         )
 
-        model = WyrdboundModel(
+        model = GrimoireModel(
             model_def, {"stats": {"strength": 10, "dexterity": 15}, "level": 5}
         )
 
@@ -598,7 +598,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"base_damage": 10, "strength": 5})
+        model = GrimoireModel(model_def, {"base_damage": 10, "strength": 5})
 
         # Test get_derived_fields
         derived_fields = model.get_derived_fields()
@@ -639,7 +639,7 @@ class TestWyrdboundModel:
             },
         )
 
-        model = WyrdboundModel(model_def, {"strength": 10, "weapon_damage": 5})
+        model = GrimoireModel(model_def, {"strength": 10, "weapon_damage": 5})
 
         # Test the complex dependency chain works correctly
         assert model["total_damage"] == 15
@@ -648,8 +648,8 @@ class TestWyrdboundModel:
 
     def test_batch_update_with_batched_resolver(self):
         """Test batch_update functionality with BatchedDerivedFieldResolver."""
-        from wyrdbound_model.resolvers.derived import BatchedDerivedFieldResolver
-        from wyrdbound_model.resolvers.template import Jinja2TemplateResolver
+        from grimoire_model.resolvers.derived import BatchedDerivedFieldResolver
+        from grimoire_model.resolvers.template import Jinja2TemplateResolver
 
         model_def = ModelDefinition(
             id="test_model",
@@ -665,7 +665,7 @@ class TestWyrdboundModel:
         # Create model with batched resolver
         template_resolver = Jinja2TemplateResolver()
         batched_resolver = BatchedDerivedFieldResolver(template_resolver)
-        model = WyrdboundModel(
+        model = GrimoireModel(
             model_def, {"a": 1, "b": 2}, derived_field_resolver=batched_resolver
         )
 
@@ -683,7 +683,7 @@ class TestWyrdboundModel:
 
     def test_model_with_inheritance_resolve_inheritance(self):
         """Test model inheritance resolution with both success and error cases."""
-        from wyrdbound_model import clear_registry
+        from grimoire_model import clear_registry
 
         # Clear registry first
         clear_registry()
@@ -712,7 +712,7 @@ class TestWyrdboundModel:
         )
 
         # Test successful inheritance - models auto-registered
-        model = WyrdboundModel(child_model_def, {"name": "Conan", "strength": 18})
+        model = GrimoireModel(child_model_def, {"name": "Conan", "strength": 18})
 
         assert model["name"] == "Conan"
         assert model["health"] == 100  # From base model
@@ -732,7 +732,7 @@ class TestWyrdboundModel:
         )
 
         with pytest.raises(InheritanceError):
-            WyrdboundModel(broken_child_def, {"name": "Failed"})
+            GrimoireModel(broken_child_def, {"name": "Failed"})
 
     def test_model_delete_with_dot_path(self):
         """Test delete operation that triggers __delitem__ with dot notation path."""
@@ -747,7 +747,7 @@ class TestWyrdboundModel:
         )
 
         # Create model with nested data
-        model = WyrdboundModel(
+        model = GrimoireModel(
             model_def,
             {
                 "name": "Test",
@@ -788,7 +788,7 @@ class TestCreateModelFactory:
 
     def test_create_model_basic(self):
         """Test basic model creation with factory function."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="test_model",
@@ -801,14 +801,14 @@ class TestCreateModelFactory:
 
         model = create_model(model_def, {"name": "Alice"})
 
-        assert isinstance(model, WyrdboundModel)
+        assert isinstance(model, GrimoireModel)
         assert model["name"] == "Alice"
         assert model["age"] == 25  # Default value applied
         assert model.model_definition.id == "test_model"
 
     def test_create_model_with_template_resolver_type(self):
         """Test factory with different template resolver types."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="template_model",
@@ -831,7 +831,7 @@ class TestCreateModelFactory:
 
     def test_create_model_with_model_registry(self):
         """Test factory with model registry for inheritance."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         base_model_def = ModelDefinition(
             id="base_character",
@@ -867,7 +867,7 @@ class TestCreateModelFactory:
 
     def test_create_model_with_template_resolver_kwargs(self):
         """Test factory with custom template resolver configuration."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="custom_template_model",
@@ -898,7 +898,7 @@ class TestCreateModelFactory:
 
     def test_create_model_with_derived_resolver_kwargs(self):
         """Test factory with custom derived field resolver configuration."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="batched_model",
@@ -924,8 +924,8 @@ class TestCreateModelFactory:
         assert model["product"] == "15"
 
     def test_create_model_with_additional_kwargs(self):
-        """Test factory with additional kwargs passed to WyrdboundModel."""
-        from wyrdbound_model.core.model import create_model
+        """Test factory with additional kwargs passed to GrimoireModel."""
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="kwargs_model",
@@ -944,7 +944,7 @@ class TestCreateModelFactory:
 
     def test_create_model_no_data(self):
         """Test factory with no initial data (should use defaults)."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="default_model",
@@ -964,8 +964,8 @@ class TestCreateModelFactory:
 
     def test_create_model_with_validation_error(self):
         """Test factory when validation fails during creation."""
-        from wyrdbound_model.core.exceptions import ModelValidationError
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.exceptions import ModelValidationError
+        from grimoire_model.core.model import create_model
 
         model_def = ModelDefinition(
             id="validation_model",
@@ -980,7 +980,7 @@ class TestCreateModelFactory:
     def test_derived_field_recomputation_on_individual_updates(self):
         """Test that derived fields are recomputed when individual base fields
         are updated."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         # Create a model EXACTLY like the basic usage example
         model_def = ModelDefinition(
@@ -1034,8 +1034,8 @@ class TestCreateModelFactory:
     def test_validation_rules_execution_during_creation(self):
         """Test that ValidationRule expressions are properly executed during
         model creation."""
-        from wyrdbound_model.core.exceptions import ModelValidationError
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.exceptions import ModelValidationError
+        from grimoire_model.core.model import create_model
 
         # Create a model with validation rules like in the basic usage example
         model_def = ModelDefinition(
@@ -1095,8 +1095,8 @@ class TestCreateModelFactory:
     def test_validation_rules_with_derived_fields(self):
         """Test that validation rules can reference derived fields during
         model creation."""
-        from wyrdbound_model.core.exceptions import ModelValidationError
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.exceptions import ModelValidationError
+        from grimoire_model.core.model import create_model
 
         # Create a model with derived fields and validation rules that reference them
         model_def = ModelDefinition(
@@ -1146,7 +1146,7 @@ class TestCreateModelFactory:
 
     def test_model_context_template_resolver(self):
         """Test that model_context template resolver works with $variable syntax."""
-        from wyrdbound_model.core.model import create_model
+        from grimoire_model.core.model import create_model
 
         # Create a model using model_context template resolver
         model_def = ModelDefinition(
