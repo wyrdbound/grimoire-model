@@ -8,7 +8,7 @@ allowing users to provide their own logger implementations or use the default.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 
 class LoggerProtocol(Protocol):
@@ -42,7 +42,7 @@ class StandardLogger:
     """
 
     def __init__(
-        self, logger: Optional[logging.Logger] = None, name: str = "grimoire_model"
+        self, logger: logging.Logger | None = None, name: str = "grimoire_model"
     ) -> None:
         """Initialize with an optional Python logger.
 
