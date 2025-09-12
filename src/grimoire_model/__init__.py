@@ -41,7 +41,7 @@ Example Usage:
     context.set_variable('character.level', 7)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "The Wyrd One"
 __email__ = "wyrdbound@proton.me"
 
@@ -73,7 +73,7 @@ from .core.schema import (
 )
 
 # Logging configuration
-from .logging import get_logger, logger
+from .logging import clear_logger_injection, get_logger, inject_logger, logger
 from .resolvers.derived import (
     BatchedDerivedFieldResolver,
     DependencyInfo,
@@ -136,6 +136,8 @@ __all__ = [
     # Logging
     "logger",
     "get_logger",
+    "inject_logger",
+    "clear_logger_injection",
     # Exceptions
     "GrimoireModelError",
     "ModelValidationError",

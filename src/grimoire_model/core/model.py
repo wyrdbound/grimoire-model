@@ -93,6 +93,11 @@ class GrimoireModel(MutableMapping):
         # Validate data (including validation rules that may reference derived fields)
         self._validate_initial_data()
 
+        logger.info(
+            f"Successfully initialized model '{self._model_def.id}' "
+            f"with instance ID '{self._instance_id}'"
+        )
+
     @property
     def model_definition(self) -> ModelDefinition:
         """Get the model definition."""

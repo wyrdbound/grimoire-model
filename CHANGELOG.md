@@ -7,10 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-09-12
+
 ### Changed
 
+- **BREAKING**: Replaced internal logging system with grimoire-logging for flexible dependency injection
+- Updated logging architecture to use grimoire-logging's LoggerProtocol and dependency injection
+- Enhanced logging with appropriate INFO, DEBUG, WARNING, and ERROR level messages throughout the system
 - Updated license from Proprietary to MIT License
 - Updated contributing guidelines to welcome open source contributions
+
+### Added
+
+- Dependency on grimoire-logging package (>=0.1.0) for flexible logging capabilities
+- New logging configuration examples (examples/05_logging_configuration.py) demonstrating:
+  - Standard Python logging integration
+  - Custom logger implementations with emojis and formatting
+  - Structured JSON logging for modern logging systems
+  - Message filtering and level management
+  - Integration patterns with existing logging infrastructure
+- Comprehensive logging documentation in LOGGING.md with:
+  - Multiple configuration approaches (standard logging, dependency injection, adapters)
+  - Integration examples for popular logging frameworks (structlog, loguru, rich)
+  - Thread-safe logging management patterns
+  - Performance considerations and best practices
+- INFO level logging for successful model initialization
+- Enhanced DEBUG logging for model registration, derived field computation, and system operations
+- Support for runtime logger switching and configuration
+- Thread-safe logger management capabilities
+
+### Removed
+
+- Legacy utils/logging.py module (replaced by grimoire-logging integration)
+
+### Technical Changes
+
+- Logger instances now use LoggerProtocol from grimoire-logging
+- All logging calls updated to work with grimoire-logging's dependency injection system
+- Added inject_logger and clear_logger_injection functions to public API
+- Logging namespace remains 'grimoire_model' with hierarchical child loggers
 
 ## [0.1.0] - 2025-09-11
 

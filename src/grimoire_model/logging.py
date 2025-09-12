@@ -1,26 +1,25 @@
 """
 Logging utilities for grimoire-model.
 
-This module provides a centralized logger for the grimoire-model library.
-Applications can configure this logger using the standard Python logging configuration.
+This module provides a centralized logger for the grimoire-model library using
+grimoire-logging for flexible dependency injection support.
+Applications can inject custom logger implementations or configure standard logging.
 """
 
-import logging
 from typing import Optional
 
-# Library-wide logger
-logger = logging.getLogger("grimoire_model")
+from grimoire_logging import (  # type: ignore[import-untyped]
+    LoggerProtocol,
+    clear_logger_injection,
+    inject_logger,
+)
+from grimoire_logging import get_logger as _get_logger  # type: ignore[import-untyped]
 
-# Set a default level, but applications should configure this
-logger.setLevel(logging.INFO)
-
-# If no handlers are configured by the application, add a null handler
-# to prevent "No handlers could be found" warnings
-if not logger.handlers:
-    logger.addHandler(logging.NullHandler())
+# Library-wide logger using grimoire-logging
+logger = _get_logger("grimoire_model")
 
 
-def get_logger(name: Optional[str] = None) -> logging.Logger:
+def get_logger(name: Optional[str] = None) -> LoggerProtocol:
     """
     Get a logger for the grimoire-model library.
 
@@ -29,8 +28,12 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
               If provided, creates a child logger like 'grimoire_model.core.registry'
 
     Returns:
-        A logger instance that applications can configure.
+        A logger instance that applications can configure through grimoire-logging.
     """
     if name:
-        return logging.getLogger(f"grimoire_model.{name}")
+        return _get_logger(f"grimoire_model.{name}")
     return logger
+
+
+# Re-export grimoire-logging functions for convenience
+__all__ = ["logger", "get_logger", "inject_logger", "clear_logger_injection"]
