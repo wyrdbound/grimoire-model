@@ -1,8 +1,8 @@
 """
 Tests for grimoire-model logging functionality.
 
-Tests the centralized logging system, logger configuration,
-and integration with Python's standard logging module.
+Tests the centralized logging system using grimoire-logging, logger configuration,
+and integration with grimoire-logging's dependency injection system.
 """
 
 import io
@@ -11,7 +11,14 @@ from unittest.mock import patch
 
 import pytest
 
-from grimoire_model import ModelDefinition, create_model, get_logger, logger
+from grimoire_model import (
+    ModelDefinition,
+    clear_logger_injection,
+    create_model,
+    get_logger,
+    inject_logger,
+    logger,
+)
 from grimoire_model.core.registry import (
     ModelRegistry,
     register_model,
@@ -19,86 +26,141 @@ from grimoire_model.core.registry import (
 
 
 class TestLoggingModule:
-    """Test the central logging module."""
+    """Test the central logging module with grimoire-logging."""
 
     def test_logger_exists(self):
-        """Test that the main logger exists and is correctly named."""
+        """Test that the main logger exists and works."""
         assert logger is not None
-        assert logger.name == "grimoire_model"
-        assert isinstance(logger, logging.Logger)
+        # Test that it has the required LoggerProtocol methods
+        assert hasattr(logger, "debug")
+        assert hasattr(logger, "info")
+        assert hasattr(logger, "warning")
+        assert hasattr(logger, "error")
+        assert hasattr(logger, "critical")
 
-    def test_logger_default_level(self):
-        """Test that logger has appropriate default level."""
-        assert logger.level == logging.INFO
+    def test_logger_basic_functionality(self):
+        """Test that logger methods can be called without errors."""
+        # These should not raise exceptions
+        logger.debug("Test debug message")
+        logger.info("Test info message")
+        logger.warning("Test warning message")
+        logger.error("Test error message")
+        logger.critical("Test critical message")
 
     def test_get_logger_without_name(self):
         """Test get_logger returns the main logger when no name provided."""
         result = get_logger()
         assert result is logger
-        assert result.name == "grimoire_model"
 
     def test_get_logger_with_name(self):
-        """Test get_logger creates child loggers with correct names."""
+        """Test get_logger creates child loggers correctly."""
         child_logger = get_logger("test.child")
-        assert child_logger.name == "grimoire_model.test.child"
-        assert isinstance(child_logger, logging.Logger)
+        assert child_logger is not None
+        # Test that it has the required LoggerProtocol methods
+        assert hasattr(child_logger, "debug")
+        assert hasattr(child_logger, "info")
+        assert hasattr(child_logger, "warning")
+        assert hasattr(child_logger, "error")
+        assert hasattr(child_logger, "critical")
 
-    def test_logger_hierarchy(self):
-        """Test that child loggers inherit from parent."""
-        get_logger("parent")
-        child = get_logger("parent.child")
+    def test_logger_dependency_injection(self):
+        """Test that logger dependency injection works."""
 
-        # Child should inherit from parent in the hierarchy
-        assert child.parent is not None
-        assert child.parent.name == "grimoire_model.parent"
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
+
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        mock_logger = MockLogger()
+
+        try:
+            # Inject mock logger
+            inject_logger(mock_logger)
+
+            # Test that messages are captured
+            test_logger = get_logger("test")
+            test_logger.info("Test message")
+
+            assert len(mock_logger.messages) == 1
+            assert mock_logger.messages[0] == ("INFO", "Test message")
+
+        finally:
+            # Clean up
+            clear_logger_injection()
 
 
 class TestRegistryLogging:
-    """Test logging in the ModelRegistry."""
+    """Test logging in the ModelRegistry using grimoire-logging dependency injection."""
 
     def setup_method(self):
-        """Set up test registry and capture logging."""
+        """Set up test registry and mock logger."""
         self.registry = ModelRegistry()
-        self.log_stream = io.StringIO()
-        self.handler = logging.StreamHandler(self.log_stream)
-        self.handler.setLevel(logging.DEBUG)
 
-        # Add a formatter to include log level
-        formatter = logging.Formatter("%(levelname)s - %(message)s")
-        self.handler.setFormatter(formatter)
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
 
-        # Configure the registry logger
-        registry_logger = logging.getLogger("grimoire_model.core.registry")
-        registry_logger.setLevel(logging.DEBUG)
-        registry_logger.addHandler(self.handler)
-        registry_logger.propagate = False  # Don't propagate to avoid interference
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        self.mock_logger = MockLogger()
+        inject_logger(self.mock_logger)
 
     def teardown_method(self):
         """Clean up logging configuration."""
-        registry_logger = logging.getLogger("grimoire_model.core.registry")
-        registry_logger.removeHandler(self.handler)
-        registry_logger.propagate = True
-        self.handler.close()
+        clear_logger_injection()
 
-    def get_log_output(self) -> str:
-        """Get the captured log output."""
-        self.handler.flush()
-        return self.log_stream.getvalue()
+    def get_log_messages(self) -> list:
+        """Get the captured log messages."""
+        return self.mock_logger.messages
 
     def test_model_registration_conflict_warning(self):
         """Test that model registration conflicts log warnings."""
+        from grimoire_model import AttributeDefinition
+
         # Create two different model definitions with same ID
         model_def1 = ModelDefinition(
-            id="test_model", name="First Model", attributes={"field1": {"type": "str"}}
+            id="test_model",
+            name="First Model",
+            attributes={"field1": AttributeDefinition(type="str")},
         )
 
         model_def2 = ModelDefinition(
-            id="test_model", name="Second Model", attributes={"field2": {"type": "int"}}
+            id="test_model",
+            name="Second Model",
+            attributes={"field2": AttributeDefinition(type="int")},
         )
 
-        # Clear any previous logs from auto-registration
-        self.log_stream.truncate(0)
-        self.log_stream.seek(0)
+        # Clear any previous logs
+        self.mock_logger.messages.clear()
 
         # Register first model
         self.registry.register("test", "test_model", model_def1)
@@ -106,235 +168,334 @@ class TestRegistryLogging:
         # Register second model - should trigger warning
         self.registry.register("test", "test_model", model_def2)
 
-        log_output = self.get_log_output()
-        assert (
-            "Model 'test__test_model' already registered. "
-            "Overwriting with new definition." in log_output
+        messages = self.get_log_messages()
+        warning_messages = [msg for level, msg in messages if level == "WARNING"]
+
+        assert len(warning_messages) > 0
+        assert any(
+            "Model 'test__test_model' already registered" in msg
+            for msg in warning_messages
         )
-        assert "WARNING" in log_output
 
     def test_same_model_no_warning(self):
-        """Test that registering the same model object warns but doesn't error."""
+        """Test that registering the same model object still works."""
+        from grimoire_model import AttributeDefinition
+
         model_def = ModelDefinition(
-            id="test_model", name="Test Model", attributes={"field": {"type": "str"}}
+            id="test_model",
+            name="Test Model",
+            attributes={"field": AttributeDefinition(type="str")},
         )
 
         # Clear any previous logs
-        self.log_stream.truncate(0)
-        self.log_stream.seek(0)
+        self.mock_logger.messages.clear()
 
-        # Register same model twice
+        # Register same model twice - should still work
         self.registry.register("test", "test_model", model_def)
         self.registry.register("test", "test_model", model_def)
 
-        log_output = self.get_log_output()
-        # The current implementation warns even for same object - that's ok for now
-        # The important thing is that it doesn't crash
-        assert isinstance(log_output, str)
+        # Should not raise any exceptions
+        assert self.registry.has("test", "test_model")
 
     def test_debug_logging(self):
         """Test debug level logging for registry operations."""
+        from grimoire_model import AttributeDefinition
+
         model_def = ModelDefinition(
-            id="debug_model", name="Debug Model", attributes={"field": {"type": "str"}}
+            id="debug_model",
+            name="Debug Model",
+            attributes={"field": AttributeDefinition(type="str")},
         )
 
-        # Clear any previous logs from auto-registration
-        self.log_stream.truncate(0)
-        self.log_stream.seek(0)
+        # Clear any previous logs
+        self.mock_logger.messages.clear()
 
         self.registry.register("debug", "debug_model", model_def)
 
-        log_output = self.get_log_output()
-        assert "Registered model 'debug_model' in namespace 'debug'" in log_output
-        assert "DEBUG" in log_output
+        messages = self.get_log_messages()
+        debug_messages = [msg for level, msg in messages if level == "DEBUG"]
 
-    def test_unregister_debug_logging(self):
+        assert len(debug_messages) > 0
+        assert any(
+            "Registered model 'debug_model' in namespace 'debug'" in msg
+            for msg in debug_messages
+        )
+
+    def test_unregister_model_logging(self):
         """Test debug logging for model unregistration."""
+        from grimoire_model import AttributeDefinition
+
         model_def = ModelDefinition(
             id="unregister_model",
             name="Unregister Model",
-            attributes={"field": {"type": "str"}},
+            attributes={"field": AttributeDefinition(type="str")},
         )
 
         self.registry.register("test", "unregister_model", model_def)
+
+        # Clear logs and unregister
+        self.mock_logger.messages.clear()
         self.registry.unregister("test", "unregister_model")
 
-        log_output = self.get_log_output()
-        assert "Unregistered model 'test__unregister_model'" in log_output
+        messages = self.get_log_messages()
+        debug_messages = [msg for level, msg in messages if level == "DEBUG"]
+
+        assert len(debug_messages) > 0
+        assert any(
+            "Unregistered model 'test__unregister_model'" in msg
+            for msg in debug_messages
+        )
 
     def test_clear_namespace_debug_logging(self):
         """Test debug logging for namespace clearing."""
+        from grimoire_model import AttributeDefinition
+
         model_def = ModelDefinition(
-            id="clear_model", name="Clear Model", attributes={"field": {"type": "str"}}
+            id="clear_model",
+            name="Clear Model",
+            attributes={"field": AttributeDefinition(type="str")},
         )
 
         self.registry.register("clear_test", "clear_model", model_def)
+
+        # Clear logs and clear namespace
+        self.mock_logger.messages.clear()
         self.registry.clear_namespace("clear_test")
 
-        log_output = self.get_log_output()
-        assert "Cleared 1 models from namespace 'clear_test'" in log_output
+        messages = self.get_log_messages()
+        debug_messages = [msg for level, msg in messages if level == "DEBUG"]
+
+        assert len(debug_messages) > 0
+        assert any(
+            "Cleared 1 models from namespace 'clear_test'" in msg
+            for msg in debug_messages
+        )
 
     def test_clear_all_debug_logging(self):
         """Test debug logging for clearing all models."""
+        from grimoire_model import AttributeDefinition
+
         model_def = ModelDefinition(
             id="clear_all_model",
             name="Clear All Model",
-            attributes={"field": {"type": "str"}},
+            attributes={"field": AttributeDefinition(type="str")},
         )
 
         self.registry.register("clear_all", "clear_all_model", model_def)
+
+        # Clear logs and clear all
+        self.mock_logger.messages.clear()
         count = self.registry.clear_all()
 
-        log_output = self.get_log_output()
-        assert f"Cleared all {count} models from registry" in log_output
+        messages = self.get_log_messages()
+        debug_messages = [msg for level, msg in messages if level == "DEBUG"]
+
+        assert len(debug_messages) > 0
+        assert any(
+            f"Cleared all {count} models from registry" in msg for msg in debug_messages
+        )
 
 
 class TestGlobalRegistryLogging:
-    """Test logging through global registry functions."""
+    """Test logging through global registry functions using grimoire-logging."""
 
     def setup_method(self):
-        """Set up logging capture for global registry."""
-        self.log_stream = io.StringIO()
-        self.handler = logging.StreamHandler(self.log_stream)
-        self.handler.setLevel(logging.WARNING)
+        """Set up mock logger for global registry."""
 
-        # Configure the registry logger
-        registry_logger = logging.getLogger("grimoire_model.core.registry")
-        registry_logger.setLevel(logging.WARNING)
-        registry_logger.addHandler(self.handler)
-        registry_logger.propagate = False
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
+
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        self.mock_logger = MockLogger()
+        inject_logger(self.mock_logger)
 
     def teardown_method(self):
         """Clean up logging and registry."""
-        registry_logger = logging.getLogger("grimoire_model.core.registry")
-        registry_logger.removeHandler(self.handler)
-        registry_logger.propagate = True
-        self.handler.close()
+        clear_logger_injection()
 
         # Clear global registry
         from grimoire_model import clear_registry
 
         clear_registry()
 
-    def get_log_output(self) -> str:
-        """Get the captured log output."""
-        self.handler.flush()
-        return self.log_stream.getvalue()
+    def get_log_messages(self) -> list:
+        """Get the captured log messages."""
+        return self.mock_logger.messages
 
     def test_global_register_model_logging(self):
         """Test logging when using global register_model function."""
+        from grimoire_model import AttributeDefinition
+
         model_def1 = ModelDefinition(
             id="global_test",
             name="First Global Model",
-            attributes={"field": {"type": "str"}},
+            attributes={"field": AttributeDefinition(type="str")},
         )
 
         model_def2 = ModelDefinition(
             id="global_test",
             name="Second Global Model",
-            attributes={"field": {"type": "int"}},
+            attributes={"field": AttributeDefinition(type="int")},
         )
 
         # Register through global function
         register_model("global", model_def1)
         register_model("global", model_def2)  # Should trigger warning
 
-        log_output = self.get_log_output()
-        assert (
-            "Model 'global__global_test' already registered. "
-            "Overwriting with new definition." in log_output
+        messages = self.get_log_messages()
+        warning_messages = [msg for level, msg in messages if level == "WARNING"]
+
+        assert len(warning_messages) > 0
+        assert any(
+            "Model 'global__global_test' already registered" in msg
+            for msg in warning_messages
         )
 
 
 class TestModelLogging:
-    """Test logging in model operations."""
+    """Test logging in model operations using grimoire-logging."""
 
     def setup_method(self):
-        """Set up logging capture for model operations."""
-        self.log_stream = io.StringIO()
-        self.handler = logging.StreamHandler(self.log_stream)
-        self.handler.setLevel(logging.DEBUG)
+        """Set up mock logger for model operations."""
 
-        # Configure the model logger
-        model_logger = logging.getLogger("grimoire_model.core.model")
-        model_logger.setLevel(logging.DEBUG)
-        model_logger.addHandler(self.handler)
-        model_logger.propagate = False
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
+
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        self.mock_logger = MockLogger()
+        inject_logger(self.mock_logger)
 
     def teardown_method(self):
         """Clean up logging configuration."""
-        model_logger = logging.getLogger("grimoire_model.core.model")
-        model_logger.removeHandler(self.handler)
-        model_logger.propagate = True
-        self.handler.close()
+        clear_logger_injection()
 
-    def get_log_output(self) -> str:
-        """Get the captured log output."""
-        self.handler.flush()
-        return self.log_stream.getvalue()
+    def get_log_messages(self) -> list:
+        """Get the captured log messages."""
+        return self.mock_logger.messages
 
     def test_model_creation_logging(self):
         """Test that model creation generates appropriate log messages."""
+        from grimoire_model import AttributeDefinition
+
         model_def = ModelDefinition(
             id="log_test_model",
             name="Logging Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "value": {"type": "int", "default": 0},
+                "name": AttributeDefinition(type="str", required=True),
+                "value": AttributeDefinition(type="int", default=0),
             },
         )
 
         # Create model instance
         create_model(model_def, {"name": "test"})
 
-        # Should have some log output from model creation
-        log_output = self.get_log_output()
-        # At minimum, the logging system should be active
-        assert isinstance(log_output, str)
+        # Should have captured some log messages
+        messages = self.get_log_messages()
+        assert isinstance(messages, list)
 
 
 class TestLoggerConfiguration:
-    """Test logger configuration and integration scenarios."""
+    """Test logger configuration and integration scenarios with grimoire-logging."""
 
-    def test_logger_level_configuration(self):
-        """Test that logger levels can be configured."""
+    def setup_method(self):
+        """Set up test environment."""
+
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
+
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        self.mock_logger = MockLogger()
+
+    def teardown_method(self):
+        """Clean up test environment."""
+        clear_logger_injection()
+
+    def test_logger_creation(self):
+        """Test that loggers can be created via get_logger."""
         test_logger = get_logger("config.test")
 
-        # Set different levels
-        test_logger.setLevel(logging.ERROR)
-        assert test_logger.level == logging.ERROR
+        # Should return a LoggerProtocol compliant object
+        assert hasattr(test_logger, "debug")
+        assert hasattr(test_logger, "info")
+        assert hasattr(test_logger, "warning")
+        assert hasattr(test_logger, "error")
+        assert hasattr(test_logger, "critical")
 
-        test_logger.setLevel(logging.DEBUG)
-        assert test_logger.level == logging.DEBUG
+    def test_logger_dependency_injection(self):
+        """Test that logger dependency injection works properly."""
+        # Inject our mock logger
+        inject_logger(self.mock_logger)
 
-    def test_logger_handler_configuration(self):
-        """Test that handlers can be added to loggers."""
-        test_logger = get_logger("handler.test")
+        # Get a logger and use it
+        test_logger = get_logger("injection.test")
+        test_logger.info("Test message")
 
-        # Add a test handler
-        test_handler = logging.StreamHandler(io.StringIO())
-        test_logger.addHandler(test_handler)
+        # Should have captured the message via our mock
+        assert len(self.mock_logger.messages) == 1
+        assert self.mock_logger.messages[0] == ("INFO", "Test message")
 
-        assert test_handler in test_logger.handlers
+    def test_logger_without_injection(self):
+        """Test that loggers work without dependency injection."""
+        # Clear any existing injection
+        clear_logger_injection()
 
-        # Clean up
-        test_logger.removeHandler(test_handler)
+        # Get a logger - should still work but use default implementation
+        test_logger = get_logger("no_injection.test")
 
-    def test_parent_child_logger_relationship(self):
-        """Test that child loggers properly inherit from parent."""
-        get_logger("parent")
-        child_logger = get_logger("parent.child")
-        grandchild_logger = get_logger("parent.child.grandchild")
-
-        # Test hierarchy
-        assert child_logger.parent is not None
-        assert child_logger.parent.name == "grimoire_model.parent"
-        assert grandchild_logger.parent is not None
-        assert grandchild_logger.parent.name == "grimoire_model.parent.child"
-
-        # Test propagation
-        assert child_logger.propagate is True
-        assert grandchild_logger.propagate is True
+        # Should be able to call logging methods without error
+        test_logger.debug("Debug message")
+        test_logger.info("Info message")
+        test_logger.warning("Warning message")
+        test_logger.error("Error message")
+        test_logger.critical("Critical message")
 
     def test_logger_integration_with_standard_logging(self):
         """Test that the logger integrates with Python's standard logging."""
@@ -374,47 +535,60 @@ class TestLoggerConfiguration:
 
 
 class TestLoggingInheritanceResolution:
-    """Test logging in inheritance resolution utilities."""
+    """Test logging in inheritance resolution utilities using grimoire-logging."""
 
     def setup_method(self):
-        """Set up logging capture for inheritance utilities."""
-        self.log_stream = io.StringIO()
-        self.handler = logging.StreamHandler(self.log_stream)
-        self.handler.setLevel(logging.DEBUG)
+        """Set up mock logger for inheritance utilities."""
 
-        # Configure the inheritance logger
-        inheritance_logger = logging.getLogger("grimoire_model.utils.inheritance")
-        inheritance_logger.setLevel(logging.DEBUG)
-        inheritance_logger.addHandler(self.handler)
-        inheritance_logger.propagate = False
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
+
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        self.mock_logger = MockLogger()
+        inject_logger(self.mock_logger)
 
     def teardown_method(self):
         """Clean up logging configuration."""
-        inheritance_logger = logging.getLogger("grimoire_model.utils.inheritance")
-        inheritance_logger.removeHandler(self.handler)
-        inheritance_logger.propagate = True
-        self.handler.close()
+        clear_logger_injection()
 
-    def get_log_output(self) -> str:
-        """Get the captured log output."""
-        self.handler.flush()
-        return self.log_stream.getvalue()
+    def get_log_messages(self) -> list:
+        """Get the captured log messages."""
+        return self.mock_logger.messages
 
     def test_inheritance_resolution_logging(self):
         """Test that inheritance resolution generates debug logs."""
+        from grimoire_model import AttributeDefinition
         from grimoire_model.core.registry import ModelRegistry
         from grimoire_model.utils.inheritance import resolve_model_inheritance
 
         # Create test models with inheritance
         base_def = ModelDefinition(
-            id="base", name="Base Model", attributes={"base_field": {"type": "str"}}
+            id="base",
+            name="Base Model",
+            attributes={"base_field": AttributeDefinition(type="str")},
         )
 
         child_def = ModelDefinition(
             id="child",
             name="Child Model",
             extends=["base"],
-            attributes={"child_field": {"type": "int"}},
+            attributes={"child_field": AttributeDefinition(type="int")},
         )
 
         # Create registry with models
@@ -422,108 +596,136 @@ class TestLoggingInheritanceResolution:
         registry.register("test", "base", base_def)
         registry.register("test", "child", child_def)
 
-        # Resolve inheritance - should generate debug logs
+        # Clear previous messages and resolve inheritance
+        self.mock_logger.messages.clear()
+
         try:
             resolve_model_inheritance(child_def, registry)
 
-            # Check for inheritance-related log messages
-            log_output = self.get_log_output()
-            assert isinstance(log_output, str)  # Should have some log output
+            # Should have captured some log messages
+            messages = self.get_log_messages()
+            assert isinstance(messages, list)
 
         except Exception:
-            # Even if inheritance fails, we should have log output
-            log_output = self.get_log_output()
-            assert isinstance(log_output, str)
+            # Even if inheritance fails, we should have captured messages
+            messages = self.get_log_messages()
+            assert isinstance(messages, list)
 
 
 class TestLoggingIntegration:
-    """Integration tests for logging across the entire system."""
+    """Integration tests for logging across the entire system using grimoire-logging."""
+
+    def setup_method(self):
+        """Set up mock logger for integration tests."""
+
+        # Create a mock logger to capture messages
+        class MockLogger:
+            def __init__(self):
+                self.messages = []
+
+            def debug(self, msg, *args, **kwargs):
+                self.messages.append(("DEBUG", msg))
+
+            def info(self, msg, *args, **kwargs):
+                self.messages.append(("INFO", msg))
+
+            def warning(self, msg, *args, **kwargs):
+                self.messages.append(("WARNING", msg))
+
+            def error(self, msg, *args, **kwargs):
+                self.messages.append(("ERROR", msg))
+
+            def critical(self, msg, *args, **kwargs):
+                self.messages.append(("CRITICAL", msg))
+
+        self.mock_logger = MockLogger()
+
+    def teardown_method(self):
+        """Clean up after integration tests."""
+        clear_logger_injection()
+
+        # Clear registry
+        from grimoire_model import clear_registry
+
+        clear_registry()
 
     def test_end_to_end_logging_scenario(self):
         """Test logging in a complete model creation and usage scenario."""
-        # Capture all grimoire-model logs
-        log_stream = io.StringIO()
-        handler = logging.StreamHandler(log_stream)
-        handler.setLevel(logging.WARNING)
+        from grimoire_model import AttributeDefinition, register_model
 
-        root_logger = logging.getLogger("grimoire_model")
-        root_logger.setLevel(logging.WARNING)
-        root_logger.addHandler(handler)
-        root_logger.propagate = False
+        # Inject mock logger
+        inject_logger(self.mock_logger)
 
-        try:
-            # Create model definitions that will trigger conflicts
-            model_def1 = ModelDefinition(
-                id="integration_test",
-                name="First Integration Model",
-                attributes={"field": {"type": "str"}},
-            )
+        # Create model definitions that will trigger conflicts
+        model_def1 = ModelDefinition(
+            id="integration_test",
+            name="First Integration Model",
+            attributes={"field": AttributeDefinition(type="str")},
+        )
 
-            model_def2 = ModelDefinition(
-                id="integration_test",
-                name="Second Integration Model",
-                attributes={"field": {"type": "int"}},
-            )
+        model_def2 = ModelDefinition(
+            id="integration_test",
+            name="Second Integration Model",
+            attributes={"field": AttributeDefinition(type="int")},
+        )
 
-            # Create models - should trigger registry warnings
-            create_model(model_def1, {"field": "test"})
-            create_model(model_def2, {"field": 42})
+        # Clear previous messages
+        self.mock_logger.messages.clear()
 
-            # Check that warnings were logged
-            handler.flush()
-            log_output = log_stream.getvalue()
+        # Register models to trigger registry warnings
+        register_model("integration", model_def1)
+        register_model("integration", model_def2)  # Should trigger warning
 
-            # Should have registration conflict warnings
-            assert "already registered" in log_output or "Overwriting" in log_output
+        # Create models with the definitions
+        create_model(model_def1, {"field": "test"})
+        create_model(model_def2, {"field": 42})
 
-        finally:
-            # Clean up
-            root_logger.removeHandler(handler)
-            root_logger.propagate = True
-            handler.close()
+        # Check that warnings were logged
+        messages = self.mock_logger.messages
+        warning_messages = [msg for level, msg in messages if level == "WARNING"]
 
-            # Clear registry
-            from grimoire_model import clear_registry
+        # Should have registration conflict warnings
+        assert len(warning_messages) > 0
+        assert any(
+            "already registered" in msg or "Overwriting" in msg
+            for msg in warning_messages
+        )
 
-            clear_registry()
+    def test_logging_with_dependency_injection(self):
+        """Test that dependency injection logging works across components."""
+        from grimoire_model import AttributeDefinition
 
-    def test_logging_with_custom_configuration(self):
-        """Test that custom logging configurations work correctly."""
-        # Test different logging configurations
-        configurations = [
-            {"level": logging.ERROR, "should_see_warnings": False},
-            {"level": logging.WARNING, "should_see_warnings": True},
-            {"level": logging.DEBUG, "should_see_warnings": True},
-        ]
+        # Test with injection
+        inject_logger(self.mock_logger)
 
-        for config in configurations:
-            # Set up logging
-            log_stream = io.StringIO()
-            handler = logging.StreamHandler(log_stream)
-            handler.setLevel(config["level"])
+        # Clear messages and test logging
+        self.mock_logger.messages.clear()
 
-            test_logger = logging.getLogger(f"grimoire_model.test_{config['level']}")
-            test_logger.setLevel(config["level"])
-            test_logger.addHandler(handler)
-            test_logger.propagate = False
+        # Create a model to trigger various logging
+        model_def = ModelDefinition(
+            id="injection_test",
+            name="Injection Test Model",
+            attributes={"field": AttributeDefinition(type="str")},
+        )
 
-            try:
-                # Generate a warning
-                test_logger.warning("Test warning")
+        create_model(model_def, {"field": "test"})
 
-                # Check output
-                handler.flush()
-                log_output = log_stream.getvalue()
+        # Should have captured some messages
+        messages = self.mock_logger.messages
+        assert isinstance(messages, list)
 
-                if config["should_see_warnings"]:
-                    assert "Test warning" in log_output
-                else:
-                    assert "Test warning" not in log_output
+        # Test without injection
+        clear_logger_injection()
 
-            finally:
-                test_logger.removeHandler(handler)
-                test_logger.propagate = True
-                handler.close()
+        # Should still work but use default logging
+        model_def2 = ModelDefinition(
+            id="no_injection_test",
+            name="No Injection Test Model",
+            attributes={"field": AttributeDefinition(type="str")},
+        )
+
+        # Should not raise any errors
+        create_model(model_def2, {"field": "test2"})
 
 
 if __name__ == "__main__":
