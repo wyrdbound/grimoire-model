@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grimoire-model"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dict-like model system with schema validation, derived fields, and inheritance for Grimoire"
 authors = [{name = "The Wyrd One", email = "wyrdbound@proton.me"}]
 license = {text = "MIT"}
@@ -29,6 +29,7 @@ dependencies = [
     "pyrsistent>=0.19.0",
     "jinja2>=3.1.0",
     "pyyaml>=6.0",
+    "grimoire-logging>=0.1.0",
 ]
 
 [project.optional-dependencies]

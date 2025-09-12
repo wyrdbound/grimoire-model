@@ -15,6 +15,7 @@ python examples/01_basic_usage.py
 python examples/02_advanced_usage.py
 python examples/03_inheritance_polymorphism.py
 python examples/04_performance_integration.py
+python examples/05_logging_configuration.py
 ```
 
 ## Examples Overview
@@ -98,6 +99,26 @@ This example focuses on performance considerations and real-world integration pa
 - Factory pattern implementation for character generation
 - JSON serialization strategies for data persistence
 - Production-ready integration patterns and best practices
+
+### 5. Logging Configuration (`05_logging_configuration.py`)
+
+This example demonstrates how to configure logging for grimoire-model using grimoire-logging:
+
+- **Basic Standard Logging**: Setting up standard Python logging integration
+- **Custom Logger Implementation**: Creating custom loggers with emojis and special formatting
+- **Structured JSON Logging**: Implementing JSON-formatted log output for structured logging
+- **Filtering Loggers**: Creating loggers that filter by level and content patterns
+- **Integration Patterns**: Adapting grimoire-logging to work with existing logging infrastructure
+- **Dependency Injection**: Using grimoire-logging's dependency injection for flexible logging
+
+**Key Concepts Demonstrated:**
+
+- Standard Python logging integration with grimoire-logging
+- Custom logger implementation using the LoggerProtocol
+- Structured logging with JSON output for modern logging systems
+- Message filtering and log level management
+- Adapting grimoire-model logging to existing application logging systems
+- Runtime logger injection and configuration
 
 ## Common Patterns
 
