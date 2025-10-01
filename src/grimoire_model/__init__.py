@@ -41,7 +41,7 @@ Example Usage:
     context.set_variable('character.level', 7)
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __author__ = "The Wyrd One"
 __email__ = "wyrdbound@proton.me"
 
