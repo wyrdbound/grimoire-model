@@ -272,11 +272,206 @@ class TestModelDefinition:
 
     def test_invalid_attribute_definition(self):
         """Test handling of invalid attribute definitions."""
+        # Test with invalid type value (should fail validation)
         with pytest.raises(ConfigurationError):
             ModelDefinition(
                 id="test",
                 name="Test",
                 attributes={
-                    "invalid_attr": {"invalid_field": "not_valid"}  # type: ignore
+                    "invalid_attr": {"type": "invalid!type"}  # type: ignore
                 },
             )
+
+    def test_nested_dict_auto_type(self):
+        """Test that nested dict attributes automatically get type='dict'."""
+        model = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str"},
+                "hit_points": {
+                    "max": {"type": "int"},
+                    "current": {"type": "int"},
+                },
+            },
+        )
+
+        # Check that hit_points was assigned type='dict'
+        hit_points_attr = model.attributes["hit_points"]
+        assert isinstance(hit_points_attr, AttributeDefinition)
+        assert hit_points_attr.type == "dict"
+
+    def test_nested_dict_with_range_template(self):
+        """Test nested dict attribute with template expressions in range."""
+        model = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "hit_points": {
+                    "max": {"type": "int"},
+                    "current": {
+                        "type": "int",
+                        "range": "0..{{ this.hit_points.max }}",
+                    },
+                },
+            },
+        )
+
+        # Verify the model was created successfully
+        assert "hit_points" in model.attributes
+        hit_points_attr = model.attributes["hit_points"]
+        assert hit_points_attr.type == "dict"
+
+    def test_nested_dict_with_enum(self):
+        """Test nested dict attribute with enum constraint."""
+        model = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "gender": {"type": "str", "enum": ["female", "male", "non-binary"]},
+                "stats": {
+                    "strength": {"type": "int", "range": "1..20"},
+                    "dexterity": {"type": "int", "range": "1..20"},
+                },
+            },
+        )
+
+        # Verify both attributes created correctly
+        assert model.attributes["gender"].enum == [
+            "female",
+            "male",
+            "non-binary",
+        ]
+        assert model.attributes["stats"].type == "dict"
+
+    def test_explicit_dict_type_preserved(self):
+        """Test that explicit type='dict' is preserved."""
+        model = ModelDefinition(
+            id="test",
+            name="Test",
+            attributes={
+                "explicit_dict": {"type": "dict", "required": False},
+            },
+        )
+
+        # Verify explicit type is preserved
+        assert model.attributes["explicit_dict"].type == "dict"
+        assert model.attributes["explicit_dict"].required is False
+
+    def test_deeply_nested_dict_inference(self):
+        """Test multiple levels of nested dict attributes."""
+        model = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "stats": {
+                    "physical": {
+                        "strength": {"type": "int", "range": "1..20"},
+                        "dexterity": {"type": "int", "range": "1..20"},
+                    },
+                    "mental": {
+                        "intelligence": {"type": "int", "range": "1..20"},
+                        "wisdom": {"type": "int", "range": "1..20"},
+                    },
+                },
+            },
+        )
+
+        # Verify that stats is inferred as dict type
+        assert model.attributes["stats"].type == "dict"
+
+    def test_empty_dict_requires_explicit_type(self):
+        """Test that empty dict {} requires explicit type field."""
+        # Empty dict should fail validation (no 'type' field, no typed nested)
+        with pytest.raises(ConfigurationError):
+            ModelDefinition(
+                id="test",
+                name="Test",
+                attributes={
+                    "empty": {},  # No type, no nested typed attributes
+                },
+            )
+
+    def test_dict_with_only_default_requires_explicit_type(self):
+        """Test that dict with only 'default' field requires explicit type."""
+        # Has 'default' but no 'type' and no typed nested attributes
+        with pytest.raises(ConfigurationError):
+            ModelDefinition(
+                id="test",
+                name="Test",
+                attributes={
+                    "config": {"default": {"key": "value"}},
+                },
+            )
+
+    def test_dict_with_only_enum_requires_explicit_type(self):
+        """Test that dict with only 'enum' field requires explicit type."""
+        # Has 'enum' but no 'type' and no typed nested attributes
+        with pytest.raises(ConfigurationError):
+            ModelDefinition(
+                id="test",
+                name="Test",
+                attributes={
+                    "status": {"enum": ["active", "inactive"]},
+                },
+            )
+
+    def test_dict_with_untyped_nested_values_requires_explicit_type(self):
+        """Test that dict with non-typed nested values requires explicit type."""
+        # Nested values without 'type' field should fail
+        with pytest.raises(ConfigurationError):
+            ModelDefinition(
+                id="test",
+                name="Test",
+                attributes={
+                    "config": {
+                        "some_key": "some_value",  # Not a typed attribute
+                        "another_key": 123,
+                    },
+                },
+            )
+
+    def test_mixed_nested_some_typed_infers_dict(self):
+        """Test that at least one typed nested field triggers dict inference."""
+        model = ModelDefinition(
+            id="test",
+            name="Test",
+            attributes={
+                "metadata": {
+                    "created_at": {"type": "str"},
+                    # Other fields in the dict that aren't typed are ignored
+                },
+            },
+        )
+
+        # Should infer type='dict' because 'created_at' has a type
+        assert model.attributes["metadata"].type == "dict"
+
+    def test_complete_character_model_with_nested_dicts(self):
+        """Test the complete character model from the issue."""
+        model = ModelDefinition(
+            kind="model",
+            id="character",
+            name="Character",
+            description="Character model",
+            version=1,
+            attributes={
+                "name": {"type": "str"},
+                "gender": {"type": "str", "enum": ["female", "male", "non-binary"]},
+                "xp": {"type": "int", "default": 0, "range": "0..1000"},
+                "level": {"type": "int", "default": 1, "range": "1..10"},
+                "hit_points": {
+                    "max": {"type": "int"},
+                    "current": {
+                        "type": "int",
+                        "range": "0..{{ this.hit_points.max }}",
+                    },
+                },
+            },
+        )
+
+        # Verify the model structure
+        assert model.id == "character"
+        assert model.attributes["name"].type == "str"
+        assert model.attributes["gender"].enum == ["female", "male", "non-binary"]
+        assert model.attributes["hit_points"].type == "dict"

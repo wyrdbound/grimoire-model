@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Dict Type Inference**: Automatic inference of `type: dict` for nested attribute structures
+  - When an attribute definition contains nested dictionaries with at least one having a `type` field, the parent attribute automatically infers `type: dict`
+  - Allows intuitive nested attribute definitions like:
+    ```yaml
+    hit_points:
+      max: { type: int }
+      current: { type: int, range: "0..{{ this.hit_points.max }}" }
+    ```
+  - Works recursively for deeply nested structures
+  - Explicit type declarations always take precedence
+  - Empty dicts and dicts without typed nested attributes still require explicit `type` field
+
 ## [0.2.0] - 2025-09-12
 
 ### Changed

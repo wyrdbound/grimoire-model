@@ -197,7 +197,17 @@ class ModelDefinition(BaseModel):
     @field_validator("attributes", mode="before")
     @classmethod
     def validate_attributes(cls, v: Any) -> Dict[str, Any]:
-        """Validate and convert attribute definitions."""
+        """Validate and convert attribute definitions.
+
+        Args:
+            v: Attributes dictionary to validate
+
+        Returns:
+            Validated attributes dictionary
+
+        Raises:
+            ConfigurationError: If attribute definitions are invalid
+        """
         if not isinstance(v, dict):
             return v
 
@@ -205,9 +215,16 @@ class ModelDefinition(BaseModel):
         for key, value in v.items():
             if isinstance(value, dict):
                 try:
-                    # Try to create AttributeDefinition to validate
-                    AttributeDefinition(**value)
-                    converted_attributes[key] = value
+                    # Check if this should be inferred as a dict type
+                    if "type" not in value and cls._has_typed_nested_attrs(value):
+                        # Auto-infer type='dict' for nested attribute structures
+                        value_with_type = {"type": "dict", **value}
+                        AttributeDefinition(**value_with_type)
+                        converted_attributes[key] = value_with_type
+                    else:
+                        # Try to create AttributeDefinition to validate
+                        AttributeDefinition(**value)
+                        converted_attributes[key] = value
                 except Exception as e:
                     raise ConfigurationError(
                         f"Invalid attribute definition for '{key}': {e}",
@@ -218,6 +235,29 @@ class ModelDefinition(BaseModel):
                 converted_attributes[key] = value
 
         return converted_attributes
+
+    @classmethod
+    def _has_typed_nested_attrs(cls, value: Dict[str, Any]) -> bool:
+        """Check if a dict contains at least one nested dict with 'type' field.
+
+        Recursively checks nested dictionaries to detect typed attributes at
+        any level.
+
+        Args:
+            value: Dictionary to check
+
+        Returns:
+            True if at least one nested value is a dict with 'type' field
+        """
+        for nested_value in value.values():
+            if isinstance(nested_value, dict):
+                # Direct type field
+                if "type" in nested_value:
+                    return True
+                # Recursively check for typed nested attrs
+                if cls._has_typed_nested_attrs(nested_value):
+                    return True
+        return False
 
     # Validation
     validations: List[ValidationRule] = Field(
