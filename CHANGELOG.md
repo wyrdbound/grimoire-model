@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### TBD
+
+## [0.2.1] - 2025-10-01
+
 ### Added
 
 - **Dict Type Inference**: Automatic inference of `type: dict` for nested attribute structures
