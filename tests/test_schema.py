@@ -311,7 +311,7 @@ class TestModelDefinition:
                     "max": {"type": "int"},
                     "current": {
                         "type": "int",
-                        "range": "0..{{ this.hit_points.max }}",
+                        "range": "0..{{ hit_points.max }}",
                     },
                 },
             },
@@ -464,7 +464,7 @@ class TestModelDefinition:
                     "max": {"type": "int"},
                     "current": {
                         "type": "int",
-                        "range": "0..{{ this.hit_points.max }}",
+                        "range": "0..{{ hit_points.max }}",
                     },
                 },
             },
