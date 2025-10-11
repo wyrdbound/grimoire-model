@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### TBD
+### Fixed
+
+- **Nested Model Instantiation**: Fixed nested model types not being automatically instantiated as GrimoireModel objects
+  - Custom model types in AttributeDefinition (e.g., `type="stat"`) are now recursively instantiated as GrimoireModel objects
+  - Derived fields in nested models are computed correctly at all nesting depths
+  - Template resolution now works properly with custom model types at any nesting depth (e.g., `{{ abilities.constitution.bonus }}`)
+  - Namespace resolution works across nested models, supporting both same-namespace and cross-namespace references
+  - Added comprehensive test coverage for 2-level and 3-level nesting scenarios
 
 ## [0.2.1] - 2025-10-01
 
