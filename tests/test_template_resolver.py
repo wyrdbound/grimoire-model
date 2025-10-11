@@ -127,6 +127,99 @@ class TestJinja2TemplateResolver:
         result = resolver.resolve_template("plain string", {})
         assert result == "plain string"
 
+    def test_dotted_path_object_preservation(self):
+        """Test that dotted path templates preserve object types."""
+        resolver = Jinja2TemplateResolver()
+
+        # Create a mock object similar to GrimoireModel
+        class MockModel:
+            def __init__(self, name):
+                self.name = name
+                self.type = "character"
+
+            def __repr__(self):
+                return f"<MockModel: {self.name}>"
+
+        mock_obj = MockModel("Knave")
+
+        # Test simple dotted path
+        context = {"outputs": {"knave": mock_obj}}
+        result = resolver.resolve_template("{{ outputs.knave }}", context)
+        assert isinstance(result, MockModel)
+        assert result.name == "Knave"
+
+        # Test deeper nested path
+        context = {"data": {"outputs": {"character": mock_obj}}}
+        result = resolver.resolve_template("{{ data.outputs.character }}", context)
+        assert isinstance(result, MockModel)
+        assert result.name == "Knave"
+
+    def test_dotted_path_dict_preservation(self):
+        """Test that dotted path templates preserve dict types."""
+        resolver = Jinja2TemplateResolver()
+
+        # Test dictionary preservation
+        context = {"outputs": {"config": {"key": "value", "nested": {"deep": 42}}}}
+        result = resolver.resolve_template("{{ outputs.config }}", context)
+        assert isinstance(result, dict)
+        assert result == {"key": "value", "nested": {"deep": 42}}
+
+        # Test nested dict access
+        result = resolver.resolve_template("{{ outputs.config.nested }}", context)
+        assert isinstance(result, dict)
+        assert result == {"deep": 42}
+
+    def test_dotted_path_list_preservation(self):
+        """Test that dotted path templates preserve list types."""
+        resolver = Jinja2TemplateResolver()
+
+        # Test list preservation
+        context = {"outputs": {"items": [1, 2, 3, 4, 5]}}
+        result = resolver.resolve_template("{{ outputs.items }}", context)
+        assert isinstance(result, list)
+        assert result == [1, 2, 3, 4, 5]
+
+    def test_dotted_path_primitive_types(self):
+        """Test that dotted path templates preserve primitive types."""
+        resolver = Jinja2TemplateResolver()
+
+        # Test integer
+        context = {"stats": {"strength": 16}}
+        result = resolver.resolve_template("{{ stats.strength }}", context)
+        assert isinstance(result, int)
+        assert result == 16
+
+        # Test float
+        context = {"stats": {"damage": 3.5}}
+        result = resolver.resolve_template("{{ stats.damage }}", context)
+        assert isinstance(result, float)
+        assert result == 3.5
+
+        # Test boolean
+        context = {"flags": {"active": True}}
+        result = resolver.resolve_template("{{ flags.active }}", context)
+        assert isinstance(result, bool)
+        assert result is True
+
+        # Test None
+        context = {"data": {"empty": None}}
+        result = resolver.resolve_template("{{ data.empty }}", context)
+        assert result is None
+
+    def test_dotted_path_nonexistent(self):
+        """Test that nonexistent dotted paths raise errors."""
+        resolver = Jinja2TemplateResolver()
+
+        # Test nonexistent intermediate key
+        context = {"outputs": {}}
+        with pytest.raises(TemplateResolutionError):
+            resolver.resolve_template("{{ outputs.nonexistent }}", context)
+
+        # Test nonexistent top-level key
+        context = {}
+        with pytest.raises(TemplateResolutionError):
+            resolver.resolve_template("{{ nonexistent.path }}", context)
+
 
 class TestModelContextTemplateResolver:
     """Test ModelContextTemplateResolver class."""
@@ -153,7 +246,8 @@ class TestModelContextTemplateResolver:
             "{{ _dollar.stats.strength }}", model_data
         )
 
-        assert result == "16"
+        # Should preserve the integer type, not convert to string
+        assert result == 16
 
     def test_additional_context(self):
         """Test additional context alongside model data."""
