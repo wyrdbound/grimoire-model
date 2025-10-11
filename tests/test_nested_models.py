@@ -1,11 +1,14 @@
 """Tests for nested model instantiation functionality."""
 
+import pytest
+
 from grimoire_model import (
     AttributeDefinition,
     ModelDefinition,
     clear_registry,
     create_model,
 )
+from grimoire_model.core.exceptions import ModelValidationError
 from grimoire_model.core.model import GrimoireModel
 
 
@@ -404,8 +407,8 @@ class TestNestedModelInstantiation:
         assert model["list_field"] == [1, 2, 3]
         assert model["dict_field"] == {"key": "value"}
 
-    def test_unregistered_model_type_handled_gracefully(self):
-        """Test that referencing an unregistered model type doesn't crash."""
+    def test_unregistered_model_type_raises_error(self):
+        """Test that referencing an unregistered model type raises an error."""
         # Don't register the "unknown_model" type
         model_def = ModelDefinition(
             id="test",
@@ -417,11 +420,9 @@ class TestNestedModelInstantiation:
             },
         )
 
-        # Should not crash, just leave as dict
+        # Should raise ModelValidationError for invalid type
         data = {"name": "Test", "unknown": {"value": 42}}
-        model = create_model(model_def, data)
+        with pytest.raises(ModelValidationError) as exc_info:
+            create_model(model_def, data)
 
-        assert model["name"] == "Test"
-        # Should remain a dict since type can't be resolved
-        assert isinstance(model["unknown"], dict)
-        assert model["unknown"]["value"] == 42
+        assert "Invalid model type 'unknown_model'" in str(exc_info.value)
