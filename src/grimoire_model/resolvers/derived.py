@@ -426,11 +426,32 @@ class DerivedFieldResolver:
 
         for dependent_field in ordered_fields:
             if dependent_field in self.derived_fields:
-                logger.debug(f"Computing derived field: {dependent_field}")
-                self.compute_derived_field(dependent_field)
-                # CRITICAL FIX: After recomputing a derived field, we need to update
-                # its dependent fields recursively to handle dependency chains
-                self._update_dependent_fields(dependent_field)
+                # Check if all dependencies are available before computing
+                dep_info = self.derived_fields[dependent_field]
+                missing_deps = []
+                for dep in dep_info.dependencies:
+                    if dep not in self._model_data:
+                        missing_deps.append(dep)
+
+                if missing_deps:
+                    logger.debug(
+                        f"Skipping derived field '{dependent_field}' due to missing "
+                        f"dependencies: {missing_deps}"
+                    )
+                    continue
+
+                try:
+                    logger.debug(f"Computing derived field: {dependent_field}")
+                    self.compute_derived_field(dependent_field)
+                    # CRITICAL FIX: After recomputing a derived field, we need to
+                    # update its dependent fields recursively to handle dependency
+                    # chains
+                    self._update_dependent_fields(dependent_field)
+                except Exception as e:
+                    # Log but don't fail if a derived field can't be computed
+                    logger.debug(
+                        f"Failed to compute derived field '{dependent_field}': {e}"
+                    )
 
     def _on_field_updated(
         self, field_name: str, old_value: Any, new_value: Any

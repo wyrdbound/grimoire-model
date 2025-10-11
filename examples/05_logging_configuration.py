@@ -14,9 +14,9 @@ from datetime import datetime
 from grimoire_model import (
     AttributeDefinition,
     ModelDefinition,
+    clear_logger_injection,
     create_model,
     inject_logger,
-    clear_logger_injection,
     register_model,
 )
 
@@ -28,8 +28,8 @@ def example_basic_logging_setup():
     # Configure standard Python logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[logging.StreamHandler(sys.stdout)]
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
     # Create a model to see logging in action
@@ -40,7 +40,7 @@ def example_basic_logging_setup():
             "name": AttributeDefinition(type="str", required=True),
             "level": AttributeDefinition(type="int", default=1),
             "hp": AttributeDefinition(type="int", derived="{{ level * 8 }}"),
-        }
+        },
     )
 
     # This will log model creation
@@ -87,9 +87,9 @@ def example_custom_logger():
             "durability": AttributeDefinition(type="int", default=100),
             "condition": AttributeDefinition(
                 type="str",
-                derived="{{ 'Broken' if durability <= 0 else 'Good' if durability > 50 else 'Worn' }}"
+                derived="{{ 'Broken' if durability <= 0 else 'Good' if durability > 50 else 'Worn' }}",
             ),
-        }
+        },
     )
 
     sword = create_model(weapon_def, {"name": "Sting", "damage": 10, "durability": 75})
@@ -112,7 +112,7 @@ def example_structured_json_logger():
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "level": level,
                 "logger": "grimoire_model",
-                "message": message
+                "message": message,
             }
             print(json.dumps(log_entry))
 
@@ -146,12 +146,14 @@ def example_structured_json_logger():
             "damage": AttributeDefinition(type="int", derived="{{ level * 6 + 4 }}"),
             "description": AttributeDefinition(
                 type="str",
-                derived="{{ 'A level ' + level|string + ' ' + school|lower + ' spell dealing ' + damage|string + ' damage for ' + mana_cost|string + ' mana' }}"
+                derived="{{ 'A level ' + level|string + ' ' + school|lower + ' spell dealing ' + damage|string + ' damage for ' + mana_cost|string + ' mana' }}",
             ),
-        }
+        },
     )
 
-    fireball = create_model(spell_def, {"name": "Fireball", "level": 3, "school": "Evocation"})
+    fireball = create_model(
+        spell_def, {"name": "Fireball", "level": 3, "school": "Evocation"}
+    )
     print(f"Spell description (non-JSON): {fireball['description']}")
 
     clear_logger_injection()
@@ -165,7 +167,9 @@ def example_filtering_logger():
     class FilteringLogger:
         """Logger that filters messages based on content."""
 
-        def __init__(self, min_level: str = "INFO", exclude_patterns: list[str] | None = None):
+        def __init__(
+            self, min_level: str = "INFO", exclude_patterns: list[str] | None = None
+        ):
             self.levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
             self.min_level_index = self.levels.index(min_level.upper())
             self.exclude_patterns = exclude_patterns or []
@@ -201,7 +205,9 @@ def example_filtering_logger():
             self._log("CRITICAL", msg)
 
     # Use filtering logger - only show WARNING and above, exclude certain patterns
-    inject_logger(FilteringLogger(min_level="WARNING", exclude_patterns=["derived field"]))
+    inject_logger(
+        FilteringLogger(min_level="WARNING", exclude_patterns=["derived field"])
+    )
 
     # Create models that would normally generate debug logs
     item_def = ModelDefinition(
@@ -211,8 +217,10 @@ def example_filtering_logger():
             "name": AttributeDefinition(type="str", required=True),
             "value": AttributeDefinition(type="int", default=1),
             "weight": AttributeDefinition(type="float", default=0.1),
-            "value_per_weight": AttributeDefinition(type="float", derived="{{ value / weight }}"),
-        }
+            "value_per_weight": AttributeDefinition(
+                type="float", derived="{{ value / weight }}"
+            ),
+        },
     )
 
     # This should show warnings but not debug messages
@@ -237,7 +245,7 @@ def example_integration_with_standard_logging():
 
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(
-        '%(asctime)s | %(name)s | %(levelname)-8s | %(message)s'
+        "%(asctime)s | %(name)s | %(levelname)-8s | %(message)s"
     )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -277,8 +285,10 @@ def example_integration_with_standard_logging():
             "name": AttributeDefinition(type="str", required=True),
             "level": AttributeDefinition(type="int", default=1),
             "health": AttributeDefinition(type="int", derived="{{ level * 10 + 20 }}"),
-            "challenge_rating": AttributeDefinition(type="float", derived="{{ level * 0.5 }}"),
-        }
+            "challenge_rating": AttributeDefinition(
+                type="float", derived="{{ level * 0.5 }}"
+            ),
+        },
     )
 
     npc = create_model(npc_def, {"name": "Goblin Warrior", "level": 2})
