@@ -74,6 +74,9 @@ class GrimoireModel(MutableMapping):
         initial_data = data or {}
         self._data = pmap(initial_data)
 
+        # Instantiate nested models before setting up resolvers
+        self._instantiate_nested_models()
+
         # Set up derived field resolver with our data
         self._derived_field_resolver.set_model_data_accessor(dict(self._data))
         self._derived_field_resolver.set_field_change_callback(
@@ -288,6 +291,124 @@ class GrimoireModel(MutableMapping):
                 model_id=self._model_def.id,
                 parent_ids=self._model_def.extends,
             ) from e
+
+    def _is_custom_model_type(self, type_name: str) -> bool:
+        """Check if a type name refers to a custom model rather than a primitive.
+
+        Args:
+            type_name: The type name to check
+
+        Returns:
+            True if this is a custom model type, False if it's a primitive type
+        """
+        # List of primitive types that should not be instantiated as models
+        primitive_types = {
+            "int",
+            "str",
+            "float",
+            "bool",
+            "list",
+            "dict",
+            "any",
+            "none",
+            "bytes",
+            "date",
+            "datetime",
+            "time",
+        }
+        return type_name.lower() not in primitive_types
+
+    def _resolve_model_type(self, type_name: str) -> Optional[ModelDefinition]:
+        """Resolve a custom type name to a ModelDefinition.
+
+        Args:
+            type_name: The type name to resolve
+
+        Returns:
+            The ModelDefinition if found, None otherwise
+        """
+        from .registry import get_default_registry
+
+        registry = get_default_registry()
+
+        # First try to find in the same namespace as the current model
+        model_def = registry.get(self._model_def.namespace, type_name)
+
+        if model_def:
+            return model_def
+
+        # If not found in the same namespace, search across all namespaces
+        # This handles cross-namespace references
+        registry_dict = registry.get_registry_dict()
+        for key, model in registry_dict.items():
+            if key.endswith(f"__{type_name}"):
+                return model
+
+        return None
+
+    def _instantiate_nested_models(self) -> None:
+        """Recursively instantiate nested data as GrimoireModel objects.
+
+        This method walks through the data dictionary and for any attribute
+        that has a custom model type, it instantiates the nested data as a
+        GrimoireModel object with its own derived fields computed.
+        """
+        data_dict = dict(self._data)
+        modified = False
+
+        for attr_name, attr_def in self._resolved_attributes.items():
+            # Skip if this attribute doesn't have data
+            if attr_name not in data_dict:
+                continue
+
+            # Skip if this is not a custom model type
+            if not self._is_custom_model_type(attr_def.type):
+                continue
+
+            # Try to resolve the type to a model definition
+            nested_model_def = self._resolve_model_type(attr_def.type)
+
+            # If we couldn't resolve it, skip (might be a dict or other type)
+            if not nested_model_def:
+                continue
+
+            # Get the current value
+            current_value = data_dict[attr_name]
+
+            # If it's already a GrimoireModel, skip
+            if isinstance(current_value, GrimoireModel):
+                continue
+
+            # If it's None, skip
+            if current_value is None:
+                continue
+
+            # If it's a dict, instantiate it as a GrimoireModel
+            if isinstance(current_value, dict):
+                try:
+                    # Recursively create the nested model
+                    # Use the same template resolver to maintain consistency
+                    nested_model = GrimoireModel(
+                        model_definition=nested_model_def,
+                        data=current_value,
+                        template_resolver=self._template_resolver,
+                    )
+                    data_dict[attr_name] = nested_model
+                    modified = True
+                    logger.debug(
+                        f"Instantiated nested model '{attr_name}' "
+                        f"of type '{attr_def.type}'"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to instantiate nested model '{attr_name}' "
+                        f"of type '{attr_def.type}': {e}"
+                    )
+                    # Continue with the dict value if instantiation fails
+
+        # Update the data if we instantiated any nested models
+        if modified:
+            self._data = pmap(data_dict)
 
     def _register_derived_fields(self) -> None:
         """Register all derived fields with the resolver."""
