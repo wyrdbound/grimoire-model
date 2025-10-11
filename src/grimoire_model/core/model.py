@@ -302,30 +302,22 @@ class GrimoireModel(MutableMapping):
             True if this is a custom model type, False if it's a primitive type
         """
         # List of primitive types that should not be instantiated as models
-        primitive_types = {
-            "int",
-            "str",
-            "float",
-            "bool",
-            "list",
-            "dict",
-            "any",
-            "none",
-            "bytes",
-            "date",
-            "datetime",
-            "time",
-        }
+        # Only types supported by the GRIMOIRE spec
+        primitive_types = {"int", "str", "float", "bool", "list", "dict"}
         return type_name.lower() not in primitive_types
 
-    def _resolve_model_type(self, type_name: str) -> Optional[ModelDefinition]:
+    def _resolve_model_type(self, type_name: str) -> ModelDefinition:
         """Resolve a custom type name to a ModelDefinition.
 
         Args:
             type_name: The type name to resolve
 
         Returns:
-            The ModelDefinition if found, None otherwise
+            The ModelDefinition if found
+
+        Raises:
+            ModelValidationError: If the type name cannot be resolved to a
+                registered model definition
         """
         from .registry import get_default_registry
 
@@ -344,7 +336,15 @@ class GrimoireModel(MutableMapping):
             if key.endswith(f"__{type_name}"):
                 return model
 
-        return None
+        # If we reach here, the type could not be resolved
+        raise ModelValidationError(
+            f"Invalid model type '{type_name}' in model '{self._model_def.id}'",
+            context={
+                "model_id": self._model_def.id,
+                "type_name": type_name,
+                "namespace": self._model_def.namespace,
+            },
+        )
 
     def _instantiate_nested_models(self) -> None:
         """Recursively instantiate nested data as GrimoireModel objects.
@@ -365,12 +365,8 @@ class GrimoireModel(MutableMapping):
             if not self._is_custom_model_type(attr_def.type):
                 continue
 
-            # Try to resolve the type to a model definition
+            # Resolve the type to a model definition
             nested_model_def = self._resolve_model_type(attr_def.type)
-
-            # If we couldn't resolve it, skip (might be a dict or other type)
-            if not nested_model_def:
-                continue
 
             # Get the current value
             current_value = data_dict[attr_name]
@@ -383,28 +379,20 @@ class GrimoireModel(MutableMapping):
             if current_value is None:
                 continue
 
-            # If it's a dict, instantiate it as a GrimoireModel
+            # Instantiate dict as a GrimoireModel
             if isinstance(current_value, dict):
-                try:
-                    # Recursively create the nested model
-                    # Use the same template resolver to maintain consistency
-                    nested_model = GrimoireModel(
-                        model_definition=nested_model_def,
-                        data=current_value,
-                        template_resolver=self._template_resolver,
-                    )
-                    data_dict[attr_name] = nested_model
-                    modified = True
-                    logger.debug(
-                        f"Instantiated nested model '{attr_name}' "
-                        f"of type '{attr_def.type}'"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to instantiate nested model '{attr_name}' "
-                        f"of type '{attr_def.type}': {e}"
-                    )
-                    # Continue with the dict value if instantiation fails
+                # Recursively create the nested model
+                # Use the same template resolver to maintain consistency
+                nested_model = GrimoireModel(
+                    model_definition=nested_model_def,
+                    data=current_value,
+                    template_resolver=self._template_resolver,
+                )
+                data_dict[attr_name] = nested_model
+                modified = True
+                logger.debug(
+                    f"Instantiated nested model '{attr_name}' of type '{attr_def.type}'"
+                )
 
         # Update the data if we instantiated any nested models
         if modified:
