@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-10-11
+
+### Fixed
+
+- **Template Object Preservation**: Fixed `Jinja2TemplateResolver` converting objects to strings for dotted path templates ([#14](https://github.com/wyrdbound/grimoire-model/issues/14))
+  - Simple variable references like `{{ outputs.knave }}` now return the actual object instead of string representation
+  - Preserves `GrimoireModel` objects and other non-string types when resolving dotted path templates
+  - Enhanced resolver to detect simple variable references and bypass Jinja2's string conversion
+  - Maintains full Jinja2 functionality for complex template expressions
+  - Fixes downstream processing errors where objects were expected but strings were received
+  - Critical for object-oriented data flow in GRIMOIRE system flows
+
 ## [0.3.0] - 2025-10-10
 
 ### Added
