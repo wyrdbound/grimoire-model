@@ -93,9 +93,9 @@ class Jinja2TemplateResolver:
             enhanced_context = self._enhance_context(context)
 
             # Check for simple variable reference
-            simple_var = self._check_simple_variable(template_str, enhanced_context)
-            if simple_var is not None:
-                return simple_var
+            found, value = self._check_simple_variable(template_str, enhanced_context)
+            if found:
+                return value
 
             # Render template
             template = self.env.from_string(template_str)
@@ -167,18 +167,53 @@ class Jinja2TemplateResolver:
 
         return enhanced
 
-    def _check_simple_variable(self, template_str: str, context: Dict[str, Any]) -> Any:
+    def _check_simple_variable(
+        self, template_str: str, context: Dict[str, Any]
+    ) -> tuple[bool, Any]:
         """Check if template is a simple variable reference and return the value
-        directly."""
-        # Match patterns like {{ variable }} or {{variable}}
+        directly.
+
+        Handles both simple variables ({{ variable }}) and dotted paths
+        ({{ outputs.knave }}) by navigating through nested dictionaries.
+
+        Returns:
+            A tuple of (found, value) where:
+            - found: True if this is a simple variable reference with existing path
+            - value: The actual value (preserves type, can be None, dict, list, etc.)
+        """
+        # Match patterns like {{ variable }} or {{ path.to.variable }}
         match = re.match(
             r"^\s*\{\{\s*([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\s*\}\}\s*$", template_str
         )
         if match:
-            var_name = match.group(1)
-            if var_name in context:
-                return context[var_name]
-        return None
+            var_path = match.group(1)
+
+            # Handle simple (non-dotted) variable
+            if "." not in var_path:
+                if var_path in context:
+                    return (True, context[var_path])
+                return (False, None)
+
+            # Handle dotted path by navigating through the structure
+            path_parts = var_path.split(".")
+            current = context
+
+            try:
+                for part in path_parts:
+                    if isinstance(current, dict) and part in current:
+                        current = current[part]
+                    else:
+                        # Path doesn't exist
+                        return (False, None)
+
+                # Found the path - return the actual value (preserves type)
+                return (True, current)
+
+            except (KeyError, TypeError):
+                # Path navigation failed
+                return (False, None)
+
+        return (False, None)
 
     def _try_parse_structured_data(self, value: str) -> Any:
         """Try to parse a string as structured data."""
