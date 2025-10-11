@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Create Model Without Validation**: New `create_model_without_validation()` factory function for incremental object building
+  - Allows creating GrimoireModel instances without immediate validation, enabling step-by-step construction
+  - Added `skip_initial_validation` parameter to `GrimoireModel.__init__()`
+  - Derived fields are still computed from available data, but missing dependencies are gracefully skipped
+  - Validation can be explicitly called via `validate()` method when object construction is complete
+  - Fully backward compatible - existing `create_model()` behavior unchanged
+  - Use cases include workflow systems, form builders, data migration, and testing scenarios
+  - Example:
+    ```python
+    # Create with partial data
+    character = create_model_without_validation(char_def, {"name": "Hero"})
+    
+    # Build incrementally
+    character["level"] = 5
+    character["class"] = "warrior"
+    
+    # Validate when ready
+    errors = character.validate()
+    ```
+
 ## [0.2.3] - 2025-10-10
 
 ### Fixed

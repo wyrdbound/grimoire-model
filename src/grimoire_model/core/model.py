@@ -44,6 +44,7 @@ class GrimoireModel(MutableMapping):
         template_resolver: Optional[TemplateResolver] = None,
         derived_field_resolver: Optional[DerivedFieldResolver] = None,
         instance_id: Optional[str] = None,
+        skip_initial_validation: bool = False,
         **kwargs,
     ):
         """Initialize GrimoireModel with dependency injection.
@@ -55,6 +56,7 @@ class GrimoireModel(MutableMapping):
             derived_field_resolver: Derived field management service (injected
                 dependency)
             instance_id: Unique identifier for this model instance
+            skip_initial_validation: If True, skip validation during initialization
             **kwargs: Additional configuration options
         """
         self._model_def = model_definition
@@ -91,10 +93,14 @@ class GrimoireModel(MutableMapping):
 
         # Compute initial derived field values before validation
         # This ensures derived fields are available for validation rules
-        self._derived_field_resolver.compute_all_derived_fields()
+        # If skipping validation, also skip derived fields with missing dependencies
+        self._derived_field_resolver.compute_all_derived_fields(
+            skip_on_missing_dependencies=skip_initial_validation
+        )
 
         # Validate data (including validation rules that may reference derived fields)
-        self._validate_initial_data()
+        if not skip_initial_validation:
+            self._validate_initial_data()
 
         logger.info(
             f"Successfully initialized model '{self._model_def.id}' "
@@ -578,5 +584,63 @@ def create_model(
         data=data,
         template_resolver=template_resolver,
         derived_field_resolver=derived_resolver,
+        **kwargs,
+    )
+
+
+def create_model_without_validation(
+    model_definition: ModelDefinition,
+    data: Optional[Dict[str, Any]] = None,
+    template_resolver_type: str = "jinja2",
+    **kwargs,
+) -> GrimoireModel:
+    """Factory function to create GrimoireModel instances without validation.
+
+    This allows incremental object building where validation happens later via
+    explicit validate() calls.
+
+    Args:
+        model_definition: The model schema definition
+        data: Initial model data (can be partial)
+        template_resolver_type: Type of template resolver to use
+        **kwargs: Additional configuration options
+
+    Returns:
+        Configured GrimoireModel instance (unvalidated)
+
+    Note:
+        - Required field validation is skipped
+        - Derived fields are still computed from available data
+        - Call validate() explicitly when object is complete
+
+    Example:
+        >>> character_def = ModelDefinition(
+        ...     id="character",
+        ...     attributes={
+        ...         "name": {"type": "str", "required": True},
+        ...         "level": {"type": "int", "required": True},
+        ...     }
+        ... )
+        >>> character = create_model_without_validation(
+        ...     character_def, {"name": "Hero"}
+        ... )
+        >>> character["level"] = 5
+        >>> errors = character.validate()
+    """
+    template_resolver = create_template_resolver(
+        resolver_type=template_resolver_type,
+        **kwargs.pop("template_resolver_kwargs", {}),
+    )
+
+    derived_resolver = create_derived_field_resolver(
+        template_resolver=template_resolver, **kwargs.pop("derived_resolver_kwargs", {})
+    )
+
+    return GrimoireModel(
+        model_definition=model_definition,
+        data=data,
+        template_resolver=template_resolver,
+        derived_field_resolver=derived_resolver,
+        skip_initial_validation=True,
         **kwargs,
     )

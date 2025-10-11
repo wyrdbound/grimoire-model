@@ -57,6 +57,7 @@ from .core.exceptions import (
 from .core.model import (
     GrimoireModel,
     create_model,
+    create_model_without_validation,
 )
 from .core.registry import (
     ModelRegistry,
@@ -124,6 +125,7 @@ __all__ = [
     "ValidationRule",
     # Factory functions
     "create_model",
+    "create_model_without_validation",
     "create_template_resolver",
     "create_derived_field_resolver",
     # Registry
