@@ -1181,3 +1181,299 @@ class TestCreateModelFactory:
         assert character["power_level"] == "Power: 95", (
             f"Got: {character['power_level']}"
         )
+
+
+class TestCreateModelWithoutValidation:
+    """Test create_model_without_validation factory function."""
+
+    def test_create_model_without_validation_basic(self):
+        """Test creating a model without validation allows partial data."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True},
+                "class": {"type": "str", "required": True},
+            },
+        )
+
+        # This should NOT raise an error even with missing required fields
+        character = create_model_without_validation(model_def, {"name": "Hero"})
+
+        assert character["name"] == "Hero"
+        assert "level" not in character
+        assert "class" not in character
+
+    def test_create_model_without_validation_incremental_building(self):
+        """Test incremental object building with validation at the end."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True},
+                "class": {"type": "str", "required": True},
+            },
+        )
+
+        # Create with partial data
+        character = create_model_without_validation(model_def, {"name": "Hero"})
+
+        # Add fields incrementally
+        character["level"] = 5
+        character["class"] = "warrior"
+
+        # Validate when ready
+        errors = character.validate()
+        assert errors == []
+
+    def test_create_model_without_validation_validates_on_demand(self):
+        """Test that validation can be called explicitly."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True},
+            },
+        )
+
+        # Create with missing required field
+        character = create_model_without_validation(model_def, {"name": "Hero"})
+
+        # Explicit validation should report errors
+        errors = character.validate()
+        assert len(errors) > 0
+        assert any("level" in error.lower() for error in errors)
+
+        # Add the missing field
+        character["level"] = 5
+
+        # Now validation should pass
+        errors = character.validate()
+        assert errors == []
+
+    def test_create_model_without_validation_with_derived_fields(self):
+        """Test that derived fields are still computed with partial data."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True},
+                "hp": {"type": "int", "derived": "{{ level * 8 }}"},
+            },
+        )
+
+        # Create with only level
+        character = create_model_without_validation(model_def, {"level": 5})
+
+        # Derived field should be computed
+        assert character["hp"] == 40
+
+    def test_create_model_without_validation_empty_data(self):
+        """Test creating a model with no initial data."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True},
+            },
+        )
+
+        # Create with no data
+        character = create_model_without_validation(model_def, {})
+
+        # Should not raise an error
+        assert len(character) == 0
+
+        # Add fields later
+        character["name"] = "Hero"
+        character["level"] = 5
+
+        # Validate
+        errors = character.validate()
+        assert errors == []
+
+    def test_create_model_without_validation_with_defaults(self):
+        """Test that default values are still applied."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "default": 1},
+            },
+        )
+
+        # Create with missing required field
+        character = create_model_without_validation(model_def, {})
+
+        # Default should be applied
+        assert character["level"] == 1
+
+        # But validation should still fail
+        errors = character.validate()
+        assert len(errors) > 0
+        assert any("name" in error.lower() for error in errors)
+
+    def test_create_model_without_validation_field_validation_still_works(self):
+        """Test that field-level validation still works on setitem."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "age": {"type": "int", "range": "0..120"},
+            },
+        )
+
+        # Create without validation
+        character = create_model_without_validation(model_def, {})
+
+        # Setting a field with invalid value should still raise error
+        with pytest.raises(ModelValidationError):
+            character["age"] = 150  # Out of range
+
+    def test_create_model_without_validation_with_validation_rules(self):
+        """Test that validation rules are checked when validate() is called."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "strength": {"type": "int", "required": True},
+                "dexterity": {"type": "int", "required": True},
+                "intelligence": {"type": "int", "required": True},
+                "stat_total": {
+                    "type": "int",
+                    "derived": "{{ strength + dexterity + intelligence }}",
+                },
+            },
+            validations=[
+                ValidationRule(
+                    expression="stat_total >= 30",
+                    message="Total stats must be at least 30",
+                )
+            ],
+        )
+
+        # Create with partial data
+        character = create_model_without_validation(
+            model_def, {"strength": 8, "dexterity": 8}
+        )
+
+        # Add intelligence
+        character["intelligence"] = 8
+
+        # Validation should fail
+        errors = character.validate()
+        assert len(errors) > 0
+        assert "Total stats must be at least 30" in errors
+
+        # Fix the stats
+        character["strength"] = 12
+        character["dexterity"] = 10
+
+        # Now validation should pass
+        errors = character.validate()
+        assert errors == []
+
+    def test_create_model_without_validation_workflow_example(self):
+        """Test a realistic workflow example."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        # Define a character model
+        character_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "gender": {"type": "str", "required": True},
+                "race": {"type": "str", "required": True},
+                "class": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True, "default": 1},
+                "strength": {"type": "int", "required": True},
+                "hp": {"type": "int", "derived": "{{ level * strength }}"},
+            },
+        )
+
+        # Step 1: Create empty character
+        character = create_model_without_validation(character_def, {})
+
+        # Step 2: Set basic info
+        character["name"] = "Aragorn"
+        character["gender"] = "male"
+
+        # Step 3: Choose race
+        character["race"] = "human"
+
+        # Step 4: Roll abilities
+        character["strength"] = 16
+
+        # Step 5: Choose class
+        character["class"] = "ranger"
+
+        # Now validate the complete character
+        errors = character.validate()
+        assert errors == []
+
+        # Check derived fields
+        assert character["hp"] == 16  # level(1) * strength(16)
+
+    def test_create_model_without_validation_parameters_passed_through(self):
+        """Test that additional parameters are passed through correctly."""
+        from grimoire_model.core.model import create_model_without_validation
+
+        model_def = ModelDefinition(
+            id="test",
+            name="Test",
+            attributes={"name": {"type": "str", "required": True}},
+        )
+
+        # Create with custom instance_id
+        character = create_model_without_validation(
+            model_def, {}, instance_id="custom-id"
+        )
+
+        assert character.instance_id == "custom-id"
+
+    def test_grimoiremodel_direct_skip_validation(self):
+        """Test using GrimoireModel directly with skip_initial_validation."""
+        model_def = ModelDefinition(
+            id="character",
+            name="Character",
+            attributes={
+                "name": {"type": "str", "required": True},
+                "level": {"type": "int", "required": True},
+            },
+        )
+
+        # Create directly with skip_initial_validation
+        character = GrimoireModel(
+            model_def, {"name": "Hero"}, skip_initial_validation=True
+        )
+
+        assert character["name"] == "Hero"
+        assert "level" not in character
+
+        # Validation should fail
+        errors = character.validate()
+        assert len(errors) > 0

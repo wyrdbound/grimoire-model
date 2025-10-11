@@ -219,8 +219,15 @@ class DerivedFieldResolver:
         finally:
             self._computing.discard(field_name)
 
-    def compute_all_derived_fields(self) -> None:
-        """Compute all derived fields in dependency order."""
+    def compute_all_derived_fields(
+        self, skip_on_missing_dependencies: bool = False
+    ) -> None:
+        """Compute all derived fields in dependency order.
+
+        Args:
+            skip_on_missing_dependencies: If True, skip fields whose dependencies
+                are not present in the model data
+        """
         logger.debug(
             f"Computing all derived fields: {list(self.derived_fields.keys())}"
         )
@@ -233,7 +240,29 @@ class DerivedFieldResolver:
         logger.debug(f"Computing derived fields in order: {ordered_fields}")
 
         for field_name in ordered_fields:
-            self.compute_derived_field(field_name)
+            # Check if dependencies exist if requested
+            if skip_on_missing_dependencies:
+                dep_info = self.derived_fields[field_name]
+                missing_deps = []
+                for dep in dep_info.dependencies:
+                    if dep not in self._model_data:
+                        missing_deps.append(dep)
+
+                if missing_deps:
+                    logger.debug(
+                        f"Skipping derived field '{field_name}' due to missing "
+                        f"dependencies: {missing_deps}"
+                    )
+                    continue
+
+            try:
+                self.compute_derived_field(field_name)
+            except Exception as e:
+                # If we're being lenient about missing deps, just log and continue
+                if skip_on_missing_dependencies:
+                    logger.debug(f"Failed to compute derived field '{field_name}': {e}")
+                else:
+                    raise
 
     def get_field_dependencies(self, field_name: str) -> Set[str]:
         """Get the dependencies of a specific field."""
