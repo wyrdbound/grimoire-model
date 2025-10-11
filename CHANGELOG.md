@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-10-10
+
 ### Fixed
 
 - **Nested Model Instantiation**: Fixed nested model types not being automatically instantiated as GrimoireModel objects
