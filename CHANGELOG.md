@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Attribute-Style Access**: GrimoireModel objects now support both dictionary-style and attribute-style access patterns
+  - Implemented `__getattr__()` method to enable attribute-style reads (e.g., `model.name`)
+  - Implemented `__setattr__()` method to enable attribute-style writes (e.g., `model.name = "value"`)
+  - Full compatibility with template engines like Jinja2, Django templates, etc.
+  - `getattr()` now returns actual field values instead of defaults for model attributes
+  - Both access patterns work seamlessly together - set via dict, read via attribute and vice versa
+  - All validation and derived field updates work correctly with attribute access
+  - Backward compatible - all existing dictionary-style code continues to work unchanged
+  - Benefits:
+    - **Template Engine Support**: `{{ model.field }}` syntax works in Jinja2 and other engines
+    - **Standard Python Behavior**: Objects work like normal Python objects with dot notation
+    - **IDE Support**: Better autocomplete and type checking potential
+    - **Debugging**: More natural syntax for inspection (`print(obj.name)`)
+    - **Interoperability**: Works with libraries expecting standard attribute access
+  - Example:
+    ```python
+    character = create_model(character_def, {"name": "Hero", "level": 5})
+    
+    # All of these now work:
+    print(character['name'])       # Dictionary-style (existing)
+    print(character.name)          # Attribute-style (NEW)
+    print(character.get('name'))   # Dict method (existing)
+    print(getattr(character, 'name'))  # getattr (NEW - returns actual value)
+    
+    character['level'] = 10        # Dictionary-style assignment (existing)
+    character.level = 10           # Attribute-style assignment (NEW)
+    
+    # Template engines now work seamlessly:
+    template = Template("{{ character.name }} is level {{ character.level }}")
+    result = template.render(character=character)
+    ```
+
 ## [0.3.1] - 2025-10-11
 
 ### Fixed
