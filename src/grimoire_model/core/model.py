@@ -307,10 +307,23 @@ class GrimoireModel(MutableMapping):
         Returns:
             True if this is a custom model type, False if it's a primitive type
         """
+        from .primitive_registry import get_default_primitive_registry
+
         # List of primitive types that should not be instantiated as models
         # Only types supported by the GRIMOIRE spec
         primitive_types = {"int", "str", "float", "bool", "list", "dict"}
-        return type_name.lower() not in primitive_types
+
+        # Check built-in primitives
+        if type_name.lower() in primitive_types:
+            return False
+
+        # Check registered custom primitives
+        primitive_registry = get_default_primitive_registry()
+        if primitive_registry.is_registered(type_name):
+            return False
+
+        # Must be a custom model type
+        return True
 
     def _resolve_model_type(self, type_name: str) -> ModelDefinition:
         """Resolve a custom type name to a ModelDefinition.
