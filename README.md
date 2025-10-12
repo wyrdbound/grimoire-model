@@ -75,6 +75,44 @@ character['level'] = 20
 print(character['max_hp'])            # 280 (20 * 8 + 120, automatically updated)
 ```
 
+### Custom Primitive Types
+
+Register domain-specific primitive types that should be treated as primitive values rather than complex model objects:
+
+```python
+from grimoire_model import register_primitive_type, ModelDefinition, AttributeDefinition, create_model_without_validation
+
+# Register custom primitive types
+register_primitive_type('roll')       # Dice roll notation
+register_primitive_type('duration')   # Time periods
+register_primitive_type('distance')   # Measurements
+
+# Define a model using custom primitive types
+weapon_def = ModelDefinition(
+    id='weapon',
+    name='Weapon',
+    attributes={
+        'name': AttributeDefinition(type='str', required=True),
+        'damage': AttributeDefinition(type='roll', required=True)  # Custom primitive
+    }
+)
+
+# Create model - custom primitives work like built-in types
+weapon = create_model_without_validation(weapon_def, {
+    'name': 'Longsword',
+    'damage': '1d8'  # Stored as-is, like a string
+})
+
+print(weapon['damage'])  # '1d8'
+```
+
+Custom primitive types:
+- Are stored as raw values without instantiation
+- Don't require model registration
+- Can have optional validators
+- Support domain-specific type semantics
+- Work in derived field templates
+
 ### Global Model Registry
 
 Models are automatically registered in a global registry using namespaces:
@@ -283,7 +321,7 @@ ModelDefinition(
 
 ```python
 AttributeDefinition(
-    type: str,                    # Data type (str, int, float, bool, list, dict)
+    type: str,                    # Data type (str, int, float, bool, list, dict, or custom primitive)
     required: bool = False,       # Whether field is required
     default: Any = None,          # Default value
     derived: str = None,          # Template expression for derived fields
@@ -360,6 +398,38 @@ from grimoire_model import get_model_registry
 registry = get_model_registry()
 registry_dict = registry.get_registry_dict()
 all_namespaces = registry.list_namespaces()
+```
+
+### Primitive Type Registry Functions
+
+```python
+from grimoire_model import (
+    register_primitive_type,
+    unregister_primitive_type,
+    is_primitive_type,
+    clear_primitive_registry
+)
+
+# Register a custom primitive type
+register_primitive_type('roll')
+
+# Register with optional validator
+def validate_duration(value):
+    if isinstance(value, str) and value.endswith('s'):
+        return True, None
+    return False, "Duration must end with 's'"
+
+register_primitive_type('duration', validator=validate_duration)
+
+# Check if a type is registered as primitive
+is_primitive_type('roll')  # True
+is_primitive_type('unknown')  # False
+
+# Unregister a primitive type
+unregister_primitive_type('roll')
+
+# Clear all registered primitives (useful for testing)
+clear_primitive_registry()
 ```
 
 ### Template Resolvers
