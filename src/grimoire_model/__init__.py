@@ -59,6 +59,14 @@ from .core.model import (
     create_model,
     create_model_without_validation,
 )
+from .core.primitive_registry import (
+    PrimitiveTypeRegistry,
+    clear_primitive_registry,
+    get_default_primitive_registry,
+    is_primitive_type,
+    register_primitive_type,
+    unregister_primitive_type,
+)
 from .core.registry import (
     ModelRegistry,
     clear_registry,
@@ -135,6 +143,13 @@ __all__ = [
     "clear_registry",
     "register_model",
     "get_model",
+    # Primitive Type Registry
+    "PrimitiveTypeRegistry",
+    "register_primitive_type",
+    "unregister_primitive_type",
+    "is_primitive_type",
+    "get_default_primitive_registry",
+    "clear_primitive_registry",
     # Logging
     "logger",
     "get_logger",
