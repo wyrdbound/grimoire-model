@@ -4,7 +4,6 @@ import pytest
 from jinja2 import Template
 
 from grimoire_model import (
-    AttributeDefinition,
     ModelDefinition,
     create_model,
     create_model_without_validation,
@@ -26,7 +25,9 @@ class TestAttributeAccess:
             },
         )
 
-        model = create_model_without_validation(model_def, {"name": "test_name", "value": 42})
+        model = create_model_without_validation(
+            model_def, {"name": "test_name", "value": 42}
+        )
 
         # Test attribute access
         assert model.name == "test_name"
@@ -318,15 +319,19 @@ class TestAttributeAccess:
             },
         )
 
-        model = create_model_without_validation(model_def, {"name": "test", "value": 42})
+        model = create_model_without_validation(
+            model_def, {"name": "test", "value": 42}
+        )
 
         # All existing dict-style operations should still work
         assert model["name"] == "test"
         assert model.get("value") == 42
         assert "name" in model
         assert len(model) == 2
-        assert set(model.keys()) == {"name", "value"}  # Use set for unordered comparison
-        assert set(model.values()) == {"test", 42}  # Use set for unordered comparison
+        # Use set for unordered comparison
+        assert set(model.keys()) == {"name", "value"}
+        # Use set for unordered comparison
+        assert set(model.values()) == {"test", 42}
 
         # Update via dict
         model["name"] = "updated"
