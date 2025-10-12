@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-10-12
+
 ### Added
 
 - **Attribute-Style Access**: GrimoireModel objects now support both dictionary-style and attribute-style access patterns
+
   - Implemented `__getattr__()` method to enable attribute-style reads (e.g., `model.name`)
   - Implemented `__setattr__()` method to enable attribute-style writes (e.g., `model.name = "value"`)
   - Full compatibility with template engines like Jinja2, Django templates, etc.
@@ -24,23 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Debugging**: More natural syntax for inspection (`print(obj.name)`)
     - **Interoperability**: Works with libraries expecting standard attribute access
   - Example:
+
     ```python
     character = create_model(character_def, {"name": "Hero", "level": 5})
-    
+
     # All of these now work:
     print(character['name'])       # Dictionary-style (existing)
     print(character.name)          # Attribute-style (NEW)
     print(character.get('name'))   # Dict method (existing)
     print(getattr(character, 'name'))  # getattr (NEW - returns actual value)
-    
+
     character['level'] = 10        # Dictionary-style assignment (existing)
     character.level = 10           # Attribute-style assignment (NEW)
-    
+
     # Template engines now work seamlessly:
     template = Template("{{ character.name }} is level {{ character.level }}")
     result = template.render(character=character)
     ```
+
 - **Custom Primitive Type Support**: New primitive type registry for domain-specific primitive types
+
   - Added `register_primitive_type()` function to register custom primitive types that should be treated as primitives rather than models
   - Custom primitives (e.g., `roll` for dice notation, `duration` for time periods) are now stored as raw values without model instantiation
   - New `PrimitiveTypeRegistry` class with thread-safe registration and management
@@ -49,13 +55,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Supports optional validators for custom primitive types
   - Prevents registration of built-in primitives (int, str, float, bool, list, dict)
   - Example:
+
     ```python
     from grimoire_model import register_primitive_type
-    
+
     # Register domain-specific primitive types
     register_primitive_type('roll')      # Dice roll notation
     register_primitive_type('duration')  # Time periods
-    
+
     # Use in model definitions
     weapon_def = ModelDefinition(
         attributes={
@@ -63,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         }
     )
     ```
+
   - Use cases: TTRPG systems (dice rolls, durations), business domains (currency, phone), scientific domains (measurements with units)
 
 ## [0.3.1] - 2025-10-11
