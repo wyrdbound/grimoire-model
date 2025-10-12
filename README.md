@@ -12,9 +12,11 @@ Grimoire Model provides a sophisticated, schema-driven model system that combine
 ## ✨ Features
 
 - **📚 Dict-like Interface**: Familiar Python dictionary operations with schema validation
+- **✨ Dual Access Pattern**: Support for both dictionary-style (`obj['field']`) and attribute-style (`obj.field`) access
 - **🔄 Reactive Derived Fields**: Automatic computation with dependency tracking and batch updates
 - **🧬 Model Inheritance**: Multiple inheritance support with automatic namespace-based resolution
 - **📝 Template Expressions**: Jinja2-powered field templates for dynamic content
+- **🎨 Template Engine Compatible**: Works seamlessly with Jinja2, Django templates, and other engines
 - **🏷️ Namespace Organization**: Global model registry with namespace-based organization
 - **🛡️ Schema Validation**: Pydantic-based type checking and custom validation rules
 - **🔧 Dependency Injection**: Pluggable resolvers for extensibility
@@ -65,14 +67,16 @@ character = create_model(character_def, {
     "mp": 80
 })
 
-# Dict-like interface with automatic derived field updates
-print(character['name'])              # "Aragorn"
-print(character['max_hp'])            # 240 (15 * 8 + 120)
-print(character['character_summary']) # "Level 15 Aragorn (240 HP, 80 MP)"
+# Access data using BOTH dictionary-style AND attribute-style notation
+print(character['name'])        # "Aragorn" (dictionary-style)
+print(character.name)           # "Aragorn" (attribute-style)
+print(character.max_hp)         # 240 (15 * 8 + 120)
+print(character.character_summary)  # "Level 15 Aragorn (240 HP, 80 MP)"
 
-# Updates trigger automatic recalculation
-character['level'] = 20
-print(character['max_hp'])            # 280 (20 * 8 + 120, automatically updated)
+# Updates work with both access patterns
+character['level'] = 20         # Dictionary-style update
+character.level = 20            # Attribute-style update (same result)
+print(character.max_hp)         # 280 (automatically recalculated)
 ```
 
 ### Custom Primitive Types
@@ -229,6 +233,51 @@ character.batch_update({
 print(character['max_hp'])  # 390 (30 * 8 + 150)
 ```
 
+### Template Engine Integration
+
+GrimoireModel objects support both dictionary-style and attribute-style access, making them fully compatible with template engines like Jinja2, Django templates, and others:
+
+```python
+from jinja2 import Template
+
+# Create a weapon model
+weapon_def = ModelDefinition(
+    id="weapon",
+    name="Weapon",
+    attributes={
+        "name": AttributeDefinition(type="str", required=True),
+        "damage": AttributeDefinition(type="str", required=True),
+        "bonus": AttributeDefinition(type="int", default=0),
+    }
+)
+
+weapon = create_model(weapon_def, {
+    "name": "Longsword",
+    "damage": "1d8",
+    "bonus": 2
+})
+
+# Use attribute access in Jinja2 templates
+template = Template("{{ weapon.name }}: {{ weapon.damage }} +{{ weapon.bonus }}")
+result = template.render(weapon=weapon)
+print(result)  # "Longsword: 1d8 +2"
+
+# Works with more complex templates
+template = Template("""
+{% if weapon.bonus > 0 %}
+  {{ weapon.name }} ({{ weapon.damage }}+{{ weapon.bonus }})
+{% else %}
+  {{ weapon.name }} ({{ weapon.damage }})
+{% endif %}
+""")
+```
+
+This dual-access pattern (dictionary and attribute) provides:
+- **Template Compatibility**: Works seamlessly with Jinja2, Django, and other template engines
+- **Standard Python Behavior**: Objects behave like normal Python objects
+- **IDE Support**: Better autocomplete and type hints
+- **Backward Compatible**: All existing dictionary-style code continues to work
+
 ## 📚 Documentation
 
 - **[Logging Configuration](LOGGING.md)** - Configure library logging output and integration
@@ -352,6 +401,11 @@ class GrimoireModel(MutableMapping):
     def __iter__(self) -> Iterator[str]
     def __len__(self) -> int
     def keys(), values(), items()
+
+    # Attribute-style access (NEW in 0.3.2)
+    def __getattr__(self, name: str) -> Any
+    def __setattr__(self, name: str, value: Any) -> None
+    # Enables: obj.field_name (read) and obj.field_name = value (write)
 
     # Batch operations
     def batch_update(self, updates: Dict[str, Any]) -> None

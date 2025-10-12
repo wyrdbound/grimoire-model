@@ -171,6 +171,61 @@ class GrimoireModel(MutableMapping):
         """String representation."""
         return f"GrimoireModel(id={self._model_def.id}, data={dict(self._data)})"
 
+    def __getattr__(self, name: str) -> Any:
+        """Provide attribute-style access to model data.
+
+        This enables both dictionary-style (`obj['name']`) and attribute-style
+        (`obj.name`) access to model fields, improving compatibility with
+        template engines like Jinja2 and following standard Python object patterns.
+
+        Args:
+            name: The attribute name to access
+
+        Returns:
+            The value of the model field if it exists in the resolved attributes
+
+        Raises:
+            AttributeError: If the attribute is not a defined model field
+        """
+        # Check if it's a defined attribute in the model
+        # We need to check if _resolved_attributes exists first to avoid infinite
+        # recursion during object initialization
+        if (
+            "_resolved_attributes" in self.__dict__
+            and name in self._resolved_attributes
+        ):
+            return self.get(name)
+
+        # Fall back to normal AttributeError for undefined attributes
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Handle attribute assignment.
+
+        Enables both dictionary-style and attribute-style assignment to model fields.
+        Internal attributes (starting with '_') and special attributes are handled
+        normally, while model data attributes are routed through the validation system.
+
+        Args:
+            name: The attribute name to set
+            value: The value to assign
+        """
+        # Handle internal attributes normally (those starting with '_')
+        if name.startswith("_"):
+            super().__setattr__(name, value)
+        # Handle model data attributes (if _resolved_attributes exists and
+        # name is in it)
+        elif (
+            "_resolved_attributes" in self.__dict__
+            and name in self._resolved_attributes
+        ):
+            self[name] = value
+        else:
+            # For any other attributes, use default behavior
+            super().__setattr__(name, value)
+
     # Extended interface for model-specific operations
     def get_attribute_definition(self, attr_name: str) -> Optional[AttributeDefinition]:
         """Get the attribute definition for a field."""
