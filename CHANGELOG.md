@@ -40,6 +40,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     template = Template("{{ character.name }} is level {{ character.level }}")
     result = template.render(character=character)
     ```
+- **Custom Primitive Type Support**: New primitive type registry for domain-specific primitive types
+  - Added `register_primitive_type()` function to register custom primitive types that should be treated as primitives rather than models
+  - Custom primitives (e.g., `roll` for dice notation, `duration` for time periods) are now stored as raw values without model instantiation
+  - New `PrimitiveTypeRegistry` class with thread-safe registration and management
+  - Added global registry functions: `is_primitive_type()`, `unregister_primitive_type()`, `clear_primitive_registry()`
+  - Updated `_is_custom_model_type()` to check both built-in and custom registered primitives
+  - Supports optional validators for custom primitive types
+  - Prevents registration of built-in primitives (int, str, float, bool, list, dict)
+  - Example:
+    ```python
+    from grimoire_model import register_primitive_type
+    
+    # Register domain-specific primitive types
+    register_primitive_type('roll')      # Dice roll notation
+    register_primitive_type('duration')  # Time periods
+    
+    # Use in model definitions
+    weapon_def = ModelDefinition(
+        attributes={
+            'damage': AttributeDefinition(type='roll')  # Works like str
+        }
+    )
+    ```
+  - Use cases: TTRPG systems (dice rolls, durations), business domains (currency, phone), scientific domains (measurements with units)
 
 ## [0.3.1] - 2025-10-11
 
