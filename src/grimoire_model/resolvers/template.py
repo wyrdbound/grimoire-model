@@ -97,7 +97,32 @@ class Jinja2TemplateResolver:
             if found:
                 return value
 
-            # Render template
+            # Check if this is a pure expression template (just {{ expression }})
+            # If so, use compile_expression to preserve object types
+            is_pure_expr, expr_str = self._check_pure_expression(template_str)
+            if is_pure_expr:
+                # Validate that all required variables exist before compiling
+                # This ensures we get proper error messages for undefined variables
+                try:
+                    # Parse to check for undefined variables
+                    ast_tree = self.env.parse(template_str)
+                    undefined_vars = meta.find_undeclared_variables(ast_tree)
+                    missing_vars = [
+                        v for v in undefined_vars if v not in enhanced_context
+                    ]
+                    if missing_vars:
+                        # Let the normal render path handle this to get proper error
+                        raise ValueError(f"Undefined variables: {missing_vars}")
+
+                    # All variables exist, safe to use compile_expression
+                    expr = self.env.compile_expression(expr_str)
+                    result = expr(**enhanced_context)
+                    return result
+                except ValueError:
+                    # Fall back to render for proper error handling
+                    pass
+
+            # Render template as string
             template = self.env.from_string(template_str)
             result = template.render(enhanced_context)
 
@@ -166,6 +191,25 @@ class Jinja2TemplateResolver:
         })
 
         return enhanced
+
+    def _check_pure_expression(self, template_str: str) -> tuple[bool, str]:
+        """Check if template is a pure expression (just {{ ... }}) with no text.
+
+        Returns:
+            A tuple of (is_pure, expression) where:
+            - is_pure: True if this is a pure expression template
+            - expression: The expression string without {{ }}
+        """
+        # Match pattern: {{ expression }} with optional whitespace
+        # Use [^}] to ensure we don't match past the closing }}
+        match = re.match(r"^\s*\{\{\s*(.+?)\s*\}\}\s*$", template_str)
+        if match:
+            # Verify there's no additional template syntax after the first }}
+            # by ensuring the matched group doesn't contain }}
+            expr = match.group(1)
+            if "}}" not in expr:
+                return (True, expr)
+        return (False, "")
 
     def _check_simple_variable(
         self, template_str: str, context: Dict[str, Any]
