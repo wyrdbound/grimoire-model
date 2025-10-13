@@ -219,8 +219,8 @@ class TestJinja2TemplateResolver:
     def test_grimoire_model_in_data_structures(self):
         """Test that GrimoireModel objects are preserved in data structures."""
         from grimoire_model import (
-            ModelDefinition,
             AttributeDefinition,
+            ModelDefinition,
             create_model_without_validation,
         )
 
