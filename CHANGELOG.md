@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Jinja2 Template Expression Type Preservation**: Fixed issue where Jinja2 template expressions containing `GrimoireModel` objects in data structures (lists, dicts) were being converted to string representations instead of preserving the actual object types
+  - Pure expression templates (e.g., `{{ [item] }}`, `{{ inventory + [item] }}`, `{{ {'key': item} }}`) now use Jinja2's `compile_expression()` to preserve object types
+  - This fix enables proper TTRPG workflows where items (GrimoireModel objects) can be added to character inventories using template expressions
+  - Template expressions with text (e.g., `{{ name }} is level {{ level }}`) continue to work as before, returning strings
+  - Arithmetic operations now return proper numeric types (e.g., `{{ 5 * 8 }}` returns `40` as int, not `"40"` as string)
+  - Example:
+    ```python
+    # Previously BROKEN - returned string "[GrimoireModel(...)]"
+    result = resolver.resolve_template("{{ inventory + [item] }}", context)
+    # Now WORKS - returns actual list [GrimoireModel(...)]
+    type(result)  # <class 'list'>
+    ```
+
 ## [0.3.2] - 2025-10-12
 
 ### Added
