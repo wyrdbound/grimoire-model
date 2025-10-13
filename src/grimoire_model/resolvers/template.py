@@ -201,15 +201,17 @@ class Jinja2TemplateResolver:
             - expression: The expression string without {{ }}
         """
         # Match pattern: {{ expression }} with optional whitespace
-        # Use [^}] to ensure we don't match past the closing }}
-        match = re.match(r"^\s*\{\{\s*(.+?)\s*\}\}\s*$", template_str)
-        if match:
-            # Verify there's no additional template syntax after the first }}
-            # by ensuring the matched group doesn't contain }}
-            expr = match.group(1)
-            if "}}" not in expr:
-                return (True, expr)
-        return (False, "")
+        match = re.match(r"^\s*\{\{\s*(.+)\s*\}\}\s*$", template_str, re.DOTALL)
+        if not match:
+            return (False, "")
+
+        # Check if there are multiple Jinja2 expressions by looking for
+        # }} followed by content followed by {{
+        # This pattern would indicate "{{ expr1 }} text {{ expr2 }}"
+        if re.search(r"\}\}.*\{\{", template_str):
+            return (False, "")
+
+        return (True, match.group(1))
 
     def _check_simple_variable(
         self, template_str: str, context: Dict[str, Any]
