@@ -251,8 +251,11 @@ class GrimoireModel(MutableMapping):
         """Validate the current model data and return list of errors."""
         errors = []
 
-        # Validate fields using validation engine
-        field_errors = validate_model_data(dict(self._data), self._resolved_attributes)
+        # Validate fields using validation engine. Templated ranges
+        # (e.g. "0..{{ max_hp }}") are resolved against the current data
+        # first, so the validators stay context-free.
+        attributes = self._resolve_templated_ranges(self._resolved_attributes)
+        field_errors = validate_model_data(dict(self._data), attributes)
         errors.extend(field_errors)
 
         # Validate model-level validation rules
@@ -594,6 +597,51 @@ class GrimoireModel(MutableMapping):
         else:
             self._data = self._data.set(field_name, value)
             self._derived_field_resolver.set_model_data_accessor(dict(self._data))
+
+    def _resolve_templated_ranges(
+        self, attributes: Dict[str, "AttributeDefinition"]
+    ) -> Dict[str, "AttributeDefinition"]:
+        """Resolve template expressions inside ``range`` constraints.
+
+        A range may reference other attributes -- ``"0..{{ max_hp }}"`` -- which
+        ``RangeValidator`` cannot parse, since it reads the bounds with
+        ``float()``. Resolve those against the current model data here and hand
+        the validator a concrete range, rather than teaching every validator
+        about templating.
+
+        This runs from :meth:`validate`, after derived fields have been
+        computed, so a range may reference a derived attribute.
+
+        A range that fails to resolve is passed through unchanged. The
+        validator then reports it as an invalid range specification, which is
+        the correct loud failure -- never a skipped constraint.
+        """
+        resolved: Dict[str, AttributeDefinition] = {}
+        context = None
+
+        for name, attr_def in attributes.items():
+            range_spec = attr_def.range
+            if not range_spec or not self._template_resolver.is_template(range_spec):
+                resolved[name] = attr_def
+                continue
+
+            if context is None:
+                context = self._build_validation_context()
+
+            try:
+                resolved_range = self._template_resolver.resolve_template(
+                    range_spec, context
+                )
+            except Exception as exc:  # noqa: BLE001 - reported by the validator
+                logger.debug(
+                    f"Could not resolve range '{range_spec}' for '{name}': {exc}"
+                )
+                resolved[name] = attr_def
+                continue
+
+            resolved[name] = attr_def.model_copy(update={"range": str(resolved_range)})
+
+        return resolved
 
     def _build_validation_context(self) -> Dict[str, Any]:
         """Build context for validation rule evaluation."""
