@@ -5,7 +5,6 @@ Manages derived fields and their dependencies using the Observer pattern with
 topological sorting for correct evaluation order.
 """
 
-import re
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Set
@@ -278,14 +277,8 @@ class DerivedFieldResolver:
         """Extract variable dependencies from a template expression."""
         dependencies = set()
 
-        # Handle $. references (current model instance)
-        expression_copy = expression
-        if "$." in expression:
-            # Replace $.field with just field for dependency tracking
-            expression_copy = re.sub(r"\$\.([a-zA-Z_]\w*)", r"\1", expression)
-
         # Extract variables using the template resolver
-        template_vars = self.template_resolver.extract_variables(expression_copy)
+        template_vars = self.template_resolver.extract_variables(expression)
 
         # Process template variables to extract field references
         for var in template_vars:
@@ -309,20 +302,14 @@ class DerivedFieldResolver:
             # Add the field dependency
             dependencies.add(var)
 
-        # Also scan for pattern like $.field_name using regex
-        dollar_pattern = re.compile(r"\$\.([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)")
-        for match in dollar_pattern.finditer(expression):
-            field_ref = match.group(1)
-            dependencies.add(field_ref)
-
         logger.debug(f"Extracted dependencies from '{expression}': {dependencies}")
         return dependencies
 
     def _build_template_context(self) -> Dict[str, Any]:
         """Build context for template resolution."""
         context = {
-            "$": self._model_data,  # Model data accessible as $
-            self.instance_id: self._model_data,  # Model data accessible by instance ID
+            # Model data accessible by instance ID
+            self.instance_id: self._model_data,
         }
 
         # Add individual fields at top level for easier access

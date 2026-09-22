@@ -70,6 +70,19 @@ class Jinja2TemplateResolver:
         env_kwargs.update(jinja_kwargs)
 
         self.env = Environment(**cast(Any, env_kwargs))
+
+        # Jinja2 ships globals (range, dict, namespace, cycler, joiner,
+        # lipsum) that are reachable from any expression. In a model
+        # expression that is a hazard rather than a feature: a misspelled
+        # or missing attribute whose name collides with one of them
+        # resolves to the builtin instead of raising, so `{{ range }}`
+        # silently renders "<class 'range'>" onto a model. Both `range`
+        # and `dict` are plausible attribute names. Clearing globals makes
+        # every unresolved name raise under StrictUndefined, and lets an
+        # attribute legitimately be called `range`. Filters live in
+        # `env.filters` and are unaffected.
+        self.env.globals.clear()
+
         self.loader = loader
 
         # Template detection patterns
