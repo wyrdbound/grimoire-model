@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-22
+
+### Fixed
+
+- **Anonymous nested attribute groups lost their leaf definitions**: a group
+  declared inline with no `type` of its own (`power: {score: ..., modifier: ...}`)
+  was stored as an opaque `type: dict` and every leaf definition was discarded,
+  because `ModelDefinition.attributes` is typed `Dict[str, AttributeDefinition]`
+  and Pydantic dropped the unknown keys. Leaf `derived`, `default`, `range` and
+  `enum` were all silently ignored
+  - The failure was silent, not loud: a model instantiated successfully with no
+    derived leaves computed and out-of-range leaf values accepted
+  - `AttributeDefinition` now carries an optional `attributes` map, so a group
+    is an attribute that has attributes. Derived registration, defaults,
+    validation and range resolution all recurse into groups
+  - Validation errors name leaves by full dotted path (`hit_points.current`)
+  - The runtime data shape is unchanged: groups remain plain dicts
+- **Template expressions in `range` constraints were never resolved**:
+  `RangeValidator` parses bounds with `float()` after splitting on `..`, so
+  *every* relative range (`"0..{{ max_hp }}"`) failed as an invalid range
+  specification. Ranges are now resolved against the current model data in
+  `validate()`, after derived fields are computed, so a range may reference a
+  derived attribute. An unresolvable range still fails loudly rather than
+  becoming a skipped constraint
+- **Jinja2 globals leaked into model expressions**: `range`, `dict`,
+  `namespace`, `cycler`, `joiner` and `lipsum` were reachable from any
+  expression, so a missing or misspelled attribute colliding with one resolved
+  to the builtin instead of raising — `{{ range }}` rendered
+  `"<class 'range'>"` onto the model. Globals are now cleared on the expression
+  environment; filters are unaffected, and an attribute may be named `range`
+
+### Removed
+
+- **Dead `$` support in the derived-field resolver**: `$` is not a valid Jinja2
+  identifier, so `{{ $.field }}` fails at parse time and could never have
+  rendered. Only dependency extraction pretended to support it, producing graph
+  edges for expressions that cannot execute. The `$var` syntax in
+  `ModelContextTemplateResolver` is a separate, working feature and is unchanged
+
 ## [0.3.3] - 2025-10-12
 
 ### Fixed
