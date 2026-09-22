@@ -94,6 +94,15 @@ class AttributeDefinition(BaseModel):
         description="Regex pattern for string validation",
     )
 
+    # Anonymous nested group: leaf definitions for a group declared inline
+    # with no type of its own (``power: {score: ..., modifier: ...}``). A group
+    # is simply an attribute that has attributes; this mirrors the YAML shape
+    # exactly and needs no synthesized model names.
+    attributes: Optional[Dict[str, "AttributeDefinition"]] = Field(
+        default=None,
+        description="Leaf definitions for an anonymous nested attribute group",
+    )
+
     # Additional flags
     optional: Optional[bool] = Field(
         default=None,
@@ -165,6 +174,9 @@ class AttributeDefinition(BaseModel):
         return self
 
 
+AttributeDefinition.model_rebuild()
+
+
 class ModelDefinition(BaseModel):
     """Complete model definition following GRIMOIRE specification.
 
@@ -217,8 +229,13 @@ class ModelDefinition(BaseModel):
                 try:
                     # Check if this should be inferred as a dict type
                     if "type" not in value and cls._has_typed_nested_attrs(value):
-                        # Auto-infer type='dict' for nested attribute structures
-                        value_with_type = {"type": "dict", **value}
+                        # Anonymous nested group: keep the leaf definitions
+                        # under `attributes` rather than splatting them
+                        # alongside `type`, where Pydantic would drop them.
+                        value_with_type: Dict[str, Any] = {
+                            "type": "dict",
+                            "attributes": cls._convert_group(value),
+                        }
                         AttributeDefinition(**value_with_type)
                         converted_attributes[key] = value_with_type
                     else:
@@ -235,6 +252,21 @@ class ModelDefinition(BaseModel):
                 converted_attributes[key] = value
 
         return converted_attributes
+
+    @classmethod
+    def _convert_group(cls, group: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert an anonymous group's leaves, recursing into deeper groups."""
+        converted: Dict[str, Any] = {}
+        for name, leaf in group.items():
+            if isinstance(leaf, dict) and "type" not in leaf:
+                if cls._has_typed_nested_attrs(leaf):
+                    converted[name] = {
+                        "type": "dict",
+                        "attributes": cls._convert_group(leaf),
+                    }
+                    continue
+            converted[name] = leaf
+        return converted
 
     @classmethod
     def _has_typed_nested_attrs(cls, value: Dict[str, Any]) -> bool:

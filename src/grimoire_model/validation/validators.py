@@ -371,6 +371,51 @@ class ValidationEngine:
 
         return errors
 
+    def _validate_group(
+        self,
+        data: Dict[str, Any],
+        attributes: Dict[str, AttributeDefinition],
+        prefix: str,
+        enabled_validators: Optional[List[str]] = None,
+    ) -> List[str]:
+        """Validate the leaves of an anonymous nested group.
+
+        Errors name the leaf by its full dotted path (``hit_points.current``)
+        so two groups sharing a leaf name stay distinguishable.
+        """
+        errors: List[str] = []
+
+        # Present leaves, mirroring validate_data's split between fields that
+        # are present and fields that are absent.
+        for name, value in data.items():
+            if name not in attributes:
+                continue
+            attr_def = attributes[name]
+            path = f"{prefix}.{name}"
+            if attr_def.attributes:
+                if isinstance(value, dict):
+                    errors.extend(
+                        self._validate_group(
+                            value, attr_def.attributes, path, enabled_validators
+                        )
+                    )
+                continue
+            errors.extend(
+                self.validate_field(value, path, attr_def, enabled_validators)
+            )
+
+        # Absent leaves
+        for name, attr_def in attributes.items():
+            if name in data or attr_def.attributes:
+                continue
+            errors.extend(
+                self.validate_field(
+                    None, f"{prefix}.{name}", attr_def, enabled_validators
+                )
+            )
+
+        return errors
+
     def validate_data(
         self,
         data: Dict[str, Any],
@@ -393,6 +438,22 @@ class ValidationEngine:
         for field_name, value in data.items():
             if field_name in attributes:
                 attr_def = attributes[field_name]
+
+                # Anonymous nested group: validate its leaves, not the group.
+                # A group has no value of its own, so validating it as a
+                # `dict` would check nothing its author declared.
+                if attr_def.attributes:
+                    if isinstance(value, dict):
+                        all_errors.extend(
+                            self._validate_group(
+                                value,
+                                attr_def.attributes,
+                                field_name,
+                                enabled_validators,
+                            )
+                        )
+                    continue
+
                 field_errors = self.validate_field(
                     value, field_name, attr_def, enabled_validators
                 )
