@@ -7,7 +7,7 @@ into a dict-like model class that integrates with grimoire-context.
 
 import uuid
 from collections.abc import MutableMapping
-from typing import Any, Dict, Iterator, List, Optional, Set
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
 from pyrsistent import pmap
 
@@ -475,28 +475,63 @@ class GrimoireModel(MutableMapping):
         if modified:
             self._data = pmap(data_dict)
 
+    @staticmethod
+    def _iter_attribute_paths(
+        attributes: Dict[str, "AttributeDefinition"], prefix: str = ""
+    ) -> Iterator[Tuple[str, "AttributeDefinition"]]:
+        """Yield ``(dotted_path, definition)`` for every leaf attribute.
+
+        Anonymous nested groups carry their leaves under
+        ``AttributeDefinition.attributes``; a leaf inside ``power`` is yielded
+        as ``power.score``. Groups themselves are not yielded -- a group has no
+        value of its own, only its leaves do.
+        """
+        for name, attr_def in attributes.items():
+            path = f"{prefix}{name}"
+            if attr_def.attributes:
+                yield from GrimoireModel._iter_attribute_paths(
+                    attr_def.attributes, f"{path}."
+                )
+            else:
+                yield path, attr_def
+
     def _register_derived_fields(self) -> None:
-        """Register all derived fields with the resolver."""
-        for attr_name, attr_def in self._resolved_attributes.items():
+        """Register all derived fields with the resolver, including nested ones."""
+        for attr_path, attr_def in self._iter_attribute_paths(
+            self._resolved_attributes
+        ):
             if attr_def.derived:
                 self._derived_field_resolver.register_derived_field(
-                    attr_name, attr_def.derived, attr_def
+                    attr_path, attr_def.derived, attr_def
                 )
 
     def _apply_defaults(self) -> None:
         """Apply default values for attributes that don't have values."""
         data_dict = dict(self._data)
 
-        for attr_name, attr_def in self._resolved_attributes.items():
-            if (
-                attr_name not in data_dict
-                and attr_def.default is not None
-                and not attr_def.computed
-            ):
-                data_dict[attr_name] = attr_def.default
-                logger.debug(
-                    f"Applied default value for '{attr_name}': {attr_def.default}"
-                )
+        for attr_path, attr_def in self._iter_attribute_paths(
+            self._resolved_attributes
+        ):
+            if attr_def.default is None or attr_def.computed:
+                continue
+
+            parts = attr_path.split(".")
+            target = data_dict
+            for part in parts[:-1]:
+                existing = target.get(part)
+                if not isinstance(existing, dict):
+                    existing = {} if existing is None else existing
+                    if not isinstance(existing, dict):
+                        break
+                    target[part] = existing
+                target = existing
+            else:
+                leaf = parts[-1]
+                if leaf not in target:
+                    target[leaf] = attr_def.default
+                    logger.debug(
+                        f"Applied default value for '{attr_path}': {attr_def.default}"
+                    )
 
         self._data = pmap(data_dict)
         self._derived_field_resolver.set_model_data_accessor(data_dict)
@@ -620,6 +655,18 @@ class GrimoireModel(MutableMapping):
         context = None
 
         for name, attr_def in attributes.items():
+            # Anonymous nested groups carry leaves that may have their own
+            # templated ranges; recurse so they are resolved too.
+            if attr_def.attributes:
+                resolved[name] = attr_def.model_copy(
+                    update={
+                        "attributes": self._resolve_templated_ranges(
+                            attr_def.attributes
+                        )
+                    }
+                )
+                continue
+
             range_spec = attr_def.range
             if not range_spec or not self._template_resolver.is_template(range_spec):
                 resolved[name] = attr_def
