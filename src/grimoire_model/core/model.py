@@ -77,8 +77,11 @@ class GrimoireModel(MutableMapping):
         # Resolve inheritance to get complete schema
         self._resolved_attributes = self._resolve_inheritance()
 
-        # Initialize data storage (immutable)
-        initial_data = data or {}
+        # Initialize data storage (immutable). Null on an optional attribute
+        # means "no value", which is stored as absence.
+        initial_data = self._without_null_optionals(
+            data or {}, self._resolved_attributes
+        )
         self._data = pmap(initial_data)
 
         # Instantiate nested models before setting up resolvers
@@ -234,8 +237,21 @@ class GrimoireModel(MutableMapping):
 
     # Extended interface for model-specific operations
     def get_attribute_definition(self, attr_name: str) -> Optional[AttributeDefinition]:
-        """Get the attribute definition for a field."""
-        return self._resolved_attributes.get(attr_name)
+        """Get the attribute definition for a field.
+
+        A dotted name (``power.score``) is resolved through anonymous nested
+        groups, so writes to a nested leaf are validated like any other write.
+        A path into a named nested model returns None; that model validates its
+        own attributes.
+        """
+        parts = attr_name.split(".")
+        attributes: Dict[str, AttributeDefinition] = self._resolved_attributes
+        for part in parts[:-1]:
+            group = attributes.get(part)
+            if group is None or not group.attributes:
+                return None
+            attributes = group.attributes
+        return attributes.get(parts[-1])
 
     def get_derived_fields(self) -> Set[str]:
         """Get names of all derived fields."""
@@ -482,6 +498,26 @@ class GrimoireModel(MutableMapping):
             self._data = pmap(data_dict)
 
     @staticmethod
+    def _without_null_optionals(
+        data: Dict[str, Any], attributes: Dict[str, AttributeDefinition]
+    ) -> Dict[str, Any]:
+        """Drop ``None`` values of optional attributes, recursing into groups.
+
+        An optional attribute with no value is stored as absent, never as None.
+        ``None`` on a required attribute is left in place so validation reports
+        it. ``data`` is not modified.
+        """
+        result: Dict[str, Any] = {}
+        for key, value in data.items():
+            attr = attributes.get(key)
+            if attr is not None and value is None and attr.optional:
+                continue
+            if attr is not None and attr.attributes and isinstance(value, dict):
+                value = GrimoireModel._without_null_optionals(value, attr.attributes)
+            result[key] = value
+        return result
+
+    @staticmethod
     def _iter_attribute_paths(
         attributes: Dict[str, "AttributeDefinition"], prefix: str = ""
     ) -> Iterator[Tuple[str, "AttributeDefinition"]]:
@@ -558,6 +594,12 @@ class GrimoireModel(MutableMapping):
                 validation_errors=[f"Field '{key}' is readonly and cannot be modified"],
             )
 
+        # Null on an optional attribute means "no value": unset it rather than
+        # store None, and let dependents recompute against the unset value.
+        if value is None and attr_def is not None and attr_def.optional:
+            self._unset_field(key, skip_derived_update)
+            return
+
         # Validate the field if we have a definition
         if attr_def:
             errors = validate_field_value(value, key, attr_def)
@@ -582,6 +624,18 @@ class GrimoireModel(MutableMapping):
         # Update derived fields unless skipped
         if not skip_derived_update:
             self._derived_field_resolver.set_field_value(key, value)
+
+    def _unset_field(self, key: str, skip_derived_update: bool = False) -> None:
+        """Remove a field's value and update anything derived from it."""
+        data_copy = dict(self._data)
+        if "." in key:
+            delete_nested_value(data_copy, key)
+        else:
+            data_copy.pop(key, None)
+        self._data = pmap(data_copy)
+        self._derived_field_resolver.set_model_data_accessor(data_copy)
+        if not skip_derived_update:
+            self._derived_field_resolver.field_unset(key)
 
     def _has_field(self, field_name: str) -> bool:
         """Check if a field exists in the model."""

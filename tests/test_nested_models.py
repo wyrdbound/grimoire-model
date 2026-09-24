@@ -203,7 +203,12 @@ class TestNestedModelInstantiation:
         assert character["stat"]["bonus"] == 2
 
     def test_nested_model_with_none_value(self):
-        """Test that None values for optional nested models are preserved."""
+        """Null on an optional nested model unsets it; nothing is stored.
+
+        This previously asserted the None was preserved. Null on an optional
+        attribute now means "no value" and is stored as absence, the same as
+        any other optional attribute.
+        """
         stat_def = ModelDefinition(  # noqa: F841 (auto-registers)
             id="stat",
             name="Stat",
@@ -226,7 +231,8 @@ class TestNestedModelInstantiation:
         character_data = {"name": "Hero", "stat": None}
         character = create_model(character_def, character_data)
 
-        assert character["stat"] is None
+        assert "stat" not in character
+        assert character.get("stat") is None
 
     def test_nested_model_missing_optional(self):
         """Test that missing optional nested models don't cause errors."""
