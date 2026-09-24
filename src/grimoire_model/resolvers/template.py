@@ -184,24 +184,21 @@ class Jinja2TemplateResolver:
             return set()
 
     def _enhance_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Enhance context with additional utility variables."""
+        """Return the evaluation context: the caller's data, unaltered.
+
+        Earlier versions injected Python builtins (``max``, ``min``, ``sum``,
+        ``len``, ``abs``, ``round``) here. That was not Jinja2, so expressions
+        using them were not portable, and because the builtins were written
+        over the caller's data, a model attribute named ``round`` or ``max``
+        was silently replaced by a function. Aggregation uses Jinja2 filters
+        (``xs | sum``, ``xs | max``, ``xs | length``) instead.
+        """
         enhanced = context.copy()
 
         # Add underscore-prefixed dollar access since $ can't start Jinja2 variables
+        # (used only by ModelContextTemplateResolver's `$` syntax).
         if "$" in enhanced:
             enhanced["_dollar"] = enhanced["$"]
-
-        # Add Python built-ins that are commonly needed
-        import builtins
-
-        enhanced.update({
-            "max": builtins.max,
-            "min": builtins.min,
-            "sum": builtins.sum,
-            "len": builtins.len,
-            "abs": builtins.abs,
-            "round": builtins.round,
-        })
 
         return enhanced
 
