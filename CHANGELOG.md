@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-24
+
+### Removed (breaking)
+
+- **`ModelContextTemplateResolver` and the `model_context` resolver type.**
+  It resolved a `$var` substitution syntax that the GRIMOIRE specification
+  does not have, and added `get_field` / `has_field` template globals that
+  returned placeholders. `create_template_resolver("model_context")` and
+  `create_model(..., template_resolver_type="model_context")` now raise
+  `ValueError`; `"jinja2"` is the only resolver type. The base resolver no
+  longer aliases a `"$"` context key to `_dollar`. Write derived expressions
+  as Jinja2: `"{{ name }} (Level {{ level }})"`, not `"$name (Level $level)"`
+
 ## [0.6.0] - 2026-09-24
 
 ### Changed (breaking)
