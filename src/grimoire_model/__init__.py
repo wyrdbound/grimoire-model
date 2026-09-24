@@ -97,7 +97,6 @@ from .resolvers.derived import (
 from .resolvers.template import (
     CachingTemplateResolver,
     Jinja2TemplateResolver,
-    ModelContextTemplateResolver,
     TemplateResolver,
     create_template_resolver,
 )
@@ -169,7 +168,6 @@ __all__ = [
     # Resolvers
     "TemplateResolver",
     "Jinja2TemplateResolver",
-    "ModelContextTemplateResolver",
     "CachingTemplateResolver",
     "DerivedFieldResolver",
     "BatchedDerivedFieldResolver",

@@ -823,11 +823,11 @@ class TestCreateModelFactory:
         model1 = create_model(model_def, {"base": 10}, template_resolver_type="jinja2")
         assert model1["computed"] == "20"
 
-        # Test with model_context resolver
-        model2 = create_model(
-            model_def, {"base": 15}, template_resolver_type="model_context"
-        )
-        assert model2["computed"] == "30"
+        # The `$`-syntax model_context resolver was removed in 0.7.0
+        with pytest.raises(ValueError, match="Only 'jinja2' is supported"):
+            create_model(
+                model_def, {"base": 15}, template_resolver_type="model_context"
+            )
 
     def test_create_model_with_model_registry(self):
         """Test factory with model registry for inheritance."""
@@ -1143,44 +1143,6 @@ class TestCreateModelFactory:
 
         error = exc_info.value
         assert "Total stats must be at least 30" in str(error)
-
-    def test_model_context_template_resolver(self):
-        """Test that model_context template resolver works with $variable syntax."""
-        from grimoire_model.core.model import create_model
-
-        # Create a model using model_context template resolver
-        model_def = ModelDefinition(
-            id="character",
-            name="Character",
-            attributes={
-                "name": {"type": "str"},
-                "level": {"type": "int", "default": 1},
-                "power": {"type": "int", "default": 10},
-                # Using $variable syntax instead of {{ variable }}
-                "display_name": {"type": "str", "derived": "$name (Level $level)"},
-                "power_level": {"type": "str", "derived": "Power: $power"},
-            },
-        )
-
-        # Create model with model_context template resolver
-        character = create_model(
-            model_def,
-            {"name": "Gandalf", "level": 50, "power": 95},
-            template_resolver_type="model_context",
-        )
-
-        # The derived fields should be properly resolved
-        assert character["name"] == "Gandalf"
-        assert character["level"] == 50
-        assert character["power"] == 95
-
-        # These should resolve the $variable syntax correctly
-        assert character["display_name"] == "Gandalf (Level 50)", (
-            f"Got: {character['display_name']}"
-        )
-        assert character["power_level"] == "Power: 95", (
-            f"Got: {character['power_level']}"
-        )
 
 
 class TestCreateModelWithoutValidation:

@@ -86,7 +86,10 @@ a natural name for a combat counter. Aggregation is spelled with filters:
 
 Do not add an instance prefix. `$` was tried and removed — it is not a valid
 Jinja2 identifier, so `{{ $.field }}` cannot parse. `this.` is not supported
-and is not in the specification.
+and is not in the specification. The `$var` substitution resolver
+(`ModelContextTemplateResolver`, `create_template_resolver("model_context")`)
+was removed in 0.7.0 for the same reason: it is not GRIMOIRE. There is one
+expression syntax, Jinja2 inside `{{ }}`.
 
 ### III. A group is an attribute that has attributes
 

@@ -6,7 +6,6 @@ from grimoire_model.core.exceptions import TemplateResolutionError
 from grimoire_model.resolvers.template import (
     CachingTemplateResolver,
     Jinja2TemplateResolver,
-    ModelContextTemplateResolver,
     create_template_resolver,
 )
 
@@ -305,47 +304,6 @@ class TestJinja2TemplateResolver:
         assert result["weapon"] == weapon
 
 
-class TestModelContextTemplateResolver:
-    """Test ModelContextTemplateResolver class."""
-
-    def test_model_context_resolution(self):
-        """Test template resolution with model context."""
-        resolver = ModelContextTemplateResolver()
-
-        model_data = {"name": "Aragorn", "level": 5, "strength": 16}
-
-        result = resolver.resolve_with_model_context(
-            "{{ name }} is level {{ level }}", model_data
-        )
-        assert result == "Aragorn is level 5"
-
-    def test_dollar_sign_access(self):
-        """Test accessing model data via $ variable with special syntax."""
-        resolver = ModelContextTemplateResolver()
-
-        model_data = {"stats": {"strength": 16}}
-
-        # Use underscore since Jinja2 doesn't allow $ at start of variable names
-        result = resolver.resolve_with_model_context(
-            "{{ _dollar.stats.strength }}", model_data
-        )
-
-        # Should preserve the integer type, not convert to string
-        assert result == 16
-
-    def test_additional_context(self):
-        """Test additional context alongside model data."""
-        resolver = ModelContextTemplateResolver()
-
-        model_data = {"level": 5}
-        additional_context = {"multiplier": 8}
-
-        result = resolver.resolve_with_model_context(
-            "{{ level * multiplier }}", model_data, additional_context
-        )
-        assert result == 40  # Returns actual int from expression
-
-
 class TestCachingTemplateResolver:
     """Test CachingTemplateResolver class."""
 
@@ -409,10 +367,10 @@ class TestCreateTemplateResolver:
         # Should be wrapped in CachingTemplateResolver by default
         assert isinstance(resolver, CachingTemplateResolver)
 
-    def test_create_model_context_resolver(self):
-        """Test creating model context resolver."""
-        resolver = create_template_resolver("model_context")
-        assert isinstance(resolver, CachingTemplateResolver)
+    def test_model_context_resolver_is_gone(self):
+        """The `$`-syntax resolver was removed; asking for it is an error."""
+        with pytest.raises(ValueError, match="Only 'jinja2' is supported"):
+            create_template_resolver("model_context")
 
     def test_create_without_caching(self):
         """Test creating resolver without caching."""
