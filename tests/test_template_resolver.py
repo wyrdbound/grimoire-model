@@ -71,8 +71,8 @@ class TestJinja2TemplateResolver:
         result = resolver.resolve_template("{{ level * 8 }}", {"level": 5})
         assert result == 40  # Returns actual int from expression
 
-        # Test with enhanced context functions
-        result = resolver.resolve_template("{{ max(a, b) }}", {"a": 10, "b": 15})
+        # Aggregation uses Jinja2 filters, not Python builtins
+        result = resolver.resolve_template("{{ [a, b] | max }}", {"a": 10, "b": 15})
         assert result == 15  # Returns actual int from expression
 
     def test_structured_data_parsing(self):
@@ -96,16 +96,36 @@ class TestJinja2TemplateResolver:
         with pytest.raises(TemplateResolutionError):
             resolver.resolve_template("{{ undefined_var }}", {})
 
-    def test_context_enhancement(self):
-        """Test that context is enhanced with utility functions."""
+    def test_aggregation_uses_filters(self):
+        """Aggregation is spelled with Jinja2 filters and the `in` operator."""
+        resolver = Jinja2TemplateResolver()
+        ctx = {"xs": [{"w": 2}, {"w": 5}], "tags": ["a", "b"]}
+
+        assert resolver.resolve_template("{{ xs | sum(attribute='w') }}", ctx) == 7
+        assert (
+            resolver.resolve_template("{{ xs | map(attribute='w') | max }}", ctx) == 5
+        )
+        assert (
+            resolver.resolve_template("{{ xs | map(attribute='w') | min }}", ctx) == 2
+        )
+        assert resolver.resolve_template("{{ xs | length }}", ctx) == 2
+        assert resolver.resolve_template("{{ xs | count }}", ctx) == 2
+        assert resolver.resolve_template("{{ 'a' in tags }}", ctx) is True
+
+    @pytest.mark.parametrize("name", ["max", "min", "sum", "len", "abs", "round"])
+    def test_python_builtins_are_not_injected(self, name):
+        """Function-call forms like `sum(xs)` are not part of the language."""
         resolver = Jinja2TemplateResolver()
 
-        # Test built-in functions are available
-        result = resolver.resolve_template("{{ sum([1, 2, 3]) }}", {})
-        assert result == 6  # Returns actual int from expression
+        with pytest.raises(TemplateResolutionError):
+            resolver.resolve_template(f"{{{{ {name}([1, 2]) }}}}", {})
 
-        result = resolver.resolve_template("{{ len('hello') }}", {})
-        assert result == 5  # Returns actual int from expression
+    @pytest.mark.parametrize("name", ["max", "min", "sum", "len", "abs", "round"])
+    def test_attribute_named_like_a_builtin_is_not_shadowed(self, name):
+        """An attribute called `round` or `max` keeps its own value."""
+        resolver = Jinja2TemplateResolver()
+
+        assert resolver.resolve_template(f"{{{{ {name} + 1 }}}}", {name: 3}) == 4
 
     def test_non_string_input(self):
         """Test handling of non-string input."""

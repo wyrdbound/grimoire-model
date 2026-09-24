@@ -78,6 +78,12 @@ feature here: a misspelled attribute colliding with one resolved to the
 builtin instead of raising, and both `range` and `dict` are plausible
 attribute names. Filters live in `env.filters` and are unaffected.
 
+Nor are Python builtins added to the context. `max`, `min`, `sum`, `len`,
+`abs` and `round` used to be injected, which made `sum(xs)` work in Python
+only and silently replaced any attribute with one of those names — `round` is
+a natural name for a combat counter. Aggregation is spelled with filters:
+`xs | sum`, `xs | max`, `xs | length`, `x in xs`.
+
 Do not add an instance prefix. `$` was tried and removed — it is not a valid
 Jinja2 identifier, so `{{ $.field }}` cannot parse. `this.` is not supported
 and is not in the specification.
