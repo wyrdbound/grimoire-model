@@ -12,7 +12,7 @@ def simple_model_def():
         id="simple_test_model",
         name="Simple Test Model",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "score": AttributeDefinition(type="float", default=0.0),
             "active": AttributeDefinition(type="bool", default=True),
@@ -27,7 +27,7 @@ def character_model_def():
         id="character",
         name="Player Character",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1, range="1..20"),
             "strength": AttributeDefinition(type="int", default=10, range="3..18"),
             "dexterity": AttributeDefinition(type="int", default=10, range="3..18"),
@@ -58,8 +58,8 @@ def inheritance_parent_model():
         id="base_entity",
         name="Base Entity",
         attributes={
-            "id": AttributeDefinition(type="str", required=True),
-            "name": AttributeDefinition(type="str", required=True),
+            "id": AttributeDefinition(type="str"),
+            "name": AttributeDefinition(type="str"),
             "description": AttributeDefinition(type="str", default=""),
             "created_at": AttributeDefinition(type="str", default=""),
         },
@@ -147,12 +147,11 @@ def pattern_model_def():
             "email": AttributeDefinition(
                 type="str",
                 pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-                required=True,
             ),
             "phone": AttributeDefinition(
                 type="str",
                 pattern=r"^\+?1?-?\.?\s?\(?(\d{3})\)?[-\.\s]?(\d{3})[-\.\s]?(\d{4})$",
-                required=False,
+                optional=True,
             ),
         },
     )

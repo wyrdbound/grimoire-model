@@ -42,7 +42,7 @@ character_def = ModelDefinition(
     name="Player Character",
     namespace="rpg",  # Organize models in namespaces
     attributes={
-        "name": AttributeDefinition(type="str", required=True),
+        "name": AttributeDefinition(type="str"),
         "level": AttributeDefinition(type="int", default=1),
         "hp": AttributeDefinition(type="int", default=100),
         "mp": AttributeDefinition(type="int", default=50),
@@ -96,8 +96,8 @@ weapon_def = ModelDefinition(
     id='weapon',
     name='Weapon',
     attributes={
-        'name': AttributeDefinition(type='str', required=True),
-        'damage': AttributeDefinition(type='roll', required=True)  # Custom primitive
+        'name': AttributeDefinition(type='str'),
+        'damage': AttributeDefinition(type='roll')  # Custom primitive
     }
 )
 
@@ -152,8 +152,8 @@ base_entity_def = ModelDefinition(
     name="Base Entity",
     namespace="game",  # Registered in "game" namespace
     attributes={
-        "id": AttributeDefinition(type="str", required=True),
-        "name": AttributeDefinition(type="str", required=True),
+        "id": AttributeDefinition(type="str"),
+        "name": AttributeDefinition(type="str"),
         "description": AttributeDefinition(type="str", default="")
     }
 )
@@ -245,8 +245,8 @@ weapon_def = ModelDefinition(
     id="weapon",
     name="Weapon",
     attributes={
-        "name": AttributeDefinition(type="str", required=True),
-        "damage": AttributeDefinition(type="str", required=True),
+        "name": AttributeDefinition(type="str"),
+        "damage": AttributeDefinition(type="str"),
         "bonus": AttributeDefinition(type="int", default=0),
     }
 )
@@ -295,7 +295,7 @@ model_def = ModelDefinition(
     namespace="combat",  # Organize in combat namespace
     description="Combat weapon with damage calculations",
     attributes={
-        "name": AttributeDefinition(type="str", required=True),
+        "name": AttributeDefinition(type="str"),
         "base_damage": AttributeDefinition(type="int", default=1, range="1..50"),
         "enhancement": AttributeDefinition(type="int", default=0, range="0..10"),
 
@@ -371,7 +371,7 @@ ModelDefinition(
 ```python
 AttributeDefinition(
     type: str,                    # Data type (str, int, float, bool, list, dict, or custom primitive)
-    required: bool = False,       # Whether field is required
+    optional: bool = False,       # May be left without a value; required unless True
     default: Any = None,          # Default value
     derived: str = None,          # Template expression for derived fields
     range: str = None,            # Value range constraint (e.g., "1..100")

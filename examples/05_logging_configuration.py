@@ -37,7 +37,7 @@ def example_basic_logging_setup():
         id="character",
         name="Player Character",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "hp": AttributeDefinition(type="int", derived="{{ level * 8 }}"),
         },
@@ -82,7 +82,7 @@ def example_custom_logger():
         id="weapon",
         name="Weapon",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "damage": AttributeDefinition(type="int", default=1),
             "durability": AttributeDefinition(type="int", default=100),
             "condition": AttributeDefinition(
@@ -139,7 +139,7 @@ def example_structured_json_logger():
         id="spell",
         name="Spell",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "school": AttributeDefinition(type="str", default="Evocation"),
             "mana_cost": AttributeDefinition(type="int", derived="{{ level * 5 }}"),
@@ -214,7 +214,7 @@ def example_filtering_logger():
         id="item",
         name="Item",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "value": AttributeDefinition(type="int", default=1),
             "weight": AttributeDefinition(type="float", default=0.1),
             "value_per_weight": AttributeDefinition(
@@ -282,7 +282,7 @@ def example_integration_with_standard_logging():
         id="npc",
         name="NPC",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "health": AttributeDefinition(type="int", derived="{{ level * 10 + 20 }}"),
             "challenge_rating": AttributeDefinition(

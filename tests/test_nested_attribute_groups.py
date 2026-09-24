@@ -120,7 +120,7 @@ class TestNamedNestedModelsUnaffected:
             name="Stat",
             namespace="nested_named",
             attributes={
-                "value": {"type": "int", "required": True},
+                "value": {"type": "int"},
                 "bonus": {"type": "int", "derived": "{{ (value - 10) // 2 }}"},
             },
         )
@@ -129,7 +129,7 @@ class TestNamedNestedModelsUnaffected:
             name="Character",
             namespace="nested_named",
             attributes={
-                "constitution": {"type": "stat", "required": False},
+                "constitution": {"type": "stat", "optional": True},
                 "hit_points": {
                     "type": "int",
                     "derived": "{{ 10 + constitution.bonus }}",

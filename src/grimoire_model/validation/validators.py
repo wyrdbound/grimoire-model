@@ -45,7 +45,7 @@ class TypeValidator(FieldValidator):
     ) -> List[str]:
         """Validate that the value matches the expected type."""
         if value is None:
-            if attr_def.required and not attr_def.computed:
+            if not attr_def.optional and not attr_def.computed:
                 return [f"Required field '{field_name}' cannot be None"]
             return []
 
@@ -108,7 +108,7 @@ class RequiredValidator(FieldValidator):
         self, value: Any, field_name: str, attr_def: AttributeDefinition
     ) -> List[str]:
         """Validate that required fields are present."""
-        if attr_def.required and not attr_def.computed:
+        if not attr_def.optional and not attr_def.computed:
             if value is None:
                 return [f"Required field '{field_name}' is missing"]
         return []

@@ -20,7 +20,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "value": {"type": "int", "default": 0},
             },
         )
@@ -39,7 +39,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "value": {"type": "int", "default": 0},
             },
         )
@@ -57,7 +57,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "field1": {"type": "str", "required": True},
+                "field1": {"type": "str"},
                 "field2": {"type": "int", "default": 0},
             },
         )
@@ -99,7 +99,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
             },
         )
 
@@ -117,7 +117,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
             },
         )
 
@@ -133,8 +133,8 @@ class TestAttributeAccess:
             id="weapon",
             name="Weapon",
             attributes={
-                "name": {"type": "str", "required": True},
-                "damage": {"type": "str", "required": True},
+                "name": {"type": "str"},
+                "damage": {"type": "str"},
                 "bonus": {"type": "int", "default": 0},
             },
         )
@@ -162,7 +162,7 @@ class TestAttributeAccess:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "level": {"type": "int", "default": 1},
                 "hp": {"type": "int", "default": 10},
                 "max_hp": {"type": "int", "derived": "{{ level * 8 + hp }}"},
@@ -184,7 +184,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "age": {"type": "int", "range": "0..120"},
             },
         )
@@ -206,7 +206,7 @@ class TestAttributeAccess:
             name="Test",
             attributes={
                 "id": {"type": "str", "readonly": True, "default": "default_id"},
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
             },
         )
 
@@ -225,7 +225,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
             },
         )
 
@@ -246,8 +246,8 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
-                "optional": {"type": "str", "required": False},
+                "name": {"type": "str"},
+                "optional": {"type": "str", "optional": True},
             },
         )
 
@@ -271,7 +271,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "data": {"type": "dict", "required": False},
+                "data": {"type": "dict", "optional": True},
             },
         )
 
@@ -288,7 +288,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "value": {"type": "int", "default": 0},
             },
         )
@@ -314,7 +314,7 @@ class TestAttributeAccess:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "value": {"type": "int", "default": 0},
             },
         )

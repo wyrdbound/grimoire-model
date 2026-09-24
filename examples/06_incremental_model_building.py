@@ -29,9 +29,9 @@ def example_1_basic_incremental_building():
         id="character",
         name="Character",
         attributes={
-            "name": {"type": "str", "required": True},
-            "level": {"type": "int", "required": True},
-            "class": {"type": "str", "required": True},
+            "name": {"type": "str"},
+            "level": {"type": "int"},
+            "class": {"type": "str"},
         },
     )
 
@@ -67,17 +67,17 @@ def example_2_workflow_system():
         id="rpg_character",
         name="RPG Character",
         attributes={
-            "name": {"type": "str", "required": True},
-            "gender": {"type": "str", "required": True},
-            "race": {"type": "str", "required": True},
-            "class": {"type": "str", "required": True},
-            "level": {"type": "int", "required": True, "default": 1},
-            "strength": {"type": "int", "required": True, "range": "3..18"},
-            "dexterity": {"type": "int", "required": True, "range": "3..18"},
-            "constitution": {"type": "int", "required": True, "range": "3..18"},
-            "intelligence": {"type": "int", "required": True, "range": "3..18"},
-            "wisdom": {"type": "int", "required": True, "range": "3..18"},
-            "charisma": {"type": "int", "required": True, "range": "3..18"},
+            "name": {"type": "str"},
+            "gender": {"type": "str"},
+            "race": {"type": "str"},
+            "class": {"type": "str"},
+            "level": {"type": "int", "default": 1},
+            "strength": {"type": "int", "range": "3..18"},
+            "dexterity": {"type": "int", "range": "3..18"},
+            "constitution": {"type": "int", "range": "3..18"},
+            "intelligence": {"type": "int", "range": "3..18"},
+            "wisdom": {"type": "int", "range": "3..18"},
+            "charisma": {"type": "int", "range": "3..18"},
             # Derived fields
             "hp": {"type": "int", "derived": "{{ level * constitution }}"},
             "stat_total": {
@@ -150,8 +150,8 @@ def example_3_derived_fields_with_partial_data():
         id="computed_model",
         name="Computed Model",
         attributes={
-            "base_value": {"type": "int", "required": True},
-            "multiplier": {"type": "int", "required": True},
+            "base_value": {"type": "int"},
+            "multiplier": {"type": "int"},
             "bonus": {"type": "int", "default": 0},
             # This derived field depends on base_value and multiplier
             "computed": {
@@ -185,9 +185,9 @@ def example_4_validation_rules():
         id="constrained_model",
         name="Constrained Model",
         attributes={
-            "strength": {"type": "int", "required": True},
-            "dexterity": {"type": "int", "required": True},
-            "intelligence": {"type": "int", "required": True},
+            "strength": {"type": "int"},
+            "dexterity": {"type": "int"},
+            "intelligence": {"type": "int"},
             "stat_total": {
                 "type": "int",
                 "derived": "{{ strength + dexterity + intelligence }}",
@@ -233,15 +233,14 @@ def example_5_form_builder_pattern():
         id="user_registration",
         name="User Registration",
         attributes={
-            "username": {"type": "str", "required": True},
+            "username": {"type": "str"},
             "email": {
                 "type": "str",
-                "required": True,
                 "pattern": r"^[\w\.-]+@[\w\.-]+\.\w+$",
             },
-            "password": {"type": "str", "required": True},
-            "age": {"type": "int", "required": True, "range": "18..120"},
-            "terms_accepted": {"type": "bool", "required": True},
+            "password": {"type": "str"},
+            "age": {"type": "int", "range": "18..120"},
+            "terms_accepted": {"type": "bool"},
         },
     )
 
@@ -282,11 +281,11 @@ def example_6_testing_scenario():
         id="product",
         name="Product",
         attributes={
-            "sku": {"type": "str", "required": True},
-            "name": {"type": "str", "required": True},
-            "price": {"type": "float", "required": True},
-            "quantity": {"type": "int", "required": True},
-            "category": {"type": "str", "required": True},
+            "sku": {"type": "str"},
+            "name": {"type": "str"},
+            "price": {"type": "float"},
+            "quantity": {"type": "int"},
+            "category": {"type": "str"},
             "total_value": {"type": "float", "derived": "{{ price * quantity }}"},
         },
     )
@@ -314,8 +313,8 @@ def example_7_comparison_with_traditional():
         id="character_comparison",
         name="Character",
         attributes={
-            "name": {"type": "str", "required": True},
-            "level": {"type": "int", "required": True},
+            "name": {"type": "str"},
+            "level": {"type": "int"},
         },
     )
 

@@ -35,8 +35,8 @@ def main():
         namespace="game",  # Using namespace for organization
         description="Base entity with common properties",
         attributes={
-            "id": AttributeDefinition(type="str", required=True),
-            "name": AttributeDefinition(type="str", required=True),
+            "id": AttributeDefinition(type="str"),
+            "name": AttributeDefinition(type="str"),
             "description": AttributeDefinition(type="str", default=""),
             "created_at": AttributeDefinition(type="str", default="2024-01-01"),
             "tags": AttributeDefinition(type="list", default=[]),
@@ -211,7 +211,7 @@ def main():
         id="alt_character",
         name="Alternative Character",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "power": AttributeDefinition(type="int", default=10),
             # Using different template syntax

@@ -19,7 +19,7 @@ from grimoire_model import (
 def example_basic_custom_primitive():
     """Example 1: Basic custom primitive type registration."""
     print("=== Example 1: Basic Custom Primitive Type ===")
-    
+
     # Clear any previously registered types
     clear_primitive_registry()
 
@@ -31,10 +31,8 @@ def example_basic_custom_primitive():
         id="weapon",
         name="Weapon",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
-            "damage": AttributeDefinition(
-                type="roll", required=True
-            ),  # Custom primitive
+            "name": AttributeDefinition(type="str"),
+            "damage": AttributeDefinition(type="roll"),  # Custom primitive
         },
     )
 
@@ -52,7 +50,7 @@ def example_basic_custom_primitive():
 def example_multiple_custom_primitives():
     """Example 2: Multiple custom primitive types in a model."""
     print("=== Example 2: Multiple Custom Primitive Types ===")
-    
+
     # Clear any previously registered types
     clear_primitive_registry()
 
@@ -66,7 +64,7 @@ def example_multiple_custom_primitives():
         id="spell",
         name="Spell",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "damage": AttributeDefinition(type="roll"),
             "duration": AttributeDefinition(type="duration"),
             "range": AttributeDefinition(type="distance"),
@@ -100,7 +98,7 @@ def example_multiple_custom_primitives():
 def example_with_validator():
     """Example 3: Custom primitive with validator."""
     print("=== Example 3: Custom Primitive with Validator ===")
-    
+
     # Clear any previously registered types
     clear_primitive_registry()
 
@@ -130,7 +128,7 @@ def example_with_validator():
 def example_built_in_primitives_still_work():
     """Example 4: Built-in primitives work alongside custom ones."""
     print("=== Example 4: Built-in and Custom Primitives Together ===")
-    
+
     # Clear any previously registered types
     clear_primitive_registry()
 
@@ -142,7 +140,7 @@ def example_built_in_primitives_still_work():
         id="character",
         name="Character",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "hp": AttributeDefinition(type="float", default=10.0),
             "active": AttributeDefinition(type="bool", default=True),

@@ -225,8 +225,8 @@ class TestPrimitiveTypeIntegration:
 
         # Define a model with the custom primitive type
         weapon_attrs = {
-            "name": AttributeDefinition(type="str", required=True),
-            "damage": AttributeDefinition(type="roll", required=True),
+            "name": AttributeDefinition(type="str"),
+            "damage": AttributeDefinition(type="roll"),
         }
 
         weapon_def = ModelDefinition(
@@ -253,8 +253,8 @@ class TestPrimitiveTypeIntegration:
         # Don't register 'roll' - it should be treated as a custom model
 
         weapon_attrs = {
-            "name": AttributeDefinition(type="str", required=True),
-            "damage": AttributeDefinition(type="roll", required=True),
+            "name": AttributeDefinition(type="str"),
+            "damage": AttributeDefinition(type="roll"),
         }
 
         weapon_def = ModelDefinition(
@@ -280,7 +280,7 @@ class TestPrimitiveTypeIntegration:
         register_primitive_type("distance")
 
         spell_attrs = {
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "damage": AttributeDefinition(type="roll"),
             "duration": AttributeDefinition(type="duration"),
             "range": AttributeDefinition(type="distance"),
@@ -315,7 +315,7 @@ class TestPrimitiveTypeIntegration:
         register_primitive_type("roll")
 
         character_attrs = {
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1),
             "hp": AttributeDefinition(type="float", default=10.0),
             "active": AttributeDefinition(type="bool", default=True),
@@ -353,8 +353,8 @@ class TestPrimitiveTypeIntegration:
         register_primitive_type("roll")
 
         weapon_attrs = {
-            "name": AttributeDefinition(type="str", required=True),
-            "base_damage": AttributeDefinition(type="roll", required=True),
+            "name": AttributeDefinition(type="str"),
+            "base_damage": AttributeDefinition(type="roll"),
             "bonus": AttributeDefinition(type="int", default=0),
             "description": AttributeDefinition(
                 type="str", derived="{{ name }} deals {{ base_damage }} + {{ bonus }}"
@@ -389,8 +389,8 @@ class TestPrimitiveTypeIntegration:
 
         # Define a model with a custom primitive type that should work like 'str'
         weapon_attrs = {
-            "name": AttributeDefinition(type="str", required=True),
-            "damage": AttributeDefinition(type="roll", required=True),
+            "name": AttributeDefinition(type="str"),
+            "damage": AttributeDefinition(type="roll"),
         }
 
         weapon_def = ModelDefinition(
