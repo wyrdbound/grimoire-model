@@ -413,7 +413,7 @@ class TestModelLogging:
             id="log_test_model",
             name="Logging Test Model",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
+                "name": AttributeDefinition(type="str"),
                 "value": AttributeDefinition(type="int", default=0),
             },
         )

@@ -27,7 +27,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -40,8 +40,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "constitution": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "constitution": AttributeDefinition(type="stat", optional=True),
                 "hit_points": AttributeDefinition(
                     type="int", derived="{{ 10 + constitution.bonus }}"
                 ),
@@ -69,7 +69,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -82,9 +82,9 @@ class TestNestedModelInstantiation:
             name="Abilities",
             namespace="test",
             attributes={
-                "strength": AttributeDefinition(type="stat", required=False),
-                "constitution": AttributeDefinition(type="stat", required=False),
-                "dexterity": AttributeDefinition(type="stat", required=False),
+                "strength": AttributeDefinition(type="stat", optional=True),
+                "constitution": AttributeDefinition(type="stat", optional=True),
+                "dexterity": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -94,8 +94,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "abilities": AttributeDefinition(type="abilities", required=False),
+                "name": AttributeDefinition(type="str"),
+                "abilities": AttributeDefinition(type="abilities", optional=True),
                 "hit_points": AttributeDefinition(
                     type="int", derived="{{ 10 + abilities.constitution.bonus }}"
                 ),
@@ -126,7 +126,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -138,11 +138,11 @@ class TestNestedModelInstantiation:
             name="Mixed",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "level": AttributeDefinition(type="int", required=True),
-                "tags": AttributeDefinition(type="list", required=False),
-                "stats": AttributeDefinition(type="dict", required=False),
-                "primary_stat": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "level": AttributeDefinition(type="int"),
+                "tags": AttributeDefinition(type="list", optional=True),
+                "stats": AttributeDefinition(type="dict", optional=True),
+                "primary_stat": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -174,7 +174,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -186,8 +186,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "stat": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "stat": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -209,7 +209,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
             },
         )
 
@@ -218,8 +218,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "stat": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "stat": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -235,7 +235,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
             },
         )
 
@@ -244,8 +244,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "stat": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "stat": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -264,7 +264,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="common",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -277,8 +277,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="game",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "stat": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "stat": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -296,7 +296,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -308,10 +308,10 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "strength": AttributeDefinition(type="stat", required=False),
-                "dexterity": AttributeDefinition(type="stat", required=False),
-                "constitution": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "strength": AttributeDefinition(type="stat", optional=True),
+                "dexterity": AttributeDefinition(type="stat", optional=True),
+                "constitution": AttributeDefinition(type="stat", optional=True),
             },
         )
 
@@ -340,7 +340,7 @@ class TestNestedModelInstantiation:
             name="Stat",
             namespace="test",
             attributes={
-                "value": AttributeDefinition(type="int", required=True),
+                "value": AttributeDefinition(type="int"),
                 "bonus": AttributeDefinition(
                     type="int", derived="{{ (value - 10) // 2 }}"
                 ),
@@ -352,8 +352,8 @@ class TestNestedModelInstantiation:
             name="Character",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "constitution": AttributeDefinition(type="stat", required=False),
+                "name": AttributeDefinition(type="str"),
+                "constitution": AttributeDefinition(type="stat", optional=True),
                 "hit_points": AttributeDefinition(
                     type="int", derived="{{ 10 + constitution.bonus }}"
                 ),
@@ -379,12 +379,12 @@ class TestNestedModelInstantiation:
             name="Test",
             namespace="test",
             attributes={
-                "int_field": AttributeDefinition(type="int", required=False),
-                "str_field": AttributeDefinition(type="str", required=False),
-                "float_field": AttributeDefinition(type="float", required=False),
-                "bool_field": AttributeDefinition(type="bool", required=False),
-                "list_field": AttributeDefinition(type="list", required=False),
-                "dict_field": AttributeDefinition(type="dict", required=False),
+                "int_field": AttributeDefinition(type="int", optional=True),
+                "str_field": AttributeDefinition(type="str", optional=True),
+                "float_field": AttributeDefinition(type="float", optional=True),
+                "bool_field": AttributeDefinition(type="bool", optional=True),
+                "list_field": AttributeDefinition(type="list", optional=True),
+                "dict_field": AttributeDefinition(type="dict", optional=True),
             },
         )
 
@@ -415,8 +415,8 @@ class TestNestedModelInstantiation:
             name="Test",
             namespace="test",
             attributes={
-                "name": AttributeDefinition(type="str", required=True),
-                "unknown": AttributeDefinition(type="unknown_model", required=False),
+                "name": AttributeDefinition(type="str"),
+                "unknown": AttributeDefinition(type="unknown_model", optional=True),
             },
         )
 

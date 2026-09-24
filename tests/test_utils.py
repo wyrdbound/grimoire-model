@@ -342,7 +342,7 @@ class TestInheritanceUtils:
         parent_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
             {
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "created_at": {"type": "str", "computed": True, "derived": "{{now()}}"},
             },
         )
@@ -354,8 +354,8 @@ class TestInheritanceUtils:
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
             {
-                "email": {"type": "str", "required": True},
-                "name": {"type": "str", "required": False},  # Override parent
+                "email": {"type": "str"},
+                "name": {"type": "str", "optional": True},  # Override parent
             },
         )
         child = ModelDefinition(
@@ -377,7 +377,7 @@ class TestInheritanceUtils:
         # Child should override parent - check the resolved attribute object
         name_attr = resolved.attributes["name"]
         assert isinstance(name_attr, AttributeDefinition)
-        assert name_attr.required is False
+        assert name_attr.optional is True
 
     def test_resolve_model_inheritance_no_inheritance(self):
         """Test resolving model without inheritance."""
@@ -385,7 +385,7 @@ class TestInheritanceUtils:
 
         attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
-            {"name": {"type": "str", "required": True}},
+            {"name": {"type": "str"}},
         )
         model = ModelDefinition(id="simple_model", name="SimpleModel", attributes=attrs)
 
@@ -404,7 +404,7 @@ class TestInheritanceUtils:
         # Create parent with str type
         parent_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
-            {"field": {"type": "str", "required": True}},
+            {"field": {"type": "str"}},
         )
         parent = ModelDefinition(id="parent", name="Parent", attributes=parent_attrs)
 
@@ -412,7 +412,7 @@ class TestInheritanceUtils:
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
             {
-                "field": {"type": "int", "required": True}  # Conflicting type
+                "field": {"type": "int"}  # Conflicting type
             },
         )
         child = ModelDefinition(
@@ -432,15 +432,15 @@ class TestInheritanceUtils:
         # Create compatible models
         parent_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
-            {"field": {"type": "str", "required": True}},
+            {"field": {"type": "str"}},
         )
         parent = ModelDefinition(id="parent", name="Parent", attributes=parent_attrs)
 
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
             {
-                "field": {"type": "str", "required": False},  # Compatible override
-                "new_field": {"type": "int", "required": True},
+                "field": {"type": "str", "optional": True},  # Compatible override
+                "new_field": {"type": "int"},
             },
         )
         child = ModelDefinition(
@@ -495,7 +495,7 @@ class TestInheritanceUtils:
 
         child_attrs: Dict[str, Union[AttributeDefinition, Dict[str, Any]]] = cast(
             Dict[str, Union[AttributeDefinition, Dict[str, Any]]],
-            {"name": {"type": "str", "required": True}},
+            {"name": {"type": "str"}},
         )
         child = ModelDefinition(
             id="child", name="Child", extends=["missing_parent"], attributes=child_attrs

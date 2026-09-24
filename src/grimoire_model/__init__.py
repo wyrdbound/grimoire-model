@@ -21,7 +21,7 @@ Example Usage:
         id="character",
         name="Player Character",
         attributes={
-            "name": {"type": "str", "required": True},
+            "name": {"type": "str"},
             "level": {"type": "int", "default": 1},
             "hp": {"type": "int", "default": 8},
             "max_hp": {"type": "int", "derived": "{{ level * 8 }}"}

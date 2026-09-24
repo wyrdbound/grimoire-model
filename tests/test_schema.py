@@ -16,26 +16,33 @@ class TestAttributeDefinition:
 
     def test_basic_attribute_creation(self):
         """Test creating basic attribute definitions."""
-        attr = AttributeDefinition(type="str", required=True)
+        attr = AttributeDefinition(type="str")
         assert attr.type == "str"
-        assert attr.required is True
+        assert attr.optional is False  # required by default
         assert attr.computed is False
         assert attr.derived is None
 
     def test_derived_attribute_creation(self):
         """Test creating derived attribute definitions."""
-        attr = AttributeDefinition(
-            type="int", derived="{{ level * 2 }}", required=False
-        )
+        attr = AttributeDefinition(type="int", derived="{{ level * 2 }}", optional=True)
         assert attr.type == "int"
         assert attr.derived == "{{ level * 2 }}"
         assert attr.computed is True  # Should be auto-set
-        assert attr.required is False
+        assert attr.optional is True
 
-    def test_optional_override(self):
-        """Test that optional overrides required."""
-        attr = AttributeDefinition(type="str", required=True, optional=True)
-        assert attr.required is False  # Should be overridden by optional
+    def test_required_field_is_rejected(self):
+        """`required` is not an attribute field; `optional` is the only flag.
+
+        Silently ignoring `required: false` would make an attribute the author
+        meant to be optional required instead, so it must be an error.
+        """
+        for value in (True, False):
+            with pytest.raises(ValueError, match="`required` is not an attribute"):
+                AttributeDefinition(type="str", required=value)
+
+    def test_optional_attribute(self):
+        """`optional: true` marks an attribute that may be left without a value."""
+        assert AttributeDefinition(type="str", optional=True).optional is True
 
     def test_range_validation(self):
         """Test range validation."""
@@ -138,7 +145,7 @@ class TestModelDefinition:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "level": {"type": "int", "default": 1},
             },
         )
@@ -205,7 +212,7 @@ class TestModelDefinition:
             id="test",
             name="Test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
             },
         )
 
@@ -222,8 +229,8 @@ class TestModelDefinition:
             id="test",
             name="Test",
             attributes={
-                "required_field": {"type": "str", "required": True},
-                "optional_field": {"type": "str", "required": False},
+                "required_field": {"type": "str"},
+                "optional_field": {"type": "str", "optional": True},
                 "computed_field": {"type": "int", "derived": "{{ 42 }}"},
             },
         )
@@ -238,7 +245,7 @@ class TestModelDefinition:
             id="test",
             name="Test",
             attributes={
-                "normal_field": {"type": "str", "required": True},
+                "normal_field": {"type": "str"},
                 "computed_field": {"type": "int", "derived": "{{ 42 }}"},
             },
         )
@@ -253,7 +260,7 @@ class TestModelDefinition:
             id="test",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "level": {"type": "int", "default": 1},
             },
         )
@@ -350,13 +357,13 @@ class TestModelDefinition:
             id="test",
             name="Test",
             attributes={
-                "explicit_dict": {"type": "dict", "required": False},
+                "explicit_dict": {"type": "dict", "optional": True},
             },
         )
 
         # Verify explicit type is preserved
         assert model.attributes["explicit_dict"].type == "dict"
-        assert model.attributes["explicit_dict"].required is False
+        assert model.attributes["explicit_dict"].optional is True
 
     def test_deeply_nested_dict_inference(self):
         """Test multiple levels of nested dict attributes."""

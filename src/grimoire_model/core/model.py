@@ -780,8 +780,8 @@ def create_model_without_validation(
         >>> character_def = ModelDefinition(
         ...     id="character",
         ...     attributes={
-        ...         "name": {"type": "str", "required": True},
-        ...         "level": {"type": "int", "required": True},
+        ...         "name": {"type": "str"},
+        ...         "level": {"type": "int"},
         ...     }
         ... )
         >>> character = create_model_without_validation(

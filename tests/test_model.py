@@ -24,8 +24,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": False, "default": 0},
+                "name": {"type": "str"},
+                "age": {"type": "int", "optional": True, "default": 0},
             },
         )
 
@@ -41,7 +41,7 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "age": {"type": "int", "range": "0..120"},
             },
         )
@@ -63,8 +63,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": False, "default": 0},
+                "name": {"type": "str"},
+                "age": {"type": "int", "optional": True, "default": 0},
             },
         )
 
@@ -97,7 +97,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         model = GrimoireModel(model_def, {"name": "John"})
@@ -112,8 +112,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "age": {"type": "int"},
             },
         )
 
@@ -140,8 +140,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": False},
+                "name": {"type": "str"},
+                "age": {"type": "int", "optional": True},
             },
         )
 
@@ -162,8 +162,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": False},
-                "age": {"type": "int", "required": False},
+                "name": {"type": "str", "optional": True},
+                "age": {"type": "int", "optional": True},
             },
         )
 
@@ -179,8 +179,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": False},
-                "age": {"type": "int", "required": False},
+                "name": {"type": "str", "optional": True},
+                "age": {"type": "int", "optional": True},
             },
         )
 
@@ -204,7 +204,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": False}},
+            attributes={"name": {"type": "str", "optional": True}},
         )
 
         model = GrimoireModel(model_def, {"name": "John"})
@@ -224,8 +224,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": False},
-                "age": {"type": "int", "required": False},
+                "name": {"type": "str", "optional": True},
+                "age": {"type": "int", "optional": True},
             },
         )
 
@@ -247,8 +247,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "first_name": {"type": "str", "required": True},
-                "last_name": {"type": "str", "required": True},
+                "first_name": {"type": "str"},
+                "last_name": {"type": "str"},
                 "full_name": {"type": "str", "derived": "{{first_name}} {{last_name}}"},
             },
         )
@@ -281,8 +281,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "age": {"type": "int"},
             },
             validations=[validation_rule],
         )
@@ -302,7 +302,7 @@ class TestGrimoireModel:
             name="Test Model",
             attributes={
                 "id": {"type": "str", "readonly": True, "default": "auto-generated"},
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
             },
         )
 
@@ -321,8 +321,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "a": {"type": "str", "required": True},
-                "b": {"type": "str", "required": True},
+                "a": {"type": "str"},
+                "b": {"type": "str"},
                 "computed": {"type": "str", "derived": "{{a}} {{b}}"},
             },
         )
@@ -350,8 +350,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "age": {"type": "int"},
             },
         )
 
@@ -369,8 +369,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "age": {"type": "int"},
             },
         )
 
@@ -391,7 +391,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         model1 = GrimoireModel(model_def, {"name": "John"})
@@ -407,7 +407,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         model = GrimoireModel(model_def, {"name": "John"})
@@ -443,8 +443,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "age": {"type": "int"},
             },
         )
 
@@ -458,8 +458,8 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
-                "age": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "age": {"type": "int"},
             },
         )
 
@@ -482,7 +482,7 @@ class TestGrimoireModel:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "status": {"type": "str", "default": "active"},
                 "count": {"type": "int", "default": 0},
             },
@@ -500,7 +500,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         model = GrimoireModel(model_def, {"name": "John"})
@@ -519,7 +519,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         model = GrimoireModel(model_def, {"name": "John"})
@@ -538,7 +538,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         model = GrimoireModel(model_def, {"name": "John"})
@@ -553,7 +553,7 @@ class TestGrimoireModel:
         model_def = ModelDefinition(
             id="invalid_model",
             name="Invalid Model",
-            attributes={"required_field": {"type": "str", "required": True}},
+            attributes={"required_field": {"type": "str"}},
         )
 
         # Test exception handling
@@ -622,8 +622,8 @@ class TestGrimoireModel:
             id="complex_model",
             name="Complex Model",
             attributes={
-                "strength": {"type": "int", "required": True},
-                "weapon_damage": {"type": "int", "required": True},
+                "strength": {"type": "int"},
+                "weapon_damage": {"type": "int"},
                 "damage_multiplier": {
                     "type": "float",
                     "derived": "{{ total_damage * 0.1 }}",
@@ -695,7 +695,7 @@ class TestGrimoireModel:
             name="Base Character",
             namespace="test",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "health": {"type": "int", "default": 100},
             },
         )
@@ -740,7 +740,7 @@ class TestGrimoireModel:
             id="nested_model",
             name="Nested Model",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "stats": {"type": "dict"},
                 "config": {"type": "dict"},
             },
@@ -794,7 +794,7 @@ class TestCreateModelFactory:
             id="test_model",
             name="Test Model",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "age": {"type": "int", "default": 25},
             },
         )
@@ -814,7 +814,7 @@ class TestCreateModelFactory:
             id="template_model",
             name="Template Model",
             attributes={
-                "base": {"type": "int", "required": True},
+                "base": {"type": "int"},
                 "computed": {"type": "str", "derived": "{{ base * 2 }}"},
             },
         )
@@ -837,7 +837,7 @@ class TestCreateModelFactory:
             id="base_character",
             name="Base Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "health": {"type": "int", "default": 100},
             },
         )
@@ -873,7 +873,7 @@ class TestCreateModelFactory:
             id="custom_template_model",
             name="Custom Template Model",
             attributes={
-                "value": {"type": "int", "required": True},
+                "value": {"type": "int"},
                 "result": {"type": "str", "derived": "{{ value }}"},
             },
         )
@@ -904,8 +904,8 @@ class TestCreateModelFactory:
             id="batched_model",
             name="Batched Model",
             attributes={
-                "a": {"type": "int", "required": True},
-                "b": {"type": "int", "required": True},
+                "a": {"type": "int"},
+                "b": {"type": "int"},
                 "sum": {"type": "str", "derived": "{{ a + b }}"},
                 "product": {"type": "str", "derived": "{{ a * b }}"},
             },
@@ -930,7 +930,7 @@ class TestCreateModelFactory:
         model_def = ModelDefinition(
             id="kwargs_model",
             name="Kwargs Model",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         # Test with custom instance_id
@@ -970,7 +970,7 @@ class TestCreateModelFactory:
         model_def = ModelDefinition(
             id="validation_model",
             name="Validation Model",
-            attributes={"required_field": {"type": "str", "required": True}},
+            attributes={"required_field": {"type": "str"}},
         )
 
         # Should raise validation error for missing required field
@@ -987,7 +987,7 @@ class TestCreateModelFactory:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "level": {"type": "int", "default": 1, "range": "1..100"},
                 "health": {"type": "int", "default": 100},
                 "mana": {"type": "int", "default": 50},
@@ -1042,7 +1042,7 @@ class TestCreateModelFactory:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "health": {"type": "int", "default": 100},
                 "mana": {"type": "int", "default": 50},
             },
@@ -1103,7 +1103,7 @@ class TestCreateModelFactory:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "strength": {"type": "int", "default": 10},
                 "dexterity": {"type": "int", "default": 10},
                 "intelligence": {"type": "int", "default": 10},
@@ -1153,7 +1153,7 @@ class TestCreateModelFactory:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "level": {"type": "int", "default": 1},
                 "power": {"type": "int", "default": 10},
                 # Using $variable syntax instead of {{ variable }}
@@ -1194,9 +1194,9 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True},
-                "class": {"type": "str", "required": True},
+                "name": {"type": "str"},
+                "level": {"type": "int"},
+                "class": {"type": "str"},
             },
         )
 
@@ -1215,9 +1215,9 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True},
-                "class": {"type": "str", "required": True},
+                "name": {"type": "str"},
+                "level": {"type": "int"},
+                "class": {"type": "str"},
             },
         )
 
@@ -1240,8 +1240,8 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "level": {"type": "int"},
             },
         )
 
@@ -1268,8 +1268,8 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "level": {"type": "int"},
                 "hp": {"type": "int", "derived": "{{ level * 8 }}"},
             },
         )
@@ -1288,8 +1288,8 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "level": {"type": "int"},
             },
         )
 
@@ -1315,7 +1315,7 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "level": {"type": "int", "default": 1},
             },
         )
@@ -1339,7 +1339,7 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
+                "name": {"type": "str"},
                 "age": {"type": "int", "range": "0..120"},
             },
         )
@@ -1359,9 +1359,9 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "strength": {"type": "int", "required": True},
-                "dexterity": {"type": "int", "required": True},
-                "intelligence": {"type": "int", "required": True},
+                "strength": {"type": "int"},
+                "dexterity": {"type": "int"},
+                "intelligence": {"type": "int"},
                 "stat_total": {
                     "type": "int",
                     "derived": "{{ strength + dexterity + intelligence }}",
@@ -1405,12 +1405,12 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "gender": {"type": "str", "required": True},
-                "race": {"type": "str", "required": True},
-                "class": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True, "default": 1},
-                "strength": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "gender": {"type": "str"},
+                "race": {"type": "str"},
+                "class": {"type": "str"},
+                "level": {"type": "int", "default": 1},
+                "strength": {"type": "int"},
                 "hp": {"type": "int", "derived": "{{ level * strength }}"},
             },
         )
@@ -1445,7 +1445,7 @@ class TestCreateModelWithoutValidation:
         model_def = ModelDefinition(
             id="test",
             name="Test",
-            attributes={"name": {"type": "str", "required": True}},
+            attributes={"name": {"type": "str"}},
         )
 
         # Create with custom instance_id
@@ -1461,8 +1461,8 @@ class TestCreateModelWithoutValidation:
             id="character",
             name="Character",
             attributes={
-                "name": {"type": "str", "required": True},
-                "level": {"type": "int", "required": True},
+                "name": {"type": "str"},
+                "level": {"type": "int"},
             },
         )
 

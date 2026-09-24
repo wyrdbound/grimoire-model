@@ -30,7 +30,7 @@ def main():
         namespace="rpg",  # Organize models in namespaces
         description="A basic RPG character",
         attributes={
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "level": AttributeDefinition(type="int", default=1, range="1..100"),
             "health": AttributeDefinition(type="int", default=100),
             "mana": AttributeDefinition(type="int", default=50),

@@ -43,7 +43,7 @@ class TestModelRegistry:
             id="test_model",
             name="Test Model",
             namespace="test",
-            attributes={"name": AttributeDefinition(type="str", required=True)},
+            attributes={"name": AttributeDefinition(type="str")},
         )
 
         # Register the model
@@ -340,7 +340,7 @@ class TestModelDefinitionAutoRegistration:
             id="auto_test",
             name="Auto Test",
             namespace="test",
-            attributes={"name": AttributeDefinition(type="str", required=True)},
+            attributes={"name": AttributeDefinition(type="str")},
         )
 
         # Should be automatically registered

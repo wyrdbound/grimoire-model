@@ -64,9 +64,6 @@ class AttributeDefinition(BaseModel):
         description="Attribute type: int, str, float, bool, list, dict, or model ID",
     )
     default: Any = Field(default=None, description="Default value for the attribute")
-    required: bool = Field(
-        default=True, description="Whether the attribute is required"
-    )
     derived: Optional[str] = Field(
         default=None,
         description="Template expression for derived attributes",
@@ -104,9 +101,12 @@ class AttributeDefinition(BaseModel):
     )
 
     # Additional flags
-    optional: Optional[bool] = Field(
-        default=None,
-        description="Whether attribute can be null/undefined (overrides required)",
+    optional: bool = Field(
+        default=False,
+        description=(
+            "Whether the attribute may be left without a value. Attributes are "
+            "required unless marked optional; this is the only presence flag."
+        ),
     )
     readonly: bool = Field(
         default=False,
@@ -125,9 +125,22 @@ class AttributeDefinition(BaseModel):
         if self.derived is not None:
             self.computed = True
 
-        # Handle optional override of required
-        if self.optional is not None:
-            self.required = not self.optional
+    @model_validator(mode="before")
+    @classmethod
+    def reject_required_field(cls, data: Any) -> Any:
+        """Reject ``required``, which is not a GRIMOIRE attribute field.
+
+        Attributes are required by default and ``optional`` is the only presence
+        flag. Silently ignoring ``required: false`` would turn an attribute the
+        author meant to be optional into a required one, so it is an error.
+        """
+        if isinstance(data, dict) and "required" in data:
+            raise ValueError(
+                "`required` is not an attribute field. Attributes are required by "
+                "default; mark an attribute that may be left without a value with "
+                "`optional: true`."
+            )
+        return data
 
     @field_validator("type")
     @classmethod
@@ -396,7 +409,7 @@ class ModelDefinition(BaseModel):
             name: attr
             for name, attr in self.attributes.items()
             if isinstance(attr, AttributeDefinition)
-            and attr.required
+            and not attr.optional
             and not attr.computed
         }
 

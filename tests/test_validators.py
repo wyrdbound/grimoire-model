@@ -24,7 +24,7 @@ class TestTypeValidator:
     def test_integer_validation(self):
         """Test integer type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="int", required=True)
+        attr_def = AttributeDefinition(type="int")
 
         # Valid integers
         errors = validator.validate(42, "test_field", attr_def)
@@ -48,7 +48,7 @@ class TestTypeValidator:
     def test_float_validation(self):
         """Test float type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="float", required=True)
+        attr_def = AttributeDefinition(type="float")
 
         # Valid numbers
         errors = validator.validate(3.14, "test_field", attr_def)
@@ -67,7 +67,7 @@ class TestTypeValidator:
     def test_string_validation(self):
         """Test string type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="str", required=True)
+        attr_def = AttributeDefinition(type="str")
 
         # Valid strings
         errors = validator.validate("hello", "test_field", attr_def)
@@ -84,7 +84,7 @@ class TestTypeValidator:
     def test_boolean_validation(self):
         """Test boolean type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="bool", required=True)
+        attr_def = AttributeDefinition(type="bool")
 
         # Valid booleans
         errors = validator.validate(True, "test_field", attr_def)
@@ -101,7 +101,7 @@ class TestTypeValidator:
     def test_list_validation(self):
         """Test list type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="list", required=True)
+        attr_def = AttributeDefinition(type="list")
 
         # Valid lists
         errors = validator.validate([1, 2, 3], "test_field", attr_def)
@@ -118,7 +118,7 @@ class TestTypeValidator:
     def test_dict_validation(self):
         """Test dict type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="dict", required=True)
+        attr_def = AttributeDefinition(type="dict")
 
         # Valid dicts
         errors = validator.validate({"key": "value"}, "test_field", attr_def)
@@ -135,7 +135,7 @@ class TestTypeValidator:
     def test_any_type_validation(self):
         """Test 'any' type validation."""
         validator = TypeValidator()
-        attr_def = AttributeDefinition(type="any", required=True)
+        attr_def = AttributeDefinition(type="any")
 
         # Any type should be valid
         for value in [42, "string", True, [1, 2], {"key": "value"}, None]:
@@ -150,20 +150,18 @@ class TestTypeValidator:
         validator = TypeValidator()
 
         # Required field with None should produce error
-        required_attr = AttributeDefinition(type="str", required=True)
+        required_attr = AttributeDefinition(type="str")
         errors = validator.validate(None, "test_field", required_attr)
         assert len(errors) == 1
         assert "cannot be None" in errors[0]
 
         # Optional field with None should be OK
-        optional_attr = AttributeDefinition(type="str", required=False)
+        optional_attr = AttributeDefinition(type="str", optional=True)
         errors = validator.validate(None, "test_field", optional_attr)
         assert len(errors) == 0
 
         # Computed field with None should be OK
-        computed_attr = AttributeDefinition(
-            type="str", required=True, derived="computed_value"
-        )
+        computed_attr = AttributeDefinition(type="str", derived="computed_value")
         errors = validator.validate(None, "test_field", computed_attr)
         assert len(errors) == 0
 
@@ -176,7 +174,7 @@ class TestRequiredValidator:
         validator = RequiredValidator()
 
         # Required field with None should fail
-        required_attr = AttributeDefinition(type="str", required=True)
+        required_attr = AttributeDefinition(type="str")
         errors = validator.validate(None, "test_field", required_attr)
         assert len(errors) == 1
         assert "is missing" in errors[0]
@@ -186,14 +184,12 @@ class TestRequiredValidator:
         assert len(errors) == 0
 
         # Optional field with None should pass
-        optional_attr = AttributeDefinition(type="str", required=False)
+        optional_attr = AttributeDefinition(type="str", optional=True)
         errors = validator.validate(None, "test_field", optional_attr)
         assert len(errors) == 0
 
         # Computed field should pass even if required and None
-        computed_attr = AttributeDefinition(
-            type="str", required=True, derived="computed_value"
-        )
+        computed_attr = AttributeDefinition(type="str", derived="computed_value")
         errors = validator.validate(None, "test_field", computed_attr)
         assert len(errors) == 0
 
@@ -407,7 +403,7 @@ class TestValidationEngine:
     def test_field_validation(self):
         """Test single field validation."""
         engine = ValidationEngine()
-        attr_def = AttributeDefinition(type="str", required=True)
+        attr_def = AttributeDefinition(type="str")
 
         # Valid field
         errors = engine.validate_field("hello", "test_field", attr_def)
@@ -421,7 +417,7 @@ class TestValidationEngine:
         """Test full data validation."""
         engine = ValidationEngine()
         attributes = {
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "age": AttributeDefinition(type="int", range="0..120"),
         }
 
@@ -466,7 +462,7 @@ class TestConvenienceFunctions:
 
     def test_validate_field_value(self):
         """Test validate_field_value convenience function."""
-        attr_def = AttributeDefinition(type="str", required=True)
+        attr_def = AttributeDefinition(type="str")
 
         errors = validate_field_value("hello", "test_field", attr_def)
         assert len(errors) == 0
@@ -477,7 +473,7 @@ class TestConvenienceFunctions:
     def test_validate_model_data(self):
         """Test validate_model_data convenience function."""
         attributes = {
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
         }
 
         errors = validate_model_data({"name": "John"}, attributes)

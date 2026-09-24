@@ -132,13 +132,15 @@ model_def = ModelDefinition(
     name="My Model",
     namespace="my_app",  # Organize models in namespaces
     attributes={
-        "field1": AttributeDefinition(type="str", required=True),
+        "field1": AttributeDefinition(type="str"),
         "field2": AttributeDefinition(type="int", default=0),
-        "computed": AttributeDefinition(type="str", derived="{{ field1 }}_{{ field2 }}")
+        "computed": AttributeDefinition(
+            type="str", derived="{{ field1 }}_{{ field2 }}"
+        ),
     },
     validations=[
         ValidationRule(expression="field2 >= 0", message="Field2 must be non-negative")
-    ]
+    ],
 )
 ```
 
@@ -152,15 +154,13 @@ model = create_model(model_def, {"field1": "value"})
 
 # With batched resolver for performance
 model = create_model(
-    model_def,
-    {"field1": "value"},
-    derived_resolver_kwargs={"batched": True}
+    model_def, {"field1": "value"}, derived_resolver_kwargs={"batched": True}
 )
 
 # With inheritance (auto-resolved via namespaces)
 model = create_model(
     child_model_def,  # Inherits from parent automatically
-    {"field1": "value"}
+    {"field1": "value"},
 )
 ```
 
@@ -168,11 +168,7 @@ model = create_model(
 
 ```python
 # Efficient bulk updates
-model.batch_update({
-    "field1": "new_value",
-    "field2": 42,
-    "field3": True
-})
+model.batch_update({"field1": "new_value", "field2": 42, "field3": True})
 ```
 
 ### Global Registry and Namespace Pattern
@@ -184,7 +180,7 @@ from grimoire_model import get_model, clear_registry
 character_def = ModelDefinition(
     id="character",
     namespace="rpg",  # Registered in "rpg" namespace
-    attributes={...}
+    attributes={...},
 )
 
 # Retrieve models from global registry
@@ -205,9 +201,7 @@ clear_registry()  # Clear all namespaces
 parent_def = ModelDefinition(
     id="parent",
     namespace="my_app",
-    attributes={
-        "common_field": AttributeDefinition(type="str", required=True)
-    }
+    attributes={"common_field": AttributeDefinition(type="str")},
 )
 
 # Child model (automatically finds parent in same namespace)
@@ -215,9 +209,7 @@ child_def = ModelDefinition(
     id="child",
     namespace="my_app",  # Same namespace for inheritance resolution
     extends=["parent"],
-    attributes={
-        "specific_field": AttributeDefinition(type="int", default=0)
-    }
+    attributes={"specific_field": AttributeDefinition(type="int", default=0)},
 )
 ```
 
@@ -243,9 +235,9 @@ base_def = ModelDefinition(
     id="base_entity",
     namespace="game",  # Organize in namespace
     attributes={
-        "id": AttributeDefinition(type="str", required=True),
-        "name": AttributeDefinition(type="str", required=True)
-    }
+        "id": AttributeDefinition(type="str"),
+        "name": AttributeDefinition(type="str"),
+    },
 )
 
 # Intermediate level (shared domain concepts)
@@ -255,8 +247,8 @@ item_def = ModelDefinition(
     extends=["base_entity"],
     attributes={
         "value": AttributeDefinition(type="int", default=0),
-        "weight": AttributeDefinition(type="float", default=1.0)
-    }
+        "weight": AttributeDefinition(type="float", default=1.0),
+    },
 )
 
 # Specific implementation (specialized behavior)
@@ -265,9 +257,9 @@ weapon_def = ModelDefinition(
     namespace="game",  # Same namespace for inheritance
     extends=["item"],
     attributes={
-        "damage": AttributeDefinition(type="int", required=True),
-        "weapon_type": AttributeDefinition(type="str", required=True)
-    }
+        "damage": AttributeDefinition(type="int"),
+        "weapon_type": AttributeDefinition(type="str"),
+    },
 )
 ```
 
@@ -275,21 +267,26 @@ weapon_def = ModelDefinition(
 
 ```python
 # Create specialized instance (inheritance auto-resolved)
-weapon = create_model(weapon_def, {
-    "id": "sword_001",
-    "name": "Excalibur",
-    "value": 1000,
-    "weight": 3.0,
-    "damage": 25,
-    "weapon_type": "sword"
-})
+weapon = create_model(
+    weapon_def,
+    {
+        "id": "sword_001",
+        "name": "Excalibur",
+        "value": 1000,
+        "weight": 3.0,
+        "damage": 25,
+        "weapon_type": "sword",
+    },
+)
+
 
 # Use polymorphically as item
 def process_item(item_data):
     print(f"Item: {item_data['name']}, Value: {item_data['value']}")
     # Weapon-specific data still available in underlying dict
-    if 'damage' in item_data:
+    if "damage" in item_data:
         print(f"  (This item is actually a weapon with {item_data['damage']} damage)")
+
 
 process_item(weapon)  # Works seamlessly
 
@@ -306,7 +303,7 @@ def create_character_factory(model_def):
     class_stats = {
         "warrior": {"strength": 16, "constitution": 14, "dexterity": 12},
         "mage": {"intelligence": 16, "wisdom": 14, "constitution": 10},
-        "rogue": {"dexterity": 16, "intelligence": 14, "strength": 10}
+        "rogue": {"dexterity": 16, "intelligence": 14, "strength": 10},
     }
 
     def create_character(name: str, character_class: str, level: int = 1):
@@ -314,11 +311,12 @@ def create_character_factory(model_def):
             "name": name,
             "class": character_class,
             "level": level,
-            **class_stats.get(character_class, {})
+            **class_stats.get(character_class, {}),
         }
         return create_model(model_def, base_data)
 
     return create_character
+
 
 # Usage
 character_factory = create_character_factory(character_def)
@@ -341,11 +339,13 @@ def benchmark_operation(name: str, operation, iterations: int = 1000):
     print(f"{name}: {avg_time:.6f}s avg ({iterations} iterations)")
     return avg_time
 
+
 # Compare different approaches
 benchmark_operation("Regular resolver", lambda: create_model(model_def, data))
-benchmark_operation("Batched resolver", lambda: create_model(
-    model_def, data, derived_resolver_kwargs={"batched": True}
-))
+benchmark_operation(
+    "Batched resolver",
+    lambda: create_model(model_def, data, derived_resolver_kwargs={"batched": True}),
+)
 ```
 
 ## Performance Considerations

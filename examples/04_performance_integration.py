@@ -45,7 +45,7 @@ def create_complex_game_model():
         description="Complex game character with many derived fields",
         attributes={
             # Basic info
-            "name": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
             "class": AttributeDefinition(type="str", default="warrior"),
             "race": AttributeDefinition(type="str", default="human"),
             "level": AttributeDefinition(type="int", default=1, range="1..100"),

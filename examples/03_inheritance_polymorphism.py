@@ -34,8 +34,8 @@ def main():
         namespace="demo",  # Using demo namespace
         description="Base entity with common properties",
         attributes={
-            "id": AttributeDefinition(type="str", required=True),
-            "name": AttributeDefinition(type="str", required=True),
+            "id": AttributeDefinition(type="str"),
+            "name": AttributeDefinition(type="str"),
             "description": AttributeDefinition(type="str", default=""),
             "created_at": AttributeDefinition(type="str", default="2024-01-01"),
         },
@@ -105,7 +105,6 @@ def main():
             "durability": AttributeDefinition(type="int", default=100, range="0..100"),
             "weapon_type": AttributeDefinition(
                 type="str",
-                required=True,
                 enum=["sword", "axe", "bow", "staff", "dagger"],
             ),
             # Weapon-specific derived fields

@@ -228,8 +228,8 @@ class TestJinja2TemplateResolver:
 
         # Create a GrimoireModel instance
         attrs = {
-            "name": AttributeDefinition(type="str", required=True),
-            "type": AttributeDefinition(type="str", required=True),
+            "name": AttributeDefinition(type="str"),
+            "type": AttributeDefinition(type="str"),
         }
         weapon_def = ModelDefinition(
             id="weapon",
