@@ -170,6 +170,36 @@ class AttributeDefinition(BaseModel):
         return v
 
     @model_validator(mode="after")
+    def validate_default_rule(self) -> "AttributeDefinition":
+        """A default belongs only to a required attribute.
+
+        A default is applied when an instance is created and stored with it.
+        An optional attribute can be deliberately emptied, and a default would
+        undo that the next time the instance is rebuilt from stored data -- so
+        optional attributes have no default. Anything an optional attribute
+        should start with is set by whatever creates the instance.
+
+        ``default: null`` is rejected outright: on a required attribute it
+        contradicts itself, and on an optional one it is exactly the default
+        this rule forbids. ``model_fields_set`` distinguishes an explicit
+        ``default: null`` from an omitted default.
+        """
+        if "default" in self.model_fields_set and self.default is None:
+            raise ValueError(
+                "`default: null` is not a valid default. An attribute that may be "
+                "left without a value should be marked `optional: true` and given "
+                "no default."
+            )
+        if self.optional and self.default is not None:
+            raise ValueError(
+                "An optional attribute cannot have a default. A default is stored "
+                "when an instance is created and would re-apply whenever the "
+                "attribute is emptied; set the starting value when the instance "
+                "is created instead."
+            )
+        return self
+
+    @model_validator(mode="after")
     def validate_computed_attributes(self) -> "AttributeDefinition":
         """Validate computed/derived attribute constraints."""
         if self.computed and self.derived is None:
@@ -433,9 +463,14 @@ class ModelDefinition(BaseModel):
         """Convert to dictionary representation."""
         result = self.model_dump()
 
-        # Convert AttributeDefinition objects back to dicts
+        # Convert AttributeDefinition objects back to dicts. Only fields that
+        # were actually set are emitted: dumping every field would write
+        # `default: None` for attributes that never had a default, which reads
+        # back as an explicit `default: null` and is (correctly) rejected.
         result["attributes"] = {
-            name: attr.model_dump() if isinstance(attr, AttributeDefinition) else attr
+            name: attr.model_dump(exclude_unset=True)
+            if isinstance(attr, AttributeDefinition)
+            else attr
             for name, attr in self.attributes.items()
         }
 

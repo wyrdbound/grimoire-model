@@ -25,7 +25,7 @@ class TestGrimoireModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str"},
-                "age": {"type": "int", "optional": True, "default": 0},
+                "age": {"type": "int", "default": 0},
             },
         )
 
@@ -64,7 +64,7 @@ class TestGrimoireModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str"},
-                "age": {"type": "int", "optional": True, "default": 0},
+                "age": {"type": "int", "default": 0},
             },
         )
 
