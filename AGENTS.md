@@ -115,6 +115,31 @@ ordering. Writing several inputs to one derived field MUST be batched
 (`BatchedDerivedFieldResolver.start_batch()` / `end_batch()`), or observers
 see inconsistent intermediate states and the same field recomputes repeatedly.
 
+### VI. Presence, defaults and null
+
+Four rules, and they only work together:
+
+1. **Attributes are required unless `optional: true`.** `optional` is the only
+   presence flag. There is no `required` field, and passing one is an error.
+2. **Defaults belong only to required attributes.** A default is applied when
+   an instance is created and stored with it, so re-running it on load can only
+   ever fill an attribute added to the model after the instance was saved — a
+   migration. An optional attribute can be deliberately emptied, and a default
+   would undo that on the next rebuild, so optional attributes have none.
+   `default: null` is never valid.
+3. **Null on an optional attribute means "no value", stored as absence.** Never
+   store None for an optional attribute. Null on a required attribute is an
+   error.
+4. **In expressions, an unset optional attribute reads as null.** Build the
+   evaluation context with `unset_as_null`, never by hand. Only declared,
+   optional, non-derived attributes are filled — a misspelling must still
+   raise, a missing required attribute is an error, and a derived attribute
+   must never be seen as None before it is computed.
+
+Anything that walks attributes to apply one of these rules MUST recurse into
+groups (Principle III), and a write to a nested leaf MUST be validated and
+MUST trigger its dependents, exactly like a top-level write.
+
 ## Engineering Standards
 
 - **Explicit errors over fallbacks.** Silent failures are prohibited.

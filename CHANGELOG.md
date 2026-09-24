@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-24
+
+Presence, defaults and null are now one coherent set of rules: attributes
+are required unless `optional: true`; defaults belong only to required
+attributes; null on an optional attribute means "no value" and is stored as
+absence; and in expressions an unset optional attribute reads as null.
+
+### Changed (breaking)
+
+- **`required` removed; `optional` is the only presence flag.**
+  `AttributeDefinition.optional` is now `bool = False`. Passing `required` is
+  an error rather than being ignored — ignoring `required: false` would quietly
+  turn an optional attribute into a required one. Replace `required=False` with
+  `optional=True`, and drop `required=True`, which is the default
+- **Defaults belong only to required attributes.** An optional attribute with a
+  default now raises: a default is stored when an instance is created and would
+  re-apply whenever the attribute is emptied. An explicit `default: null` also
+  raises, told apart from an omitted default via `model_fields_set`
+- **Null on an optional attribute is no longer stored.** At creation and on
+  assignment it unsets the attribute. Null on a required attribute remains a
+  validation error
+
+### Added
+
+- **An unset optional attribute reads as null in expressions**, so guards such
+  as `{{ slot or 'none' }}` and `{{ slot is none }}` work instead of raising.
+  Only declared, optional, non-derived attributes are filled: a misspelled name
+  still raises, and a required attribute with no value is still an error
+- `unset_as_null(data, attributes)` and `iter_leaf_attributes(attributes)` are
+  exported, so code evaluating its own templates against model data (such as a
+  flow engine) can apply exactly the same rule
+- `ModelDefinition.to_dict()` emits only fields that were set, so a definition
+  round-trips through `from_dict()`
+
+### Fixed
+
+- **Nested writes never recomputed their dependents.** After
+  `model["power.score"] = 18`, the derived `power.modifier` kept its old value.
+  Dependencies are recorded by top-level name and writes now trigger it
+- **Nested writes were never validated.** `model["power.score"] = 99` was
+  accepted against a range of `3..20`, because `get_attribute_definition` did
+  not look inside groups
+- **An absent group of optional leaves was reported as a missing required
+  field.** A group has no value of its own; its leaves are now checked instead,
+  and a missing required leaf is reported by its dotted path
+- A derived field depending on an unset optional attribute is computed rather
+  than skipped as having a missing dependency
+- Removed an unreachable `"$"` key from the model's validation context (the
+  0.4.0 cleanup missed this one)
+
+
 ## [0.4.0] - 2026-09-22
 
 ### Fixed
