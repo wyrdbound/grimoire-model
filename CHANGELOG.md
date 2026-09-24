@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-24
+
+### Changed (breaking)
+
+- **Python builtins are no longer injected into the expression context.**
+  `max`, `min`, `sum`, `len`, `abs` and `round` were added to every
+  evaluation context, written over the caller's data. A model attribute named
+  `round` or `max` was silently replaced by the builtin function, and
+  expressions using the function forms (`sum(xs)`) worked only in Python.
+  Use Jinja2 filters instead: `xs | sum`, `xs | sum(attribute='w')`,
+  `xs | max`, `xs | min`, `xs | length`, and the `in` operator
+
 ## [0.5.0] - 2026-09-24
 
 Presence, defaults and null are now one coherent set of rules: attributes
