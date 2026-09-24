@@ -167,6 +167,48 @@ class DerivedFieldResolver:
         if field_name in self.observable_values:
             del self.observable_values[field_name]
 
+    @staticmethod
+    def _trigger_keys(field_name: str) -> List[str]:
+        """Dependency-graph keys a write to ``field_name`` should trigger.
+
+        Dependencies are recorded by top-level name -- ``{{ power.score }}``
+        depends on ``power`` -- so a nested write to ``power.score`` must also
+        trigger ``power``, or nothing that depends on it recomputes.
+        """
+        root = field_name.split(".", 1)[0]
+        return [field_name] if root == field_name else [field_name, root]
+
+    def _dependency_available(self, dep: str) -> bool:
+        """Whether an expression can see ``dep``.
+
+        True if it is in the data, or if it is an unset optional attribute --
+        which reads as None (see ``unset_as_null``). A dependent of an optional
+        attribute that has just been emptied must recompute, not keep its old
+        value.
+        """
+        if dep in self._model_data:
+            return True
+        return dep in unset_as_null(self._model_data, self._declared_attributes)
+
+    def _remove_value(self, field_name: str) -> None:
+        """Remove ``field_name`` (possibly dotted) from the model data."""
+        parts = field_name.split(".")
+        current: Any = self._model_data
+        for part in parts[:-1]:
+            if not isinstance(current, dict) or part not in current:
+                return
+            current = current[part]
+        if isinstance(current, dict):
+            current.pop(parts[-1], None)
+
+    def field_unset(self, field_name: str) -> None:
+        """Record that a field no longer has a value, and update dependents."""
+        self._remove_value(field_name)
+        if field_name in self.observable_values:
+            self.observable_values[field_name].value = None
+        for key in self._trigger_keys(field_name):
+            self._update_dependent_fields(key)
+
     def set_field_value(self, field_name: str, value: Any) -> None:
         """Set a field value and trigger derived field updates."""
         logger.debug(f"Setting field value: {field_name} = {value}")
@@ -178,8 +220,10 @@ class DerivedFieldResolver:
         if field_name in self.observable_values:
             self.observable_values[field_name].value = value
 
-        # Trigger dependent field updates
-        self._update_dependent_fields(field_name)
+        # Trigger dependent field updates (including the top-level name of a
+        # nested write, which is how dependencies are recorded)
+        for key in self._trigger_keys(field_name):
+            self._update_dependent_fields(key)
 
     def compute_derived_field(self, field_name: str) -> Any:
         """Compute the value of a specific derived field."""
@@ -257,7 +301,7 @@ class DerivedFieldResolver:
                 dep_info = self.derived_fields[field_name]
                 missing_deps = []
                 for dep in dep_info.dependencies:
-                    if dep not in self._model_data:
+                    if not self._dependency_available(dep):
                         missing_deps.append(dep)
 
                 if missing_deps:
@@ -432,7 +476,7 @@ class DerivedFieldResolver:
                 dep_info = self.derived_fields[dependent_field]
                 missing_deps = []
                 for dep in dep_info.dependencies:
-                    if dep not in self._model_data:
+                    if not self._dependency_available(dep):
                         missing_deps.append(dep)
 
                 if missing_deps:
@@ -534,10 +578,20 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
             self._set_nested_value(self._model_data, field_name, value)
             if field_name in self.observable_values:
                 self.observable_values[field_name].value = value
-            self._pending_updates.add(field_name)
+            self._pending_updates.update(self._trigger_keys(field_name))
         else:
             # Normal processing
             super().set_field_value(field_name, value)
+
+    def field_unset(self, field_name: str) -> None:
+        """Unset a field, deferring dependent updates while batching."""
+        if self._batching:
+            self._remove_value(field_name)
+            if field_name in self.observable_values:
+                self.observable_values[field_name].value = None
+            self._pending_updates.update(self._trigger_keys(field_name))
+        else:
+            super().field_unset(field_name)
 
     def _get_all_dependent_fields(self, field_name: str) -> Set[str]:
         """Get all fields that transitively depend on the given field."""

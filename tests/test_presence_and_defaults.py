@@ -214,3 +214,83 @@ class TestAbsentGroups:
         })
         with pytest.raises(ModelValidationError, match="hit_points.max"):
             create_model(definition, {})
+
+
+def _slot_model():
+    return _model({
+        "slot": {"type": "str", "optional": True},
+        "label": {"type": "str", "derived": "{{ slot or 'empty' }}"},
+        "equipped": {
+            "covering": {"type": "str", "optional": True},
+        },
+        "cover_label": {
+            "type": "str",
+            "derived": "{{ equipped.covering or 'none' }}",
+        },
+        "name": {"type": "str"},
+    })
+
+
+class TestNullUnsets:
+    """Writing null to an optional attribute unsets it; nothing is stored."""
+
+    def test_null_at_creation_is_not_stored(self):
+        model = create_model(
+            _slot_model(), {"name": "A", "slot": None, "equipped": {"covering": None}}
+        )
+        assert "slot" not in dict(model)
+        assert dict(model)["equipped"] == {}
+
+    def test_null_on_a_required_attribute_at_creation_is_an_error(self):
+        with pytest.raises(ModelValidationError, match="name"):
+            create_model(_slot_model(), {"name": None})
+
+    def test_setting_null_unsets_and_recomputes_dependents(self):
+        model = create_model(_slot_model(), {"name": "A", "slot": "sword"})
+        assert model["label"] == "sword"
+        model["slot"] = None
+        assert "slot" not in dict(model)
+        assert model["label"] == "empty"
+
+    def test_setting_a_nested_leaf_to_null_unsets_it_and_recomputes(self):
+        model = create_model(
+            _slot_model(), {"name": "A", "equipped": {"covering": "cloak"}}
+        )
+        assert model["cover_label"] == "cloak"
+        model["equipped.covering"] = None
+        assert dict(model)["equipped"] == {}
+        assert model["cover_label"] == "none"
+
+    def test_setting_null_on_a_required_attribute_is_an_error(self):
+        model = create_model(_slot_model(), {"name": "A"})
+        with pytest.raises(ModelValidationError):
+            model["name"] = None
+
+
+class TestNestedWrites:
+    def _power(self):
+        return _model({
+            "power": {
+                "score": {"type": "int", "range": "3..20"},
+                "modifier": {
+                    "type": "int",
+                    "derived": "{{ (power.score - 10) // 2 }}",
+                },
+            }
+        })
+
+    def test_nested_write_recomputes_dependent_leaf(self):
+        model = create_model(self._power(), {"power": {"score": 16}})
+        assert dict(model)["power"]["modifier"] == 3
+        model["power.score"] = 18
+        assert dict(model)["power"]["modifier"] == 4
+
+    def test_nested_write_is_validated(self):
+        model = create_model(self._power(), {"power": {"score": 16}})
+        with pytest.raises(ModelValidationError):
+            model["power.score"] = 99
+
+    def test_nested_leaf_definition_is_resolvable(self):
+        model = create_model(self._power(), {"power": {"score": 16}})
+        leaf = model.get_attribute_definition("power.score")
+        assert leaf is not None and leaf.range == "3..20"
