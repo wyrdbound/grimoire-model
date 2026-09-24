@@ -5,7 +5,8 @@ Provides Pydantic-based model and attribute definitions that follow the GRIMOIRE
 specification for tabletop gaming model schemas.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from collections.abc import Iterator, Mapping
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -480,6 +481,64 @@ class ModelDefinition(BaseModel):
     def from_dict(cls, data: Dict[str, Any]) -> "ModelDefinition":
         """Create ModelDefinition from dictionary."""
         return cls(**data)
+
+
+def iter_leaf_attributes(
+    attributes: Mapping[str, Any], prefix: str = ""
+) -> Iterator[Tuple[str, AttributeDefinition]]:
+    """Yield ``(dotted_path, definition)`` for every leaf attribute.
+
+    Anonymous nested groups carry their leaves under
+    ``AttributeDefinition.attributes``; a leaf inside ``power`` is yielded as
+    ``power.score``. Groups themselves are not yielded -- a group has no value
+    of its own, only its leaves do.
+    """
+    for name, attr in attributes.items():
+        if not isinstance(attr, AttributeDefinition):
+            continue
+        path = f"{prefix}{name}"
+        if attr.attributes:
+            yield from iter_leaf_attributes(attr.attributes, f"{path}.")
+        else:
+            yield path, attr
+
+
+def unset_as_null(
+    data: Mapping[str, Any], attributes: Mapping[str, Any]
+) -> Dict[str, Any]:
+    """Return a copy of ``data`` in which every unset optional attribute is None.
+
+    This is the view expressions are evaluated against, and never what is
+    stored. An optional attribute with no value is absent from stored data, but
+    an expression must still be able to test it -- ``{{ slot or 'none' }}`` or
+    ``{{ slot is none }}`` -- rather than fail on an undefined name.
+
+    Only *declared*, *optional*, *non-derived* attributes are filled:
+
+    - an undeclared name is not filled, so a misspelling still raises;
+    - a required attribute with no value is an error, not an empty value, so it
+      is left absent;
+    - a derived attribute is computed in dependency order and must never be
+      observed as None before it has been computed.
+
+    Groups are recursed into, and a group absent from ``data`` is created in the
+    view when it has optional leaves to fill. ``data`` is not modified.
+    """
+    result: Dict[str, Any] = dict(data)
+    for name, attr in attributes.items():
+        if not isinstance(attr, AttributeDefinition):
+            continue
+        if attr.attributes:
+            value = result.get(name)
+            if isinstance(value, Mapping):
+                result[name] = unset_as_null(value, attr.attributes)
+            elif value is None:
+                nested = unset_as_null({}, attr.attributes)
+                if nested:
+                    result[name] = nested
+        elif name not in result and attr.optional and attr.derived is None:
+            result[name] = None
+    return result
 
 
 # Type aliases for convenience

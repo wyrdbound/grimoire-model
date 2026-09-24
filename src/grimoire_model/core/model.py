@@ -26,7 +26,12 @@ from .exceptions import (
     InheritanceError,
     ModelValidationError,
 )
-from .schema import AttributeDefinition, ModelDefinition
+from .schema import (
+    AttributeDefinition,
+    ModelDefinition,
+    iter_leaf_attributes,
+    unset_as_null,
+)
 
 logger = get_logger("core.model")
 
@@ -80,6 +85,7 @@ class GrimoireModel(MutableMapping):
         self._instantiate_nested_models()
 
         # Set up derived field resolver with our data
+        self._derived_field_resolver.set_declared_attributes(self._resolved_attributes)
         self._derived_field_resolver.set_model_data_accessor(dict(self._data))
         self._derived_field_resolver.set_field_change_callback(
             self._on_derived_field_changed
@@ -479,21 +485,8 @@ class GrimoireModel(MutableMapping):
     def _iter_attribute_paths(
         attributes: Dict[str, "AttributeDefinition"], prefix: str = ""
     ) -> Iterator[Tuple[str, "AttributeDefinition"]]:
-        """Yield ``(dotted_path, definition)`` for every leaf attribute.
-
-        Anonymous nested groups carry their leaves under
-        ``AttributeDefinition.attributes``; a leaf inside ``power`` is yielded
-        as ``power.score``. Groups themselves are not yielded -- a group has no
-        value of its own, only its leaves do.
-        """
-        for name, attr_def in attributes.items():
-            path = f"{prefix}{name}"
-            if attr_def.attributes:
-                yield from GrimoireModel._iter_attribute_paths(
-                    attr_def.attributes, f"{path}."
-                )
-            else:
-                yield path, attr_def
+        """Yield ``(dotted_path, definition)`` for every leaf attribute."""
+        return iter_leaf_attributes(attributes, prefix)
 
     def _register_derived_fields(self) -> None:
         """Register all derived fields with the resolver, including nested ones."""
@@ -692,13 +685,14 @@ class GrimoireModel(MutableMapping):
 
     def _build_validation_context(self) -> Dict[str, Any]:
         """Build context for validation rule evaluation."""
-        context = {
-            "$": dict(self._data),
-            self._instance_id: dict(self._data),
-        }
+        # Unset optional attributes read as None; stored data is untouched.
+        # (No "$" key: `$` is not a valid Jinja2 identifier, so a "$" entry here
+        # was unreachable from any expression.)
+        data = unset_as_null(dict(self._data), self._resolved_attributes)
+        context: Dict[str, Any] = {self._instance_id: data}
 
         # Add individual fields at top level
-        context.update(dict(self._data))
+        context.update(data)
 
         return context
 

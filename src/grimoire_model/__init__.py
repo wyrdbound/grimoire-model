@@ -79,6 +79,8 @@ from .core.schema import (
     AttributeDefinition,
     ModelDefinition,
     ValidationRule,
+    iter_leaf_attributes,
+    unset_as_null,
 )
 
 # Logging configuration
@@ -126,6 +128,8 @@ from .validation.validators import (
 )
 
 __all__ = [
+    "iter_leaf_attributes",
+    "unset_as_null",
     # Core classes
     "GrimoireModel",
     "ModelDefinition",

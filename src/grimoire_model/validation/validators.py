@@ -462,6 +462,16 @@ class ValidationEngine:
         # Check for missing required fields
         for field_name, attr_def in attributes.items():
             if field_name not in data:
+                # An absent group has no value of its own to be missing: check
+                # its leaves instead, so a group of optional leaves may be
+                # absent and a missing required leaf is named by its path.
+                if attr_def.attributes:
+                    all_errors.extend(
+                        self._validate_group(
+                            {}, attr_def.attributes, field_name, enabled_validators
+                        )
+                    )
+                    continue
                 # Use None value to trigger required validation
                 field_errors = self.validate_field(
                     None, field_name, attr_def, enabled_validators
