@@ -489,7 +489,6 @@ clear_primitive_registry()
 ### Template Resolvers
 
 - `Jinja2TemplateResolver`: Standard Jinja2 template syntax
-- `ModelContextTemplateResolver`: Simple `$variable` substitution
 - `CachingTemplateResolver`: Cached template compilation for performance
 
 ### Derived Field Resolvers

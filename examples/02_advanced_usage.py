@@ -203,38 +203,8 @@ def main():
     print(f"  Updated Sheet: {character['character_sheet']}")
     print()
 
-    # 5. Alternative template resolver
-    print("5. Using Model Context Template Resolver")
-
-    # Create a model with model_context resolver for different syntax
-    alternative_char_def = ModelDefinition(
-        id="alt_character",
-        name="Alternative Character",
-        attributes={
-            "name": AttributeDefinition(type="str"),
-            "level": AttributeDefinition(type="int", default=1),
-            "power": AttributeDefinition(type="int", default=10),
-            # Using different template syntax
-            "display_name": AttributeDefinition(
-                type="str", derived="$name (Level $level)"
-            ),
-            "power_level": AttributeDefinition(type="str", derived="Power: $power"),
-        },
-    )
-
-    alt_character = create_model(
-        alternative_char_def,
-        {"name": "Gandalf", "level": 50, "power": 95},
-        template_resolver_type="model_context",
-    )
-
-    print("Character with model_context resolver:")
-    print(f"  Display Name: {alt_character['display_name']}")
-    print(f"  Power Level: {alt_character['power_level']}")
-    print()
-
-    # 6. Complex validation example
-    print("6. Complex Validation Examples")
+    # 5. Complex validation example
+    print("5. Complex Validation Examples")
 
     # This should pass validation
     try:
@@ -277,8 +247,8 @@ def main():
 
     print()
 
-    # 7. Working with nested data
-    print("7. Working with Nested Equipment Data")
+    # 6. Working with nested data
+    print("6. Working with Nested Equipment Data")
 
     # Add equipment to character
     character["equipment"] = {
