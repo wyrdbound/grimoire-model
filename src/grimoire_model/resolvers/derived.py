@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Set
 
 from ..core.exceptions import DependencyError, TemplateResolutionError
+from ..core.schema import unset_as_null
 from ..logging import get_logger
 
 if TYPE_CHECKING:
@@ -95,10 +96,22 @@ class DerivedFieldResolver:
         self._model_data: Dict[str, Any] = {}
         self._on_field_change: Optional[Callable[[str, Any], None]] = None
 
+        # Declared attributes, so unset optional attributes can read as None in
+        # expressions (see ``unset_as_null``).
+        self._declared_attributes: Dict[str, Any] = {}
+
     def set_model_data_accessor(self, model_data: Dict[str, Any]) -> None:
         """Set the model data dictionary that this resolver will read from and
         write to."""
         self._model_data = model_data
+
+    def set_declared_attributes(self, attributes: Dict[str, Any]) -> None:
+        """Set the model's declared attributes.
+
+        Used to present unset optional attributes as None when evaluating
+        expressions. Stored data is never changed by this.
+        """
+        self._declared_attributes = attributes
 
     def set_field_change_callback(self, callback: Callable[[str, Any], None]) -> None:
         """Set a callback that will be called when a derived field is computed."""
@@ -307,13 +320,15 @@ class DerivedFieldResolver:
 
     def _build_template_context(self) -> Dict[str, Any]:
         """Build context for template resolution."""
-        context = {
+        # Unset optional attributes read as None; stored data is untouched.
+        data = unset_as_null(self._model_data, self._declared_attributes)
+        context: Dict[str, Any] = {
             # Model data accessible by instance ID
-            self.instance_id: self._model_data,
+            self.instance_id: data,
         }
 
         # Add individual fields at top level for easier access
-        context.update(self._model_data)
+        context.update(data)
 
         return context
 

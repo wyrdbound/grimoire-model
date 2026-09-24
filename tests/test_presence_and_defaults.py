@@ -18,9 +18,16 @@ import itertools
 
 import pytest
 
-from grimoire_model import AttributeDefinition, ModelDefinition, create_model
+from grimoire_model import (
+    AttributeDefinition,
+    ModelDefinition,
+    create_model,
+    unset_as_null,
+)
 from grimoire_model.core.exceptions import (
     ConfigurationError,
+    ModelValidationError,
+    TemplateResolutionError,
 )
 
 _ids = itertools.count()
@@ -94,3 +101,116 @@ class TestRoundTrip:
         assert rebuilt.attributes["level"].default == 1
         assert rebuilt.attributes["nickname"].optional is True
         assert rebuilt.attributes["equipped"].attributes["covering"].optional is True
+
+
+class TestUnsetReadsAsNull:
+    """A declared optional attribute with no value reads as null in expressions."""
+
+    def test_is_none_guard_works_on_an_unset_optional(self):
+        definition = _model({
+            "slot": {"type": "str", "optional": True},
+            "label": {
+                "type": "str",
+                "derived": "{{ 'empty' if slot is none else slot }}",
+            },
+        })
+        assert create_model(definition, {})["label"] == "empty"
+        assert create_model(definition, {"slot": "sword"})["label"] == "sword"
+
+    def test_truthiness_guard_works_on_an_unset_optional(self):
+        definition = _model({
+            "slot": {"type": "str", "optional": True},
+            "label": {"type": "str", "derived": "{{ slot or 'empty' }}"},
+        })
+        assert create_model(definition, {})["label"] == "empty"
+
+    def test_unset_leaf_in_a_present_group_reads_as_null(self):
+        definition = _model({
+            "equipped": {"main_hand": {"type": "str", "optional": True}},
+            "label": {"type": "str", "derived": "{{ equipped.main_hand or 'none' }}"},
+        })
+        assert create_model(definition, {"equipped": {}})["label"] == "none"
+
+    def test_unset_leaf_in_an_absent_group_reads_as_null(self):
+        definition = _model({
+            "equipped": {"main_hand": {"type": "str", "optional": True}},
+            "label": {"type": "str", "derived": "{{ equipped.main_hand or 'none' }}"},
+        })
+        assert create_model(definition, {})["label"] == "none"
+
+    def test_validation_rule_can_reference_an_unset_optional(self):
+        definition = _model(
+            {"nickname": {"type": "str", "optional": True}},
+            validations=[
+                {
+                    "expression": "{{ nickname is none or nickname | length <= 12 }}",
+                    "message": "Nickname too long",
+                }
+            ],
+        )
+        assert dict(create_model(definition, {})) == {}
+        with pytest.raises(ModelValidationError, match="Nickname too long"):
+            create_model(definition, {"nickname": "Bartholomew the Bold"})
+
+    def test_a_misspelled_name_still_raises(self):
+        """Only *declared* attributes read as null; a typo is never empty."""
+        definition = _model({
+            "slot": {"type": "str", "optional": True},
+            "label": {"type": "str", "derived": "{{ slto or 'empty' }}"},
+        })
+        with pytest.raises(TemplateResolutionError):
+            create_model(definition, {})
+
+    def test_a_required_attribute_with_no_value_does_not_read_as_null(self):
+        """A missing required attribute is an error, not an empty value."""
+        definition = _model({
+            "score": {"type": "int"},
+            "bonus": {"type": "int", "derived": "{{ score + 1 }}"},
+        })
+        with pytest.raises((TemplateResolutionError, ModelValidationError)):
+            create_model(definition, {})
+
+    def test_reading_as_null_never_stores_null(self):
+        definition = _model({
+            "slot": {"type": "str", "optional": True},
+            "label": {"type": "str", "derived": "{{ slot or 'empty' }}"},
+        })
+        assert dict(create_model(definition, {})) == {"label": "empty"}
+
+
+class TestUnsetAsNullHelper:
+    def test_fills_only_optional_leaves_and_does_not_mutate(self):
+        attributes = _model({
+            "name": {"type": "str"},
+            "nickname": {"type": "str", "optional": True},
+            "equipped": {
+                "main_hand": {"type": "str", "optional": True},
+                "covering": {"type": "str", "optional": True},
+            },
+        }).attributes
+        data = {"name": "Brann", "equipped": {"covering": "cloak"}}
+        view = unset_as_null(data, attributes)
+        assert view == {
+            "name": "Brann",
+            "nickname": None,
+            "equipped": {"main_hand": None, "covering": "cloak"},
+        }
+        assert data == {"name": "Brann", "equipped": {"covering": "cloak"}}
+
+
+class TestAbsentGroups:
+    def test_group_of_optional_leaves_may_be_absent(self):
+        definition = _model({
+            "equipped": {"main_hand": {"type": "str", "optional": True}}
+        })
+        assert dict(create_model(definition, {})) == {}
+
+    def test_absent_group_reports_its_missing_required_leaves_by_path(self):
+        definition = _model({
+            "hit_points": {
+                "max": {"type": "int"},
+                "note": {"type": "str", "optional": True},
+            }
+        })
+        with pytest.raises(ModelValidationError, match="hit_points.max"):
+            create_model(definition, {})
