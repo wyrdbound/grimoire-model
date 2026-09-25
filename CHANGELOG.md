@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-25
+
+### Fixed
+
+- **A write to an attribute with a templated range works.** `validate()`
+  resolved ranges such as `"0..{{ max_hp }}"` against the current data, but a
+  single write (`model["current_hp"] = 5`, `model["hit_points.current"] = 3`)
+  validated the raw range, so every such write failed as an invalid range
+  specification, in range or not. The write now resolves the attribute's own
+  range first; out-of-range values are still rejected
+
 ## [0.7.0] - 2026-09-24
 
 ### Removed (breaking)
