@@ -600,8 +600,12 @@ class GrimoireModel(MutableMapping):
             self._unset_field(key, skip_derived_update)
             return
 
-        # Validate the field if we have a definition
+        # Validate the field if we have a definition. A templated range
+        # ("0..{{ max_hp }}") is resolved against the current data first, as
+        # validate() does; otherwise every write to it would fail as an
+        # invalid range specification.
         if attr_def:
+            attr_def = self._resolve_templated_ranges({key: attr_def})[key]
             errors = validate_field_value(value, key, attr_def)
             if errors:
                 raise ModelValidationError(
@@ -692,7 +696,8 @@ class GrimoireModel(MutableMapping):
         about templating.
 
         This runs from :meth:`validate`, after derived fields have been
-        computed, so a range may reference a derived attribute.
+        computed, so a range may reference a derived attribute, and from
+        :meth:`_set_with_validation` for the attribute being written.
 
         A range that fails to resolve is passed through unchanged. The
         validator then reports it as an invalid range specification, which is

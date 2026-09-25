@@ -94,3 +94,54 @@ class TestTemplatedRanges:
         )
         with pytest.raises(ModelValidationError):
             create_model(definition, {"label": "abc", "value": 5})
+
+
+class TestTemplatedRangesOnWrite:
+    """A write checks a templated range against the current data.
+
+    ``validate()`` resolved templated ranges but a single write did not, so
+    every write to a relative-range attribute failed as an invalid range
+    specification — in range or not (wyrdbound 02-spec-findings.md F38).
+    """
+
+    def test_in_range_write_succeeds(self):
+        model = create_model(
+            _definition("w_in", "0..{{ max_hp }}"), {"max_hp": 10, "current_hp": 5}
+        )
+        model["current_hp"] = 10
+        assert model["current_hp"] == 10
+
+    def test_out_of_range_write_is_rejected(self):
+        model = create_model(
+            _definition("w_out", "0..{{ max_hp }}"), {"max_hp": 10, "current_hp": 5}
+        )
+        with pytest.raises(ModelValidationError) as excinfo:
+            model["current_hp"] = 11
+        assert "Invalid range specification" not in str(excinfo.value)
+        assert model["current_hp"] == 5
+
+    def test_bound_follows_the_current_data(self):
+        model = create_model(
+            _definition("w_follow", "0..{{ max_hp }}"), {"max_hp": 10, "current_hp": 5}
+        )
+        model["max_hp"] = 20
+        model["current_hp"] = 15
+        assert model["current_hp"] == 15
+
+    def test_write_to_a_group_leaf(self):
+        definition = ModelDefinition(
+            id="w_group",
+            name="Grouped",
+            namespace="tmplrange",
+            attributes={
+                "hit_points": {
+                    "max": {"type": "int"},
+                    "current": {"type": "int", "range": "0..{{ hit_points.max }}"},
+                }
+            },
+        )
+        model = create_model(definition, {"hit_points": {"max": 8, "current": 8}})
+        model["hit_points.current"] = 3
+        assert model["hit_points"]["current"] == 3
+        with pytest.raises(ModelValidationError):
+            model["hit_points.current"] = 9
