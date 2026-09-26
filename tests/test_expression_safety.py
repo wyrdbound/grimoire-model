@@ -125,6 +125,67 @@ class TestR03DataBeforeMethods:
         assert R.resolve_template("{{ 'k' in g }}", ctx) is True
 
 
+class TestR05R06NothingButDataInScope:
+    """Nothing is in scope but the model's data (Principle II)."""
+
+    @pytest.mark.parametrize("name", ["round", "max", "sum", "len", "int", "str"])
+    def test_builtin_named_attribute_is_a_dependency(self, name):
+        definition = ModelDefinition(
+            id=f"r05_{name}",
+            name="R05",
+            namespace="exprsafe",
+            attributes={
+                name: {"type": "int", "default": 1},
+                "y": {"type": "int", "derived": f"{{{{ {name} * 2 }}}}"},
+            },
+        )
+        model = create_model(definition, {name: 1})
+        assert model["y"] == 2
+        model[name] = 5
+        assert model["y"] == 10
+
+    def test_model_prefix_is_not_in_scope(self):
+        definition = ModelDefinition(
+            id="r06_no_prefix",
+            name="R06",
+            namespace="exprsafe",
+            attributes={
+                "name": {"type": "str", "default": "x"},
+                "n2": {"type": "str", "derived": "{{ model.name }}"},
+            },
+        )
+        with pytest.raises(TemplateResolutionError):
+            create_model(definition, {})
+
+    def test_explicit_instance_id_is_not_in_scope(self):
+        definition = ModelDefinition(
+            id="r06_explicit_id",
+            name="R06",
+            namespace="exprsafe",
+            attributes={
+                "name": {"type": "str", "default": "x"},
+                "n2": {"type": "str", "derived": "{{ myinstance.name }}"},
+            },
+        )
+        with pytest.raises(TemplateResolutionError):
+            create_model(definition, {}, instance_id="myinstance")
+
+    def test_attribute_named_model_is_a_dependency(self):
+        definition = ModelDefinition(
+            id="r06_attr_model",
+            name="R06",
+            namespace="exprsafe",
+            attributes={
+                "model": {"type": "int", "default": 1},
+                "y": {"type": "int", "derived": "{{ model + 1 }}"},
+            },
+        )
+        model = create_model(definition, {})
+        assert model["y"] == 2
+        model["model"] = 5
+        assert model["y"] == 6
+
+
 class TestR04MixedTemplatesAreStrings:
     """Only a single ``{{ expression }}`` keeps its value's type."""
 

@@ -331,50 +331,26 @@ class DerivedFieldResolver:
         return self.dependency_graph.get(field_name, set()).copy()
 
     def _extract_dependencies(self, expression: str) -> Set[str]:
-        """Extract variable dependencies from a template expression."""
-        dependencies = set()
+        """Extract variable dependencies from a template expression.
 
-        # Extract variables using the template resolver
-        template_vars = self.template_resolver.extract_variables(expression)
-
-        # Process template variables to extract field references
-        for var in template_vars:
-            # Skip built-in functions and operators
-            if var in {
-                "sum",
-                "max",
-                "min",
-                "len",
-                "abs",
-                "round",
-                "int",
-                "float",
-                "str",
-                "bool",
-            }:
-                continue
-            # Skip the model instance reference itself
-            if var == self.instance_id:
-                continue
-            # Add the field dependency
-            dependencies.add(var)
+        Every name the expression references is a dependency -- including one
+        named like a Python builtin (``round``, ``max``). Nothing but the
+        model's data is in scope (``AGENTS.md`` Principle II), so there is no
+        name to skip.
+        """
+        dependencies = set(self.template_resolver.extract_variables(expression))
 
         logger.debug(f"Extracted dependencies from '{expression}': {dependencies}")
         return dependencies
 
     def _build_template_context(self) -> Dict[str, Any]:
-        """Build context for template resolution."""
-        # Unset optional attributes read as None; stored data is untouched.
-        data = unset_as_null(self._model_data, self._declared_attributes)
-        context: Dict[str, Any] = {
-            # Model data accessible by instance ID
-            self.instance_id: data,
-        }
+        """Build context for template resolution.
 
-        # Add individual fields at top level for easier access
-        context.update(data)
-
-        return context
+        The context is the model's data and nothing else: no instance-id key,
+        no builtins. An unset optional attribute reads as None; stored data is
+        untouched.
+        """
+        return unset_as_null(self._model_data, self._declared_attributes)
 
     def _convert_value_to_type(
         self, value: Any, attr_def: "AttributeDefinition"
