@@ -13,7 +13,8 @@ R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
 rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 (write-rule tests for R16-R21). T020 done (R16). T021 done (R17). T022 done
 (R18-R20). T023 done (R21; examples 02/03 reworked). T024 done (R24).
-Checkpoint 3 passed (coverage 92%, examples run). T025 next.
+Checkpoint 3 passed (coverage 92%, examples run). T025 done
+(derived-ordering tests for R25-R30). T026 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -680,7 +681,7 @@ either leaves the model valid or leaves it untouched.
 
 **Purpose:** US4.
 
-- [ ] **T025** [US4] Write `tests/test_derived_ordering.py` (TDD) for R25–R30.
+- [x] **T025** [US4] Write `tests/test_derived_ordering.py` (TDD) for R25–R30.
   Assert:
   - **R25:** a helper runs a small script in a subprocess
     (`sys.executable -c …`) that builds `p.mod = {{ p.score // 2 }}`,
@@ -1146,7 +1147,7 @@ now on.
 | [x] | T022 | 3 | | US3 | R18, R19, R20 |
 | [x] | T023 | 3 | | US3 | R21 |
 | [x] | T024 | 3 | | US3 | R24 |
-| [ ] | T025 | 4 | | US4 | tests R25–R30 |
+| [x] | T025 | 4 | | US4 | tests R25–R30 |
 | [ ] | T026 | 4 | | US4 | R25 |
 | [ ] | T027 | 4 | | US4 | R26 |
 | [ ] | T028 | 4 | | US4 | R27 |
