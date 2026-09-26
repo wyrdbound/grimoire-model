@@ -14,8 +14,12 @@ import pytest
 from grimoire_model import (
     GrimoireModel,
     ModelDefinition,
+    ValidationRule,
     create_model,
+    create_model_without_validation,
 )
+from grimoire_model.core.exceptions import ModelValidationError
+from grimoire_model.resolvers.template import create_template_resolver
 
 
 def _group_model(model_id, namespace="write_tx"):
@@ -166,3 +170,249 @@ class TestR23Unhashable:
 
     def test_hash_is_disabled_on_the_class(self):
         assert GrimoireModel.__hash__ is None
+
+
+def _write_model(model_id, namespace="write_tx"):
+    """A model with a derived attribute and a range on it."""
+    return ModelDefinition(
+        id=model_id,
+        name="Write",
+        namespace=namespace,
+        attributes={
+            "a": {"type": "int", "default": 1},
+            "b": {"type": "int", "range": "0..10", "derived": "{{ a * 2 }}"},
+        },
+    )
+
+
+class TestR16WriteIsATransaction:
+    """A write either leaves the model valid or leaves it untouched."""
+
+    @pytest.mark.xfail(strict=True, reason="R16 — fixed by T020")
+    def test_a_recomputed_derived_field_out_of_its_range_rolls_back(self):
+        model = create_model(_write_model("r16_range"), {"a": 1})
+        with pytest.raises(ModelValidationError):
+            model["a"] = 50
+        assert model == {"a": 1, "b": 2}
+
+    @pytest.mark.xfail(strict=True, reason="R16 — fixed by T020")
+    def test_a_model_level_rule_is_checked_on_write(self):
+        definition = ModelDefinition(
+            id="r16_rule",
+            name="Rule",
+            namespace="write_tx",
+            attributes={
+                "a": {"type": "int", "default": 1},
+                "b": {"type": "int", "default": 2},
+            },
+            validations=[
+                ValidationRule(expression="{{ a <= b }}", message="a must not exceed b")
+            ],
+        )
+        model = create_model(definition, {"a": 1, "b": 2})
+        with pytest.raises(ModelValidationError):
+            model["a"] = 50
+        assert model["a"] == 1
+
+    def test_incremental_model_allows_a_valid_leaf_write(self):
+        definition = ModelDefinition(
+            id="r16_incremental",
+            name="Inc",
+            namespace="write_tx",
+            attributes={
+                "name": {"type": "str"},
+                "n": {"type": "int", "default": 1},
+                "d": {"type": "int", "range": "0..10", "derived": "{{ n * 2 }}"},
+            },
+        )
+        model = create_model_without_validation(definition, {})
+        model["n"] = 3
+        assert model["d"] == 6
+
+    @pytest.mark.xfail(strict=True, reason="R16 — fixed by T020")
+    def test_incremental_model_checks_a_recomputed_derived_range(self):
+        definition = ModelDefinition(
+            id="r16_inc_range",
+            name="IncRange",
+            namespace="write_tx",
+            attributes={
+                "name": {"type": "str"},
+                "n": {"type": "int", "default": 1},
+                "d": {"type": "int", "range": "0..10", "derived": "{{ n * 2 }}"},
+            },
+        )
+        model = create_model_without_validation(definition, {})
+        with pytest.raises(ModelValidationError):
+            model["n"] = 50
+
+
+class TestR17BatchIsOneTransaction:
+    """``batch_update`` validates against recomputed data and is atomic."""
+
+    def _pool(self, model_id, namespace="write_tx"):
+        return ModelDefinition(
+            id=model_id,
+            name="Pool",
+            namespace=namespace,
+            attributes={
+                "level": {"type": "int", "default": 1},
+                "hp": {
+                    "max": {"type": "int", "derived": "{{ level * 10 }}"},
+                    "cur": {"type": "int", "range": "0..{{ hp.max }}", "default": 0},
+                },
+            },
+        )
+
+    @pytest.mark.xfail(strict=True, reason="R17 — fixed by T021")
+    def test_batch_against_recomputed_derived_succeeds(self):
+        from grimoire_model import create_derived_field_resolver
+
+        resolver = create_derived_field_resolver(
+            template_resolver=create_template_resolver(),
+            batched=True,
+        )
+        model = create_model(self._pool("r17_ok"), {}, derived_field_resolver=resolver)
+        model.batch_update({"level": 10, "hp.cur": 50})
+        assert model["hp.cur"] == 50
+        assert model["hp.max"] == 100
+
+    @pytest.mark.xfail(strict=True, reason="R17 — fixed by T021")
+    def test_batch_is_atomic_on_a_failing_field(self):
+        definition = ModelDefinition(
+            id="r17_atomic",
+            name="Atomic",
+            namespace="write_tx",
+            attributes={
+                "a": {"type": "int", "default": 0},
+                "b": {"type": "int", "range": "0..5", "default": 0},
+            },
+        )
+        model = create_model(definition, {})
+        with pytest.raises(ModelValidationError):
+            model.batch_update({"a": 2, "b": 99})
+        assert model["a"] == 0
+
+
+class TestR18DerivedNotWritable:
+    @pytest.mark.xfail(strict=True, reason="R18 — fixed by T022")
+    def test_writing_a_derived_attribute_raises(self):
+        definition = ModelDefinition(
+            id="r18_derived",
+            name="Derived",
+            namespace="write_tx",
+            attributes={
+                "a": {"type": "int", "default": 1},
+                "b": {"type": "int", "derived": "{{ a + 1 }}"},
+            },
+        )
+        model = create_model(definition, {"a": 1})
+        with pytest.raises(ModelValidationError):
+            model["b"] = 100
+        assert model["b"] == 2
+
+
+class TestR19Delete:
+    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
+    def test_deleting_a_readonly_attribute_raises(self):
+        definition = ModelDefinition(
+            id="r19_ro",
+            name="RO",
+            namespace="write_tx",
+            attributes={"id": {"type": "str", "readonly": True, "default": "x"}},
+        )
+        model = create_model(definition, {})
+        with pytest.raises(ModelValidationError):
+            del model["id"]
+
+    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
+    def test_deleting_a_required_attribute_raises(self):
+        model = create_model(_write_model("r19_req"), {"a": 1})
+        with pytest.raises(ModelValidationError):
+            del model["a"]
+
+    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
+    def test_deleting_a_derived_attribute_raises(self):
+        model = create_model(_write_model("r19_derived"), {"a": 1})
+        with pytest.raises(ModelValidationError):
+            del model["b"]
+
+    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
+    def test_deleting_an_optional_attribute_unsets_it(self):
+        definition = ModelDefinition(
+            id="r19_opt",
+            name="Opt",
+            namespace="write_tx",
+            attributes={
+                "opt": {"type": "int", "optional": True},
+                "doubled": {"type": "int", "derived": "{{ (opt or 0) * 2 }}"},
+            },
+        )
+        model = create_model(definition, {"opt": 5})
+        del model["opt"]
+        assert "opt" not in model
+        assert model["doubled"] == 0
+
+
+class TestR20ReadonlyLeafInGroup:
+    @pytest.mark.xfail(strict=True, reason="R20 — fixed by T022")
+    def test_a_readonly_group_leaf_cannot_be_written(self):
+        definition = ModelDefinition(
+            id="r20_group",
+            name="Group",
+            namespace="write_tx",
+            attributes={
+                "g": {"k": {"type": "str", "readonly": True, "default": "a"}},
+            },
+        )
+        model = create_model(definition, {})
+        with pytest.raises(ModelValidationError):
+            model["g.k"] = "b"
+
+
+class TestR21UndeclaredKeys:
+    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
+    def test_undeclared_key_on_build_raises(self):
+        definition = ModelDefinition(
+            id="r21_build",
+            name="T",
+            namespace="write_tx",
+            attributes={"strength": {"type": "int"}},
+        )
+        with pytest.raises(ModelValidationError, match="strenght"):
+            create_model(definition, {"strength": 1, "strenght": 5})
+
+    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
+    def test_undeclared_key_on_write_raises(self):
+        definition = ModelDefinition(
+            id="r21_write",
+            name="T",
+            namespace="write_tx",
+            attributes={"strength": {"type": "int"}},
+        )
+        model = create_model(definition, {"strength": 1})
+        with pytest.raises(ModelValidationError, match="dexterity"):
+            model["dexterity"] = 1
+
+    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
+    def test_undeclared_key_in_a_group_raises_naming_the_path(self):
+        definition = ModelDefinition(
+            id="r21_group",
+            name="T",
+            namespace="write_tx",
+            attributes={"g": {"x": {"type": "int"}}},
+        )
+        with pytest.raises(ModelValidationError, match="g.y"):
+            create_model(definition, {"g": {"x": 1, "y": 2}})
+
+    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
+    def test_validate_reports_an_undeclared_key(self):
+        definition = ModelDefinition(
+            id="r21_validate",
+            name="T",
+            namespace="write_tx",
+            attributes={"strength": {"type": "int"}},
+        )
+        model = create_model_without_validation(
+            definition, {"strength": 1, "dexterity": 3}
+        )
+        assert any("dexterity" in error for error in model.validate())
