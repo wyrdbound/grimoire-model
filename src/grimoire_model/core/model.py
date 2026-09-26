@@ -9,7 +9,7 @@ import copy as _copy
 import threading
 import uuid
 from collections.abc import Mapping, MutableMapping
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set, Tuple
 
 from pyrsistent import pmap
 
@@ -38,6 +38,9 @@ from .schema import (
     iter_leaf_attributes,
     unset_as_null,
 )
+
+if TYPE_CHECKING:
+    from .registry import ModelRegistry
 
 logger = get_logger("core.model")
 
@@ -74,6 +77,7 @@ class GrimoireModel(MutableMapping):
         derived_field_resolver: Optional[DerivedFieldResolver] = None,
         instance_id: Optional[str] = None,
         skip_initial_validation: bool = False,
+        registry: Optional["ModelRegistry"] = None,
     ):
         """Initialize GrimoireModel with dependency injection.
 
@@ -85,6 +89,8 @@ class GrimoireModel(MutableMapping):
                 dependency)
             instance_id: Unique identifier for this model instance
             skip_initial_validation: If True, skip validation during initialization
+            registry: Model registry for inheritance and type lookup (default:
+                the global registry). Nested models inherit it.
         """
         # Every public read and write takes this lock, so a model is safe to
         # share across threads (AGENTS.md AI Guidance §10). It is re-entrant:
@@ -94,6 +100,12 @@ class GrimoireModel(MutableMapping):
         self._model_def = model_definition
         self._instance_id = instance_id or str(uuid.uuid4())
         self._skip_initial_validation = skip_initial_validation
+
+        if registry is None:
+            from .registry import get_default_registry
+
+            registry = get_default_registry()
+        self._registry = registry
 
         # Dependency injection - create defaults if not provided
         self._template_resolver = template_resolver or create_template_resolver()
@@ -573,12 +585,7 @@ class GrimoireModel(MutableMapping):
             }
 
         try:
-            # Resolve inheritance using global registry
-            from .registry import get_default_registry
-
-            resolved_model = resolve_model_inheritance(
-                self._model_def, get_default_registry()
-            )
+            resolved_model = resolve_model_inheritance(self._model_def, self._registry)
             return {
                 name: attr
                 for name, attr in resolved_model.attributes.items()
@@ -629,32 +636,18 @@ class GrimoireModel(MutableMapping):
             ModelValidationError: If the type name cannot be resolved to a
                 registered model definition
         """
-        from .registry import get_default_registry
-
-        registry = get_default_registry()
-
-        # First try to find in the same namespace as the current model
-        model_def = registry.get(self._model_def.namespace, type_name)
-
-        if model_def:
-            return model_def
-
-        # If not found in the same namespace, search across all namespaces
-        # This handles cross-namespace references
-        registry_dict = registry.get_registry_dict()
-        for key, model in registry_dict.items():
-            if key.endswith(f"__{type_name}"):
-                return model
-
-        # If we reach here, the type could not be resolved
-        raise ModelValidationError(
-            f"Invalid model type '{type_name}' in model '{self._model_def.id}'",
-            context={
-                "model_id": self._model_def.id,
-                "type_name": type_name,
-                "namespace": self._model_def.namespace,
-            },
-        )
+        try:
+            return self._registry.lookup(type_name, self._model_def.namespace)
+        except KeyError as exc:
+            raise ModelValidationError(
+                f"Invalid model type '{type_name}' in model '{self._model_def.id}': "
+                f"{exc}",
+                context={
+                    "model_id": self._model_def.id,
+                    "type_name": type_name,
+                    "namespace": self._model_def.namespace,
+                },
+            ) from exc
 
     def _model_typed_attribute(self, name: str) -> Optional[AttributeDefinition]:
         """The attribute definition at ``name`` if its type is a model.
@@ -772,6 +765,7 @@ class GrimoireModel(MutableMapping):
             data=dict(data),
             template_resolver=self._template_resolver,
             skip_initial_validation=True,
+            registry=self._registry,
         )
 
     def _raw_data(self) -> Dict[str, Any]:
@@ -872,6 +866,7 @@ class GrimoireModel(MutableMapping):
             data=dict(value),
             template_resolver=self._template_resolver,
             skip_initial_validation=self._skip_initial_validation,
+            registry=self._registry,
         )
         logger.debug(f"Instantiated nested model '{path}' of type '{attr_def.type}'")
         return nested_model
@@ -1313,6 +1308,7 @@ def create_model(
     skip_initial_validation: bool = False,
     template_resolver_kwargs: Optional[Dict[str, Any]] = None,
     derived_resolver_kwargs: Optional[Dict[str, Any]] = None,
+    registry: Optional["ModelRegistry"] = None,
 ) -> GrimoireModel:
     """Factory function to create GrimoireModel instances.
 
@@ -1326,6 +1322,8 @@ def create_model(
         skip_initial_validation: If True, do not validate on creation
         template_resolver_kwargs: Extra kwargs for the template resolver
         derived_resolver_kwargs: Extra kwargs for the derived-field resolver
+        registry: Model registry for inheritance and type lookup (default:
+            the global registry)
 
     Returns:
         Configured GrimoireModel instance
@@ -1352,6 +1350,7 @@ def create_model(
         derived_field_resolver=derived_field_resolver,
         instance_id=instance_id,
         skip_initial_validation=skip_initial_validation,
+        registry=registry,
     )
 
 
@@ -1364,6 +1363,7 @@ def create_model_without_validation(
     instance_id: Optional[str] = None,
     template_resolver_kwargs: Optional[Dict[str, Any]] = None,
     derived_resolver_kwargs: Optional[Dict[str, Any]] = None,
+    registry: Optional["ModelRegistry"] = None,
 ) -> GrimoireModel:
     """Factory function to create GrimoireModel instances without validation.
 
@@ -1379,6 +1379,8 @@ def create_model_without_validation(
         instance_id: Unique identifier for this model instance
         template_resolver_kwargs: Extra kwargs for the template resolver
         derived_resolver_kwargs: Extra kwargs for the derived-field resolver
+        registry: Model registry for inheritance and type lookup (default:
+            the global registry)
 
     Returns:
         Configured GrimoireModel instance (unvalidated)
@@ -1424,4 +1426,5 @@ def create_model_without_validation(
         derived_field_resolver=derived_field_resolver,
         instance_id=instance_id,
         skip_initial_validation=True,
+        registry=registry,
     )

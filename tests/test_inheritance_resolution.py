@@ -141,7 +141,6 @@ class TestR41NamespaceLocalLookup:
         yield
         clear_registry()
 
-    @pytest.mark.xfail(strict=True, reason="R41 — fixed by T041")
     def test_parent_resolves_in_the_models_own_namespace(self):
         ModelDefinition(
             id="item",
@@ -162,7 +161,7 @@ class TestR41NamespaceLocalLookup:
             extends=["item"],
             attributes={"dmg": {"type": "int", "default": 1}},
         )
-        model_def = model_definition_of(weapon)
+        model_def = resolve_model_inheritance(weapon, get_default_registry())
         assert "slot_cost" in model_def.attributes
         assert "cost" not in model_def.attributes
 
@@ -183,7 +182,6 @@ class TestR41NamespaceLocalLookup:
         model = create_model(holder, {"s": {"v": 3}})
         assert model["s"]["v"] == 3
 
-    @pytest.mark.xfail(strict=True, reason="R41 — fixed by T041")
     def test_ambiguous_cross_namespace_match_raises(self):
         ModelDefinition(
             id="stat",
@@ -209,10 +207,14 @@ class TestR41NamespaceLocalLookup:
         assert "nsa__stat" in message
         assert "nsb__stat" in message
 
-    @pytest.mark.xfail(strict=True, reason="R41 — fixed by T041")
     def test_injectable_registry(self):
-        registry = ModelRegistry()
-        ModelDefinition(
+        """Lookups use the passed registry, not the global one (D10).
+
+        The injected registry's ``thing`` has a distinct default, so the built
+        nested model shows which definition was resolved. Construction
+        auto-registers globally today; T042 removes that.
+        """
+        global_thing = ModelDefinition(
             id="thing",
             name="Thing",
             namespace="local",
@@ -224,9 +226,19 @@ class TestR41NamespaceLocalLookup:
             namespace="local",
             attributes={"t": {"type": "thing"}},
         )
-        model = create_model(holder, {"t": {"v": 5}}, registry=registry)
-        assert model["t"]["v"] == 5
-        assert get_default_registry().get("local", "thing") is None
+        injected_thing = ModelDefinition(
+            id="thing",
+            name="Thing (injected)",
+            namespace="local",
+            attributes={"v": {"type": "int", "default": 99}},
+        )
+        registry = ModelRegistry()
+        registry.register("local", "thing", injected_thing)
+        registry.register("local", "holder_inj", holder)
+
+        model = create_model(holder, {"t": {}}, registry=registry)
+        assert model["t"]["v"] == 99
+        assert global_thing.attributes["v"].default == 1
 
     def test_plain_dict_still_works(self):
         """Rule 6: a plain id-keyed dict still resolves inheritance."""
@@ -245,13 +257,6 @@ class TestR41NamespaceLocalLookup:
         )
         resolved = resolve_model_inheritance(child, {"item_plain": item})
         assert "name" in resolved.attributes
-
-
-def model_definition_of(definition):
-    """Resolve a child's inheritance using the global registry."""
-    return resolve_model_inheritance(
-        definition, get_default_registry().get_registry_dict()
-    )
 
 
 class TestR42NoRegistration:

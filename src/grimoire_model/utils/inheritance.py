@@ -41,6 +41,24 @@ def _normalize_registry(
         return model_registry  # type: ignore
 
 
+def _resolve_parent(
+    parent_id: str,
+    namespace: str,
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
+) -> ModelDefinition | None:
+    """Resolve a parent, namespace-local when the registry supports it (R41).
+
+    A plain id-keyed dict has no namespace, so this falls back to
+    :func:`_find_model_in_registry` (rule 6).
+    """
+    if hasattr(model_registry, "lookup"):
+        try:
+            return model_registry.lookup(parent_id, namespace)  # type: ignore[union-attr]
+        except KeyError:
+            return None
+    return _find_model_in_registry(parent_id, _normalize_registry(model_registry))
+
+
 def _find_model_in_registry(
     model_id: str, model_registry: dict[str, ModelDefinition]
 ) -> ModelDefinition | None:
@@ -97,10 +115,8 @@ def resolve_model_inheritance(
 
     logger.debug(f"Resolving inheritance for model '{model_def.id}'")
 
-    registry_dict = _normalize_registry(model_registry)
-
     resolved_attributes, resolved_validations = _resolve_sources(
-        model_def, registry_dict, max_depth
+        model_def, model_registry, max_depth
     )
 
     resolved_model = ModelDefinition(
@@ -124,7 +140,7 @@ def resolve_model_inheritance(
 
 def _resolve_sources(
     model_def: ModelDefinition,
-    model_registry: dict[str, ModelDefinition],
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
     max_depth: int,
 ) -> tuple[dict[str, AttributeDefinition], list[ValidationRule]]:
     """Merge a model's own and its ancestors' attributes and validations.
@@ -136,15 +152,18 @@ def _resolve_sources(
     ``max_depth`` bounds the longest ``extends`` path from M (R43), and any
     cycle reachable from M raises ``InheritanceError`` naming the cycle (R44).
     """
-    cache: dict[str, tuple[dict[str, AttributeDefinition], list[ValidationRule]]] = {}
-    path: list[str] = []
+    cache: dict[tuple[str, str], tuple[dict[str, AttributeDefinition], list]] = {}
+    path: list[tuple[str, str]] = []
 
-    def _resolve(current: ModelDefinition, depth: int) -> tuple:
-        if current.id in cache:
-            return cache[current.id]
+    def _resolve(
+        current: ModelDefinition, depth: int
+    ) -> tuple[dict[str, AttributeDefinition], list[ValidationRule]]:
+        key = (current.namespace, current.id)
+        if key in cache:
+            return cache[key]
 
-        if current.id in path:
-            cycle = path[path.index(current.id) :] + [current.id]
+        if key in path:
+            cycle = [model_id for _, model_id in path[path.index(key) :]] + [current.id]
             raise InheritanceError(
                 f"Circular inheritance detected: {' -> '.join(cycle)}",
                 model_id=model_def.id,
@@ -154,20 +173,21 @@ def _resolve_sources(
             raise InheritanceError(
                 f"Maximum inheritance depth ({max_depth}) exceeded",
                 model_id=model_def.id,
-                inheritance_chain=path + [current.id],
+                inheritance_chain=[model_id for _, model_id in path] + [current.id],
             )
 
-        path.append(current.id)
+        path.append(key)
         try:
             attributes: dict[str, AttributeDefinition] = {}
             validations: list[ValidationRule] = []
             seen_rules: set[tuple[str, str]] = set()
 
             for parent_id in current.extends:
-                parent = _find_model_in_registry(parent_id, model_registry)
+                parent = _resolve_parent(parent_id, current.namespace, model_registry)
                 if parent is None:
                     raise InheritanceError(
-                        f"Parent model '{parent_id}' not found in registry",
+                        f"Parent model '{parent_id}' not found in namespace "
+                        f"'{current.namespace}' or uniquely elsewhere",
                         model_id=current.id,
                         parent_ids=[parent_id],
                     )
@@ -191,7 +211,7 @@ def _resolve_sources(
                     seen_rules.add(rule_key)
 
             result = (attributes, validations)
-            cache[current.id] = result
+            cache[key] = result
             return result
         finally:
             path.pop()
