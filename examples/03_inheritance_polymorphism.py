@@ -178,32 +178,31 @@ def main():
     )
     print()
 
-    # 4. Demonstrate polymorphism - treat weapon as item
-    print("4. Polymorphic Behavior - Treating Weapon as Item")
+    # 4. Demonstrate polymorphism - items and weapons together
+    print("4. Polymorphic Behavior - Treating Weapons as Items")
 
-    # Extract the raw data from the weapon
-    weapon_data = dict(excalibur_weapon)
+    # Each object is built from its own most specific definition, so no subtype
+    # data is discarded. A weapon's data goes through the weapon model; a plain
+    # item's through the item model. Both inherit the item attributes, so code
+    # written against an item works for either.
+    a_potion = create_model(
+        item_def,
+        {
+            "id": "item_001",
+            "name": "Health Potion",
+            "description": "Restores 50 HP",
+            "value": 25,
+            "weight": 0.2,
+            "rarity": "common",
+            "stackable": True,
+        },
+    )
 
-    # Create an item model from the weapon data (upcast)
-    excalibur_as_item = create_model(item_def, weapon_data)
-
-    print("Weapon treated as Item:")
-    print(f"  Name: {excalibur_as_item['name']}")
-    print(f"  Value: {excalibur_as_item['value']}gp")
-    print(f"  Weight: {excalibur_as_item['weight']}kg")
-    print(f"  Rarity: {excalibur_as_item['rarity']}")
-    print(f"  Item Summary: {excalibur_as_item['item_summary']}")
-    print(f"  Value per Weight: {excalibur_as_item['value_per_weight']:.1f}gp/kg")
-
-    # Important: The underlying data still contains weapon fields!
-    print("\n  Underlying data still contains weapon fields:")
-    weapon_fields = [
-        k
-        for k in weapon_data.keys()
-        if k in ["damage", "damage_type", "weapon_type", "durability"]
-    ]
-    for field in weapon_fields:
-        print(f"    {field}: {weapon_data[field]}")
+    inventory = [a_potion, excalibur_weapon]
+    print("Inventory (weapons and items read through the item interface):")
+    for i, entry in enumerate(inventory, 1):
+        print(f"  {i}. {entry['item_summary']}")
+        print(f"     value/weight: {entry['value_per_weight']:.1f}gp/kg")
     print()
 
     # 5. Validation at different levels
@@ -212,10 +211,15 @@ def main():
     # Test item-level validation
     print("Testing item-level validation:")
     try:
-        invalid_item_data = weapon_data.copy()
-        invalid_item_data["weight"] = -1.0  # Invalid weight
-
-        create_model(item_def, invalid_item_data)
+        create_model(
+            item_def,
+            {
+                "id": "item_bad",
+                "name": "Broken Item",
+                "value": 10,
+                "weight": -1.0,  # Invalid weight
+            },
+        )
         print("  ✗ Validation should have failed!")
     except Exception as e:
         print(f"  ✓ Item validation correctly failed: {str(e).split('|')[1].strip()}")
@@ -223,32 +227,25 @@ def main():
     # Test weapon-level validation
     print("\nTesting weapon-level validation:")
     try:
-        invalid_weapon_data = weapon_data.copy()
+        invalid_weapon_data = dict(excalibur_weapon)
         invalid_weapon_data["damage"] = 0  # Invalid damage
-
         create_model(weapon_def, invalid_weapon_data)
         print("  ✗ Validation should have failed!")
     except Exception as e:
         print(f"  ✓ Weapon validation correctly failed: {str(e).split('|')[1].strip()}")
     print()
 
-    # 6. Converting back to weapon (downcast)
-    print("6. Converting Back to Weapon (Preserving All Features)")
+    # 6. A weapon keeps its subtype data
+    print("6. A Weapon Keeps Its Subtype Data")
 
-    # Take the item instance and convert it back to weapon
-    item_data = dict(excalibur_as_item)
-
-    # The data still contains all weapon fields, so we can recreate the weapon
-    restored_weapon = create_model(weapon_def, item_data)
-
-    print("Restored weapon from item data:")
+    restored_weapon = create_model(weapon_def, dict(excalibur_weapon))
+    print("Restored weapon from its own data:")
     print(f"  Name: {restored_weapon['name']}")
     print(f"  Damage: {restored_weapon['damage']} {restored_weapon['damage_type']}")
     print(f"  Weapon Type: {restored_weapon['weapon_type']}")
     print(f"  Effective Damage: {restored_weapon['effective_damage']:.1f}")
     print(f"  Weapon Summary: {restored_weapon['weapon_summary']}")
 
-    # Verify all data is preserved
     print("\n  Data preservation check:")
     print(f"    Original weapon damage: {excalibur_weapon['damage']}")
     print(f"    Restored weapon damage: {restored_weapon['damage']}")
@@ -257,17 +254,6 @@ def main():
 
     # 7. Practical use case - inventory system
     print("7. Practical Use Case - Inventory System")
-
-    # Create different types of items
-    potion_data = {
-        "id": "item_001",
-        "name": "Health Potion",
-        "description": "Restores 50 HP",
-        "value": 25,
-        "weight": 0.2,
-        "rarity": "common",
-        "stackable": True,
-    }
 
     ring_data = {
         "id": "item_002",
@@ -279,7 +265,6 @@ def main():
         "stackable": False,
     }
 
-    # Create a dagger weapon
     dagger_data = {
         "id": "weapon_002",
         "name": "Silver Dagger",
@@ -295,19 +280,15 @@ def main():
         "weapon_type": "dagger",
     }
 
-    # Create instances
-    potion = create_model(item_def, potion_data)
-    ring = create_model(item_def, ring_data)
-    dagger_weapon = create_model(weapon_def, dagger_data)
-
-    # Treat everything as items in an inventory
+    # Each from its own definition: item data through `item`, weapon data
+    # through `weapon`. Both inherit the item interface.
     inventory_items = [
-        create_model(item_def, dict(potion)),
-        create_model(item_def, dict(ring)),
-        create_model(item_def, dict(dagger_weapon)),  # Weapon treated as item
+        a_potion,
+        create_model(item_def, ring_data),
+        create_model(weapon_def, dagger_data),
     ]
 
-    print("Inventory (all treated as items):")
+    print("Inventory (all read as items):")
     total_value = 0
     total_weight = 0
 
@@ -320,17 +301,12 @@ def main():
     print(f"  Total value: {total_value}gp")
     print(f"  Total weight: {total_weight:.1f}kg")
 
-    # Show that weapon data is preserved
-    dagger_as_item = inventory_items[2]
-    dagger_data_preserved = dict(dagger_as_item)
-
-    print("\nDagger as item still contains weapon data:")
-    print(f"  Damage: {dagger_data_preserved.get('damage', 'N/A')}")
-    print(f"  Weapon Type: {dagger_data_preserved.get('weapon_type', 'N/A')}")
-
-    # Can be converted back to weapon for combat
-    combat_dagger = create_model(weapon_def, dagger_data_preserved)
-    print(f"  Converted back for combat: {combat_dagger['weapon_summary']}")
+    # The weapon entry is still a weapon, with its subtype data intact
+    combat_dagger = inventory_items[2]
+    print("\nThe dagger entry keeps its weapon data:")
+    print(f"  Damage: {combat_dagger['damage']}")
+    print(f"  Weapon Type: {combat_dagger['weapon_type']}")
+    print(f"  Weapon Summary: {combat_dagger['weapon_summary']}")
 
 
 if __name__ == "__main__":

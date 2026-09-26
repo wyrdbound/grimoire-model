@@ -856,6 +856,17 @@ class GrimoireModel(MutableMapping):
         # Get attribute definition
         attr_def = self.get_attribute_definition(key)
 
+        # An undeclared write is an error (R21, D6). A path into a nested
+        # *model* is that model's business -- the head there is a declared
+        # model-typed attribute, resolved below.
+        if not self._declares(key):
+            raise ModelValidationError(
+                f"Cannot write to undeclared attribute '{key}'",
+                field_name=key,
+                field_value=value,
+                validation_errors=[f"'{key}' is not a declared attribute"],
+            )
+
         # A derived attribute is not writable at any path (R18). The derived
         # resolver writes computed values directly, not through this method.
         if attr_def is not None and attr_def.derived:
@@ -939,6 +950,22 @@ class GrimoireModel(MutableMapping):
         self._derived_field_resolver.set_model_data_accessor(data_copy)
         if not skip_derived_update:
             self._derived_field_resolver.field_unset(key)
+
+    def _declares(self, key: str) -> bool:
+        """Whether ``key`` is a writable declared path.
+
+        True when the definition exists (a leaf, a group leaf, or a
+        model-typed attribute), or when the path's head is a model-typed
+        attribute -- a path into a nested model is that model's business
+        (R21, D6). ``type: dict`` attributes have no declared interior, so a
+        dotted path through one is not declared.
+        """
+        if self.get_attribute_definition(key) is not None:
+            return True
+        if "." in key:
+            head = key.partition(".")[0]
+            return self._model_typed_attribute(head) is not None
+        return False
 
     def _has_field(self, field_name: str) -> bool:
         """Check if a field exists in the model."""

@@ -381,49 +381,26 @@ def main():
     print(f"  Item condition: {excalibur['condition']} (derived from item)")
     print(f"  Weapon DPS: {excalibur['dps']} (derived from weapon)")
 
-    # Now demonstrate polymorphism: treat weapon as an item
-    print("\nPolymorphism: Treating weapon as item...")
+    # Now demonstrate polymorphism: read the weapon through the item interface
+    print("\nPolymorphism: reading a weapon as an item...")
 
-    def process_item_inventory(item_data, item_model_def):
-        """Function that expects an item but can handle any item subtype."""
-        # Create item instance from the data - this validates as an item
-        item_instance = create_model(item_model_def, item_data)
+    def item_report(item_instance):
+        """A function written against the item interface.
 
+        Every subtype inherits item's attributes, so it works for any item
+        (a plain item or an enhanced weapon) without knowing the concrete type.
+        """
         print(f"  Processing item: {item_instance['name']}")
         print(f"    Value per weight: {item_instance['value_per_weight']:.2f} gold/lb")
         print(f"    Condition: {item_instance['condition']}")
-        print("    Validation passed as item: ✓")
-
+        print("    Read as item: ✓")
         return item_instance
 
-    # Extract just the raw data from our weapon
-    weapon_raw_data = dict(excalibur)
+    # The weapon is built from its own definition; no subtype data is dropped.
+    item_report(excalibur)
     print(
-        f"  Raw weapon data has {len(weapon_raw_data)} fields: {list(weapon_raw_data.keys())}"
-    )
-
-    # Process it as an item (polymorphism in action)
-    item_view = process_item_inventory(weapon_raw_data, item_def)
-
-    # The item view has item properties but the underlying data retains weapon info
-    print(f"  Item view shows: {item_view['name']} worth {item_view['value']} gold")
-    print(
-        f"  But raw data still contains weapon info: damage={weapon_raw_data.get('damage', 'N/A')}"
-    )
-
-    # Convert back to weapon - all weapon features are preserved!
-    print("\nConverting back to weapon...")
-    restored_weapon = create_model(enhanced_weapon_def, weapon_raw_data)
-
-    print(f"Restored weapon: {restored_weapon['weapon_summary']}")
-    print(
-        f"  All weapon features preserved: damage={restored_weapon['damage']}, DPS={restored_weapon['dps']}"
-    )
-    print(
-        f"  All item features preserved: value={restored_weapon['value']}, condition={restored_weapon['condition']}"
-    )
-    print(
-        f"  All entity features preserved: ID={restored_weapon['id']}, tags={restored_weapon['tags']}"
+        f"  The weapon keeps its subtype data: damage={excalibur['damage']}, "
+        f"DPS={excalibur['dps']}"
     )
 
     # Demonstrate that validation works at each level
@@ -462,9 +439,8 @@ def main():
         )
 
     print("\n✓ Inheritance polymorphism working perfectly!")
-    print("  - Weapon can be treated as item in item contexts")
-    print("  - All weapon-specific data is preserved in the underlying dict")
-    print("  - Can convert back to weapon with full functionality")
+    print("  - A weapon is read through the item interface with no type check")
+    print("  - The weapon keeps all of its own data")
     print("  - Validation works appropriately at each inheritance level")
 
 

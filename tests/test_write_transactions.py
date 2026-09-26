@@ -359,7 +359,6 @@ class TestR20ReadonlyLeafInGroup:
 
 
 class TestR21UndeclaredKeys:
-    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
     def test_undeclared_key_on_build_raises(self):
         definition = ModelDefinition(
             id="r21_build",
@@ -370,7 +369,6 @@ class TestR21UndeclaredKeys:
         with pytest.raises(ModelValidationError, match="strenght"):
             create_model(definition, {"strength": 1, "strenght": 5})
 
-    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
     def test_undeclared_key_on_write_raises(self):
         definition = ModelDefinition(
             id="r21_write",
@@ -382,7 +380,6 @@ class TestR21UndeclaredKeys:
         with pytest.raises(ModelValidationError, match="dexterity"):
             model["dexterity"] = 1
 
-    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
     def test_undeclared_key_in_a_group_raises_naming_the_path(self):
         definition = ModelDefinition(
             id="r21_group",
@@ -393,7 +390,6 @@ class TestR21UndeclaredKeys:
         with pytest.raises(ModelValidationError, match="g.y"):
             create_model(definition, {"g": {"x": 1, "y": 2}})
 
-    @pytest.mark.xfail(strict=True, reason="R21 — fixed by T023")
     def test_validate_reports_an_undeclared_key(self):
         definition = ModelDefinition(
             id="r21_validate",

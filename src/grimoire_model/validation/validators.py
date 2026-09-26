@@ -429,10 +429,10 @@ class ValidationEngine:
         """
         errors: List[str] = []
 
-        # Present leaves, mirroring validate_data's split between fields that
-        # are present and fields that are absent.
+        # Present leaves, plus any key that is not declared at this depth.
         for name, value in data.items():
             if name not in attributes:
+                errors.append(f"Undeclared attribute '{prefix}.{name}'")
                 continue
             attr_def = attributes[name]
             path = f"{prefix}.{name}"
@@ -478,30 +478,32 @@ class ValidationEngine:
         """
         all_errors = []
 
-        # Validate existing fields
+        # Validate existing fields, reporting any key that is not declared.
         for field_name, value in data.items():
-            if field_name in attributes:
-                attr_def = attributes[field_name]
+            if field_name not in attributes:
+                all_errors.append(f"Undeclared attribute '{field_name}'")
+                continue
+            attr_def = attributes[field_name]
 
-                # Anonymous nested group: validate its leaves, not the group.
-                # A group has no value of its own, so validating it as a
-                # `dict` would check nothing its author declared.
-                if attr_def.attributes:
-                    if isinstance(value, dict):
-                        all_errors.extend(
-                            self._validate_group(
-                                value,
-                                attr_def.attributes,
-                                field_name,
-                                enabled_validators,
-                            )
+            # Anonymous nested group: validate its leaves, not the group.
+            # A group has no value of its own, so validating it as a
+            # `dict` would check nothing its author declared.
+            if attr_def.attributes:
+                if isinstance(value, dict):
+                    all_errors.extend(
+                        self._validate_group(
+                            value,
+                            attr_def.attributes,
+                            field_name,
+                            enabled_validators,
                         )
-                    continue
+                    )
+                continue
 
-                field_errors = self.validate_field(
-                    value, field_name, attr_def, enabled_validators
-                )
-                all_errors.extend(field_errors)
+            field_errors = self.validate_field(
+                value, field_name, attr_def, enabled_validators
+            )
+            all_errors.extend(field_errors)
 
         # Check for missing required fields
         for field_name, attr_def in attributes.items():
