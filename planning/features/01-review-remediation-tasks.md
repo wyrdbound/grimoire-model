@@ -2,7 +2,8 @@
 
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
 merged). T002 done (expression-safety tests written). T003 done (R01). T004
-done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 next.
+done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 passed. T009 done
+(definition-strictness tests written). T010 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -319,7 +320,7 @@ stops exposing Python internals, and resolves data before methods.
 **Purpose:** US2. A typo in a definition is an error, and the basic types are
 the spec's, spelled one way.
 
-- [ ] **T009** [US2] Write `tests/test_definition_strictness.py` (TDD) for R08,
+- [x] **T009** [US2] Write `tests/test_definition_strictness.py` (TDD) for R08,
   R09, R10, R12, R13. Assert:
   - **R08:** each of `AttributeDefinition(type="str", optinal=True)`,
     `ModelDefinition(id="t", name="t", attributes={}, validatons=[])`, and
@@ -1069,7 +1070,7 @@ now on.
 | [x] | T006 | 1 | | US1 | R04 |
 | [x] | T007 | 1 | | US1 | R05, R06 |
 | [x] | T008 | 1 | P | US1 | R07 |
-| [ ] | T009 | 2 | | US2 | tests R08–R10, R12, R13 |
+| [x] | T009 | 2 | | US2 | tests R08–R10, R12, R13 |
 | [ ] | T010 | 2 | | US2 | R08 |
 | [ ] | T011 | 2 | | US2 | R09, R10 |
 | [ ] | T012 | 2 | | US2 | R11 |
