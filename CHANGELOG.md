@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`of` is a list-only field.** The spec defines it as the element type of a
+  `list`; on any other type it is now a definition error rather than silently
+  ignored. (R13)
 - **`roll` and `roll_result` are basic types, and primitive validators run.**
   The spec's dice types (`model_spec.md`, "Basic Types") were resolved as model
   ids, and a validator passed to `register_primitive_type` was stored but never

@@ -105,7 +105,7 @@ class AttributeDefinition(BaseModel):
     )
     of: Optional[str] = Field(
         default=None,
-        description="Element type for list/dict attributes",
+        description="Element type for a list attribute (`type: list` only)",
     )
     pattern: Optional[str] = Field(
         default=None,
@@ -197,6 +197,20 @@ class AttributeDefinition(BaseModel):
             )
 
         return v
+
+    @model_validator(mode="after")
+    def validate_of_is_list_only(self) -> "AttributeDefinition":
+        """``of`` names a list element type, so it is valid only for ``list``.
+
+        The spec defines ``of`` as "Element type for list attributes"; on any
+        other type it would be silently ignored, so it is an error.
+        """
+        if self.of is not None and self.type != "list":
+            raise ValueError(
+                f"`of` is only valid for a list attribute (got type '{self.type}'). "
+                "Use `type: list, of: <element type>`."
+            )
+        return self
 
     @model_validator(mode="after")
     def validate_default_rule(self) -> "AttributeDefinition":

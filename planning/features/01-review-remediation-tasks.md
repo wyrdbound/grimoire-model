@@ -5,7 +5,8 @@ merged). T002 done (expression-safety tests written). T003 done (R01). T004
 done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 passed. T009 done
 (definition-strictness tests written). T010 done (R08, Input gap 2 confirmed).
 T011 done (R09, R10; grep gate waived). T012 done (R11).
-T013 done (R12; test_model.py added, grep gate waived). T014 next.
+T013 done (R12; test_model.py added, grep gate waived). T014 done (R13).
+Checkpoint 2 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -435,7 +436,7 @@ the spec's, spelled one way.
   and name them in the commit. Record under `### Removed (breaking)`.
   *Accept:* T009's R12 tests pass; `grep -rn "severity" src/` prints nothing.
 
-- [ ] **T014** [P] [US2] Fix R13. Files: `src/grimoire_model/core/schema.py`,
+- [x] **T014** [P] [US2] Fix R13. Files: `src/grimoire_model/core/schema.py`,
   `tests/test_definition_strictness.py`, `CHANGELOG.md` only.
 
   Rule (`model_spec.md`: "`of`: Element type for list attributes"): `of` is
@@ -1090,7 +1091,7 @@ now on.
 | [x] | T011 | 2 | | US2 | R09, R10 |
 | [x] | T012 | 2 | | US2 | R11 |
 | [x] | T013 | 2 | | US2 | R12 |
-| [ ] | T014 | 2 | P | US2 | R13 |
+| [x] | T014 | 2 | P | US2 | R13 |
 | [ ] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
 | [ ] | T016 | 3 | | US3 | R15 |
 | [ ] | T017 | 3 | | US3 | R14 |
