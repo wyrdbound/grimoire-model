@@ -9,7 +9,7 @@ import re
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..core.schema import BASIC_TYPES, AttributeDefinition
 
@@ -155,6 +155,96 @@ class TypeValidator(FieldValidator):
         return "type"
 
 
+_RANGE_RE = re.compile(
+    r"^\s*(?:(?P<lo>[-+]?\d+(?:\.\d+)?)\s*\.\.\s*(?P<hi>[-+]?\d+(?:\.\d+)?)?"
+    r"|\.\.\s*(?P<hi_only>[-+]?\d+(?:\.\d+)?)"
+    r"|>=\s*(?P<ge>[-+]?\d+(?:\.\d+)?)"
+    r"|>\s*(?P<gt>[-+]?\d+(?:\.\d+)?)"
+    r"|<=\s*(?P<le>[-+]?\d+(?:\.\d+)?)"
+    r"|<\s*(?P<lt>[-+]?\d+(?:\.\d+)?)"
+    r"|=\s*(?P<eq>[-+]?\d+(?:\.\d+)?))\s*$"
+)
+
+
+def parse_range(spec: str) -> Tuple[Optional[float], Optional[float], bool, bool]:
+    """Parse every documented range form into bounds and inclusivity.
+
+    Accepts ``a..b``, ``a..``, ``..b``, ``>=a``, ``<=b``, ``>a``, ``<b``, ``=a``
+    (with optional spaces). Returns ``(lower, upper, lower_inclusive,
+    upper_inclusive)``; a bound is ``None`` when unbounded. Raises
+    ``ValueError`` on anything else, so an unparseable range is an error for
+    every type (R36).
+    """
+    match = _RANGE_RE.match(spec)
+    if match is None:
+        raise ValueError(f"Invalid range specification: {spec!r}")
+
+    groups = match.groupdict()
+    if groups["lo"] is not None:
+        lower = float(groups["lo"])
+        upper = float(groups["hi"]) if groups["hi"] else None
+        return lower, upper, True, True
+    if groups["hi_only"] is not None:
+        return None, float(groups["hi_only"]), True, True
+    if groups["ge"] is not None:
+        return float(groups["ge"]), None, True, True
+    if groups["gt"] is not None:
+        return float(groups["gt"]), None, False, True
+    if groups["le"] is not None:
+        return None, float(groups["le"]), True, True
+    if groups["lt"] is not None:
+        return None, float(groups["lt"]), True, False
+    return float(groups["eq"]), float(groups["eq"]), True, True
+
+
+def _fmt(bound: float) -> Any:
+    """Format a numeric bound: an int when it is whole, else the float."""
+    return int(bound) if float(bound).is_integer() else bound
+
+
+def _range_errors(
+    value: float, field_name: str, spec: str, length_mode: bool
+) -> List[str]:
+    """Errors for ``value`` against ``spec``; unit names differ by mode."""
+    lower, upper, lower_inc, upper_inc = parse_range(spec)
+    noun = "length" if length_mode else "value"
+    shown = int(value) if float(value).is_integer() else value
+    errors: List[str] = []
+
+    # An exact range (`=a`, stored as lower == upper) is one equality check.
+    if lower is not None and upper is not None and lower == upper:
+        if value != lower:
+            errors.append(
+                f"Field '{field_name}' {noun} {shown} must equal {_fmt(lower)}"
+            )
+        return errors
+
+    if lower is not None:
+        if lower_inc:
+            if value < lower:
+                errors.append(
+                    f"Field '{field_name}' {noun} {shown} is below minimum "
+                    f"{_fmt(lower)}"
+                )
+        elif value <= lower:
+            errors.append(
+                f"Field '{field_name}' {noun} {shown} must be greater than "
+                f"{_fmt(lower)}"
+            )
+    if upper is not None:
+        if upper_inc:
+            if value > upper:
+                errors.append(
+                    f"Field '{field_name}' {noun} {shown} is above maximum "
+                    f"{_fmt(upper)}"
+                )
+        elif value >= upper:
+            errors.append(
+                f"Field '{field_name}' {noun} {shown} must be less than {_fmt(upper)}"
+            )
+    return errors
+
+
 class RequiredValidator(FieldValidator):
     """Validates that required fields are present and not None."""
 
@@ -185,69 +275,13 @@ class RangeValidator(FieldValidator):
         if not isinstance(value, (int, float)) or isinstance(value, bool):
             return []  # Type validation is handled by TypeValidator
 
-        errors = []
-        range_spec = attr_def.range
-
         try:
-            # Parse range specification
-            if ".." in range_spec:
-                # Range format: "min..max", "min..", or "..max"
-                parts = range_spec.split("..")
-                min_val = None if parts[0] == "" else float(parts[0])
-                max_val = None if parts[1] == "" else float(parts[1])
-
-                if min_val is not None and value < min_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} is below minimum {min_val}"
-                    )
-                if max_val is not None and value > max_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} is above maximum {max_val}"
-                    )
-
-            elif ">=" in range_spec:
-                min_val = float(range_spec.replace(">=", "").strip())
-                if value < min_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} is below minimum {min_val}"
-                    )
-
-            elif "<=" in range_spec:
-                max_val = float(range_spec.replace("<=", "").strip())
-                if value > max_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} is above maximum {max_val}"
-                    )
-
-            elif ">" in range_spec:
-                min_val = float(range_spec.replace(">", "").strip())
-                if value <= min_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} must be greater than "
-                        f"{min_val}"
-                    )
-
-            elif "<" in range_spec:
-                max_val = float(range_spec.replace("<", "").strip())
-                if value >= max_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} must be less than "
-                        f"{max_val}"
-                    )
-
-            elif "=" in range_spec:
-                exact_val = float(range_spec.replace("=", "").strip())
-                if value != exact_val:
-                    errors.append(
-                        f"Field '{field_name}' value {value} must equal {exact_val}"
-                    )
-
-        except (ValueError, IndexError):
-            errors.append(
-                f"Invalid range specification for field '{field_name}': {range_spec}"
-            )
-
-        return errors
+            return _range_errors(float(value), field_name, attr_def.range, False)
+        except ValueError:
+            return [
+                f"Invalid range specification for field '{field_name}': "
+                f"{attr_def.range}"
+            ]
 
     def get_name(self) -> str:
         """Get the validator name."""
@@ -334,30 +368,24 @@ class LengthValidator(FieldValidator):
         errors = []
         length = len(value)
 
-        # Check if range constraint applies to length
+        # A range on a str/list/dict is a length constraint (R36). Parsed by the
+        # same parser the numeric validator uses; an unparseable range is an
+        # error, not skipped. A length bound must be a whole number.
         if attr_def.range and attr_def.type in ["str", "list", "dict"]:
-            range_spec = attr_def.range
-
             try:
-                if ".." in range_spec:
-                    parts = range_spec.split("..")
-                    min_len = None if parts[0] == "" else int(parts[0])
-                    max_len = None if parts[1] == "" else int(parts[1])
-
-                    if min_len is not None and length < min_len:
-                        errors.append(
-                            f"Field '{field_name}' length {length} is below "
-                            f"minimum {min_len}"
-                        )
-                    if max_len is not None and length > max_len:
-                        errors.append(
-                            f"Field '{field_name}' length {length} is above "
-                            f"maximum {max_len}"
-                        )
-
-            except (ValueError, IndexError):
-                # Not a valid length range, skip
-                pass
+                lower, upper, lower_inc, upper_inc = parse_range(attr_def.range)
+                for bound in (lower, upper):
+                    if bound is not None and not float(bound).is_integer():
+                        raise ValueError("a length bound must be a whole number")
+                errors.extend(
+                    _range_errors(float(length), field_name, attr_def.range, True)
+                )
+                del lower, upper, lower_inc, upper_inc
+            except ValueError:
+                errors.append(
+                    f"Invalid range specification for field '{field_name}': "
+                    f"{attr_def.range}"
+                )
 
         return errors
 

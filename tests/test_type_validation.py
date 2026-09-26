@@ -222,7 +222,6 @@ class TestR35NestedInheritsValidationMode:
 
 
 class TestR36OneRangeParser:
-    @pytest.mark.xfail(strict=True, reason="R36 — fixed by T036")
     def test_length_range_ge_on_a_list(self):
         definition = ModelDefinition(
             id="r36_list",
@@ -246,7 +245,6 @@ class TestR36OneRangeParser:
         with pytest.raises(ModelValidationError):
             create_model(definition, {"s": "abcd"})
 
-    @pytest.mark.xfail(strict=True, reason="R36 — fixed by T036")
     def test_an_unparseable_range_is_an_error_not_a_pass(self):
         definition = ModelDefinition(
             id="r36_bad",
