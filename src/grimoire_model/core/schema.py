@@ -8,7 +8,7 @@ specification for tabletop gaming model schemas.
 from collections.abc import Iterator, Mapping
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .exceptions import ConfigurationError
 
@@ -19,6 +19,8 @@ class ValidationRule(BaseModel):
     Defines a validation rule that can be applied to model instances to ensure
     data consistency and business rule compliance.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     expression: str = Field(
         ..., description="Template expression that must evaluate to True"
@@ -58,7 +60,13 @@ class AttributeDefinition(BaseModel):
 
     Defines the schema for a single attribute within a model, including type
     information, constraints, default values, and derived field expressions.
+
+    The definition is closed: an unknown key is an error, never silently
+    dropped. ``optinal: true`` used to leave the attribute required and
+    ``rnage: "1..3"`` used to leave it unconstrained, with nothing raised.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     type: str = Field(
         ...,
@@ -228,6 +236,8 @@ class ModelDefinition(BaseModel):
     attributes, and validation rules. Automatically registers itself in the global
     model registry upon creation.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     id: str = Field(..., description="Unique model identifier")
     name: str = Field(..., description="Human-readable model name")
