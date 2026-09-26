@@ -12,6 +12,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .exceptions import ConfigurationError
 
+# The GRIMOIRE basic (primitive) types, exact case. One set, used by the
+# schema, nesting, the primitive registry and ``TypeValidator`` -- so a type
+# name means the same thing everywhere. ``roll`` and ``roll_result`` are the
+# spec's non-Python basic types; they are added by the task that teaches the
+# primitive registry to validate them.
+BASIC_TYPES = frozenset({"int", "str", "float", "bool", "list", "dict"})
+
 
 class ValidationRule(BaseModel):
     """Model validation rule definition.
@@ -154,9 +161,17 @@ class AttributeDefinition(BaseModel):
     @field_validator("type")
     @classmethod
     def validate_type(cls, v: str) -> str:
-        """Validate attribute type."""
-        basic_types = {"int", "str", "float", "bool", "list", "dict", "any"}
-        if v not in basic_types and not v.replace("_", "").replace("-", "").isalnum():
+        """Validate attribute type.
+
+        A basic type is matched exactly (case-sensitive); a name that differs
+        only in case (``Int``) is a model id, and fails loudly as one when it
+        cannot be resolved. ``any`` is not a GRIMOIRE type and is rejected.
+        """
+        if v == "any":
+            raise ValueError(
+                f"Invalid type 'any'. Basic types are: {sorted(BASIC_TYPES)}"
+            )
+        if v not in BASIC_TYPES and not v.replace("_", "").replace("-", "").isalnum():
             # Allow model IDs (alphanumeric with underscores/hyphens)
             raise ValueError(
                 f"Invalid type '{v}': must be basic type or valid model ID"

@@ -132,18 +132,18 @@ class TestTypeValidator:
         assert len(errors) == 1
         assert "must be a dictionary" in errors[0]
 
-    def test_any_type_validation(self):
-        """Test 'any' type validation."""
-        validator = TypeValidator()
-        attr_def = AttributeDefinition(type="any")
+    def test_unknown_model_type_is_not_checked_here(self):
+        """A model-typed attribute is checked by the model, not this validator.
 
-        # Any type should be valid
-        for value in [42, "string", True, [1, 2], {"key": "value"}, None]:
-            errors = validator.validate(value, "test_field", attr_def)
-            if value is None:
-                # None handling depends on required field logic
-                continue
-            assert len(errors) == 0
+        ``TypeValidator`` stays context-free (AGENTS.md Principle IV); it does
+        not know whether an unknown type name is a model id, so it passes it.
+        The model rejects an unresolvable type when it builds (R09/R32).
+        """
+        validator = TypeValidator()
+        attr_def = AttributeDefinition(type="custom_model_id")
+
+        for value in [42, "string", True, [1, 2], {"key": "value"}]:
+            assert validator.validate(value, "test_field", attr_def) == []
 
     def test_none_value_handling(self):
         """Test None value handling for required fields."""

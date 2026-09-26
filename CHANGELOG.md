@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **One basic-type set, exact case; `any` removed.** A single `BASIC_TYPES`
+  constant in `core/schema.py` (`int str float bool list dict`, plus `roll`
+  and `roll_result` from T012) is used by the schema, model nesting, the
+  primitive registry and `TypeValidator`. `type: any` is rejected at
+  definition time naming the basic types (it was never instantiable with a
+  value). `Int` (wrong case) is now a model id, so it fails loudly when it
+  cannot be resolved instead of skipping type checks. (R09, R10)
 - **Definitions are closed.** `AttributeDefinition`, `ModelDefinition` and
   `ValidationRule` reject unknown keys (`extra="forbid"`). A misspelled key
   such as `optinal: true`, `rnage: "1..3"` or `validatons:` is now a

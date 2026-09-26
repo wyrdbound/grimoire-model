@@ -388,13 +388,11 @@ class GrimoireModel(MutableMapping):
             True if this is a custom model type, False if it's a primitive type
         """
         from .primitive_registry import get_default_primitive_registry
+        from .schema import BASIC_TYPES
 
-        # List of primitive types that should not be instantiated as models
-        # Only types supported by the GRIMOIRE spec
-        primitive_types = {"int", "str", "float", "bool", "list", "dict"}
-
-        # Check built-in primitives
-        if type_name.lower() in primitive_types:
+        # A basic type is the spec's type, exact case. A name that differs only
+        # in case (``Int``) is a model id, not a primitive.
+        if type_name in BASIC_TYPES:
             return False
 
         # Check registered custom primitives
