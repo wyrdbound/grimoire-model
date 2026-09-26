@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`batch_update` is one transaction.** It stages every write, recomputes
+  derived fields once, then validates every written leaf against the recomputed
+  data, every recomputed derived field, and the model-level rules. A failure
+  restores the model and raises. Before, each field was validated against stale
+  derived values (so a valid batch could be rejected) and fields written before
+  a failing one stayed written. (R17)
 - **A write is a transaction.** A write now validates, applies, recomputes
   dependents, then validates every derived field it recomputed against its own
   constraints and — for a model built with validation — the model-level

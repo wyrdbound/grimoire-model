@@ -260,7 +260,6 @@ class TestR17BatchIsOneTransaction:
             },
         )
 
-    @pytest.mark.xfail(strict=True, reason="R17 — fixed by T021")
     def test_batch_against_recomputed_derived_succeeds(self):
         from grimoire_model import create_derived_field_resolver
 
@@ -273,7 +272,6 @@ class TestR17BatchIsOneTransaction:
         assert model["hp.cur"] == 50
         assert model["hp.max"] == 100
 
-    @pytest.mark.xfail(strict=True, reason="R17 — fixed by T021")
     def test_batch_is_atomic_on_a_failing_field(self):
         definition = ModelDefinition(
             id="r17_atomic",
