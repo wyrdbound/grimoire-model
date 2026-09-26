@@ -257,7 +257,7 @@ class TestModelRegistry:
         """Test error when parent model not found."""
         registry = ModelRegistry()
 
-        with pytest.raises(KeyError, match="Parent model 'missing' not found"):
+        with pytest.raises(KeyError, match="not found"):
             registry.resolve_extends("test", ["missing"])
 
     def test_registry_overwrite_warning(self, caplog):

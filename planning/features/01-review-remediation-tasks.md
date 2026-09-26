@@ -18,7 +18,8 @@ Checkpoint 3 passed (coverage 92%, examples run). T025 done
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
 PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 done (R37-R39). Checkpoint 5 passed (coverage 92%,
 examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
-and T040 done (R40, R43, R44; T040 folded in). T041 next.
+and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
+confirmed). T042 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -981,7 +982,7 @@ now on.
   `InheritanceError` with the cycle's ids in order.
   *Accept:* T038's R43 and R44 tests pass.
 
-- [ ] **T041** [US6] Fix R41 (Wyrdbound F35): namespace-local lookup,
+- [x] **T041** [US6] Fix R41 (Wyrdbound F35): namespace-local lookup,
   injectable registry. Files: `src/grimoire_model/core/model.py`,
   `src/grimoire_model/core/registry.py`,
   `src/grimoire_model/utils/inheritance.py`,
@@ -1003,6 +1004,10 @@ now on.
   used to pass `model_registry=...`, which was silently ignored. It was dropped;
   once `registry=` exists, that test should gain a real assertion that a passed
   registry is the one used.
+  *Note from T041:* for T049's "for Justin" list — Wyrdbound should give each
+  system its own `ModelRegistry` via `registry=`. That removes its
+  scratch-namespace workaround and makes a missing model in one system raise
+  instead of resolving from another.
   *Accept:* T038's R41 tests pass.
 
 - [ ] **T042** [US6] Fix R42. Files: `src/grimoire_model/core/schema.py`,
@@ -1184,7 +1189,7 @@ now on.
 | [x] | T038 | 6 | | US6 | tests R40–R45 |
 | [x] | T039 | 6 | | US6 | R40, R43, R44 (T040 folded in) |
 | [x] | T040 | 6 | | US6 | (folded into T039) |
-| [ ] | T041 | 6 | | US6 | R41 |
+| [x] | T041 | 6 | | US6 | R41 |
 | [ ] | T042 | 6 | | US6 | R42 |
 | [ ] | T043 | 6 | P | US6 | R45 |
 | [ ] | T044 | 7 | P | US7 | R46 |

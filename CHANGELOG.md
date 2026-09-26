@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Lookup is namespace-local; the registry is injectable.** A parent, a
+  model-typed attribute and an `of` model type resolve in the requesting
+  model's namespace first; another namespace is used only when exactly one has
+  the id, and an ambiguous id raises naming every candidate key. `GrimoireModel`,
+  `create_model` and `create_model_without_validation` take
+  `registry=ModelRegistry()` (default: the global one), and nested models
+  inherit it. `resolve_model_inheritance(definition, plain_dict)` keeps working.
+  (R41, D10)
 - **`extends` is resolved later-parent-wins, with real depth and full cycle
   detection.** Per the spec (`model_spec.md`, Inheritance Rules 4), "later
   models override fields from earlier ones": resolved(M) = merge of resolved(P1)

@@ -232,8 +232,9 @@ class ModelRegistry:
     ) -> list[ModelDefinition]:
         """Resolve a list of parent model IDs to ModelDefinitions.
 
-        This method looks up parent models first in the same namespace, then in
-        other namespaces if not found.
+        Each parent resolves in the child's own namespace first (R41, D10);
+        another namespace is used only when exactly one has the id, and an
+        ambiguous id raises naming every candidate.
 
         Args:
             namespace: The namespace of the child model
@@ -243,39 +244,49 @@ class ModelRegistry:
             List of resolved ModelDefinitions
 
         Raises:
-            KeyError: If any parent model cannot be found
+            KeyError: If any parent model cannot be found, or is ambiguous
         """
-        resolved = []
-
         with self._lock:
-            for parent_id in extends:
-                # First try in the same namespace
-                parent_def = self.get(namespace, parent_id)
+            return [self.lookup(pid, namespace) for pid in extends]
 
-                if parent_def is None:
-                    # Search across all namespaces
-                    found = False
-                    for key, model_def in self._models.items():
-                        if key.endswith(f"__{parent_id}"):
-                            parent_def = model_def
-                            found = True
-                            logger.debug(
-                                f"Found parent '{parent_id}' in different "
-                                f"namespace: {key}"
-                            )
-                            break
+    def lookup(self, model_id: str, namespace: str) -> ModelDefinition:
+        """Resolve ``model_id`` from ``namespace`` first, then uniquely (R41).
 
-                    if not found:
-                        raise KeyError(
-                            f"Parent model '{parent_id}' not found in "
-                            f"namespace '{namespace}' or any other namespace"
-                        )
+        Look in ``namespace``; if absent, use another namespace only when
+        exactly one has the id. Several candidates raise ``KeyError`` naming
+        every candidate key; none raises ``KeyError`` naming the requester.
 
-                # At this point parent_def is guaranteed to be not None
-                assert parent_def is not None
-                resolved.append(parent_def)
+        Args:
+            model_id: The model id to resolve.
+            namespace: The requesting model's namespace.
 
-        return resolved
+        Returns:
+            The resolved ModelDefinition.
+
+        Raises:
+            KeyError: If the id is missing or ambiguous.
+        """
+        with self._lock:
+            local = self._models.get(f"{namespace}__{model_id}")
+            if local is not None:
+                return local
+
+            candidates = {
+                key: model
+                for key, model in self._models.items()
+                if key.endswith(f"__{model_id}")
+            }
+            if len(candidates) == 1:
+                return next(iter(candidates.values()))
+            if not candidates:
+                raise KeyError(
+                    f"Model '{model_id}' not found in namespace '{namespace}' "
+                    "or any other namespace"
+                )
+            raise KeyError(
+                f"Model '{model_id}' is ambiguous from namespace '{namespace}': "
+                f"{sorted(candidates)}"
+            )
 
     def __len__(self) -> int:
         """Return the total number of registered models."""
