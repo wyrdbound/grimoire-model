@@ -62,7 +62,6 @@ class TestR08ClosedDefinitions:
 class TestR09AnyRemoved:
     """``any`` is not a GRIMOIRE type; defining one is an error."""
 
-    @pytest.mark.xfail(strict=True, reason="R09 — fixed by T011")
     def test_any_type_raises_naming_basic_types(self):
         with pytest.raises(ValidationError) as excinfo:
             AttributeDefinition(type="any")
@@ -74,7 +73,6 @@ class TestR09AnyRemoved:
 class TestR10ExactTypeCase:
     """Basic types are matched exactly; ``Int`` is treated as a model id."""
 
-    @pytest.mark.xfail(strict=True, reason="R10 — fixed by T011")
     def test_capitalised_basic_type_is_not_type_checked(self):
         definition = ModelDefinition(
             id="r10_int",

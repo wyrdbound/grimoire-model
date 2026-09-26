@@ -86,12 +86,10 @@ class TypeValidator(FieldValidator):
                     f"Field '{field_name}' must be a dictionary, got "
                     f"{type(value).__name__}"
                 )
-        elif expected_type == "any":
-            # Any type is always valid
-            pass
         else:
-            # Assume it's a model reference or custom type
-            # In a full implementation, this would validate against model registry
+            # A model reference or primitive type. Model-typed attributes are
+            # checked by the model (R32); a registered primitive's validator is
+            # invoked here (T012).
             pass
 
         return errors

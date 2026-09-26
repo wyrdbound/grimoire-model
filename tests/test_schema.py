@@ -59,10 +59,14 @@ class TestAttributeDefinition:
     def test_type_validation(self):
         """Test type validation."""
         # Valid basic types
-        basic_types = ["int", "str", "float", "bool", "list", "dict", "any"]
+        basic_types = ["int", "str", "float", "bool", "list", "dict"]
         for type_val in basic_types:
             attr = AttributeDefinition(type=type_val)
             assert attr.type == type_val
+
+        # `any` is not a GRIMOIRE type (R09, T011)
+        with pytest.raises(ValidationError):
+            AttributeDefinition(type="any")
 
         # Valid model ID
         attr = AttributeDefinition(type="custom_model_id")
