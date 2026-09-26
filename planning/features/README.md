@@ -23,9 +23,9 @@ context mid-list.
 | --- | --- | --- | --- |
 | 01 | [Review Remediation](01-review-remediation.md) | Every defect from the 2026-09-26 full review fixed: expressions that raise, private storage, transactional writes, ordered derived fields, spec-conformant types and inheritance. Released as 0.8.0 | [list](01-review-remediation-tasks.md) |
 
-**Feature 01 starts after the `fixNestedModelWrite` branch (Wyrdbound finding
-F57) is merged to `main`.** Its first task rebases onto that merge and does
-nothing else. Several of its tasks extend the F57 write path; none of them
+**Feature 01 builds on the `fixNestedModelWrite` fix (Wyrdbound finding F57),
+merged to `main` as `228eaec`.** Its first task, T001 (done), rebased onto
+that merge and did nothing else. Several of its tasks extend the F57 write path; none of them
 redo or revert it.
 
 The findings register — what is wrong, how to reproduce it, and which task

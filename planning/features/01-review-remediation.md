@@ -1,7 +1,7 @@
 # Review Remediation — make grimoire-model fail loudly again
 
-**Status:** Designed. Not started. Blocked on the `fixNestedModelWrite` merge
-(Wyrdbound finding F57); see the task list's T001.
+**Status:** In progress. The `fixNestedModelWrite` fix (Wyrdbound F57) is
+merged; T001 is done. See the task list.
 **Companion specs:** `planning/features/README.md` (execution rules, L1–L4);
 `AGENTS.md` (binding); the GRIMOIRE model specification,
 `wyrdbound/grimoire` `spec/model_spec.md`; Wyrdbound's
@@ -70,7 +70,8 @@ rearchitecture: it is making each path do what the principles already say.
   clean, all seven `examples/` running. The suite is green because it does not
   test the failures below — each task in the list adds the test that would
   have caught its defect.
-- **In flight:** `fixNestedModelWrite` (`8b76af2`) fixes Wyrdbound F57 — a
+- **Merged since the review:** `fixNestedModelWrite` (`228eaec` on `main`) fixes
+  Wyrdbound F57 — a
   dotted write through a **top-level** model-typed attribute now builds and
   descends into the nested model. It does not reach a model-typed attribute
   **inside an anonymous group** (R34), nor list elements (R33). Both extend its

@@ -1,7 +1,7 @@
 # Review Remediation — tests first, then the fix, for every finding
 
-**Status:** Not started. T001 is blocked until `fixNestedModelWrite` is merged
-to `main`.
+**Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
+merged). T002 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -152,7 +152,7 @@ plausible-looking fix makes.
 
 **Purpose:** start from `main` with the F57 fix merged.
 
-- [ ] **T001** Rebase this branch onto `main` after `fixNestedModelWrite` is
+- [x] **T001** Rebase this branch onto `main` after `fixNestedModelWrite` is
   merged. Files: none beyond what the rebase brings (this directory, which
   already exists on this branch).
 
@@ -1044,7 +1044,7 @@ now on.
 
 | Done | Task | Phase | [P] | Story | Fixes |
 | --- | --- | --- | --- | --- | --- |
-| [ ] | T001 | 0 | | — | (rebase onto F57) |
+| [x] | T001 | 0 | | — | (rebase onto F57) |
 | [ ] | T002 | 1 | | US1 | tests R01–R04 |
 | [ ] | T003 | 1 | | US1 | R01 |
 | [ ] | T004 | 1 | | US1 | R02 |
@@ -1111,9 +1111,10 @@ now on.
 
 ## Input gaps to close before starting
 
-1. **F57 merged.** T001 is blocked until `fixNestedModelWrite` is on `main`.
-   It also decides whether F57 ships as 0.7.2 first or inside 0.8.0; T049's
-   CHANGELOG handling follows that.
+1. **~~F57 merged~~ — closed.** `fixNestedModelWrite` is on `main`
+   (`228eaec`, changelog `9b76519`); T001 rebased onto it. Its CHANGELOG entry
+   is under `[Unreleased]`, so it ships inside 0.8.0 unless Justin cuts a
+   0.7.2 first — if he does, T049 leaves that section as released.
 2. **Closed definitions and undeclared keys (D5, D6).** Wyrdbound's
    `translate_model` hands GRIMOIRE attribute declarations to
    `ModelDefinition.model_validate` as parsed. Confirm that no attribute in
