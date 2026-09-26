@@ -26,7 +26,6 @@ from grimoire_model.validation.validators import validate_field_value
 
 
 class TestR31GroupsHoldMappings:
-    @pytest.mark.xfail(strict=True, reason="R31 — fixed by T032")
     def test_building_a_group_from_a_non_mapping_raises(self):
         definition = ModelDefinition(
             id="r31_group",
@@ -71,13 +70,11 @@ class TestR32ModelTypedHoldMappings:
             attributes={"w": {"type": f"weapon_{suffix}"}},
         )
 
-    @pytest.mark.xfail(strict=True, reason="R32 — fixed by T032")
     def test_building_a_model_typed_attribute_from_a_non_mapping_raises(self):
         definition = self._models("build")
         with pytest.raises(ModelValidationError):
             create_model(definition, {"w": 5})
 
-    @pytest.mark.xfail(strict=True, reason="R32 — fixed by T032")
     def test_a_model_of_a_different_id_raises(self):
         definition = self._models("wrong")
         other = create_model(
@@ -105,6 +102,12 @@ class TestR32ModelTypedHoldMappings:
         )
         model = create_model(definition, {"w": weapon})
         assert model["w"]["name"] == "sword"
+
+    def test_writing_a_non_mapping_to_a_model_typed_attribute_raises(self):
+        definition = self._models("write")
+        model = create_model(definition, {"w": {"name": "sword"}})
+        with pytest.raises(ModelValidationError):
+            model["w"] = 5
 
 
 class TestR33ListOf:

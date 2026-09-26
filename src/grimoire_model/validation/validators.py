@@ -8,6 +8,7 @@ data types and constraints, plus support for custom validation rules.
 import re
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from typing import Any, Dict, List, Optional
 
 from ..core.schema import AttributeDefinition
@@ -427,7 +428,7 @@ class ValidationEngine:
 
     def _validate_group(
         self,
-        data: Dict[str, Any],
+        data: Mapping[str, Any],
         attributes: Dict[str, AttributeDefinition],
         prefix: str,
         enabled_validators: Optional[List[str]] = None,
@@ -497,9 +498,10 @@ class ValidationEngine:
 
             # Anonymous nested group: validate its leaves, not the group.
             # A group has no value of its own, so validating it as a
-            # `dict` would check nothing its author declared.
+            # `dict` would check nothing its author declared. A group whose
+            # value is not a mapping is an error (R31).
             if attr_def.attributes:
-                if isinstance(value, dict):
+                if isinstance(value, Mapping):
                     all_errors.extend(
                         self._validate_group(
                             value,
@@ -507,6 +509,11 @@ class ValidationEngine:
                             field_name,
                             enabled_validators,
                         )
+                    )
+                else:
+                    all_errors.append(
+                        f"Field '{field_name}' must be a group (a mapping), got "
+                        f"{type(value).__name__}"
                     )
                 continue
 

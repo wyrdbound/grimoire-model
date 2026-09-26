@@ -16,8 +16,7 @@ rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 Checkpoint 3 passed (coverage 92%, examples run). T025 done
 (derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
-PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032
-next.
+PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -826,7 +825,7 @@ now on.
     enabled_validators=[])` returns `[]`.
   *Accept:* each fails on 0.7.1 for the reason in design §3.5, `xfail(strict)`.
 
-- [ ] **T032** [US5] Fix R31 and R32. Files:
+- [x] **T032** [US5] Fix R31 and R32. Files:
   `src/grimoire_model/validation/validators.py`,
   `src/grimoire_model/core/model.py`, `tests/test_type_validation.py`,
   `CHANGELOG.md` only.
@@ -1157,7 +1156,7 @@ now on.
 | [x] | T029 | 4 | P | US4 | R28 |
 | [x] | T030 | 4 | P | US4 | R29, R30 |
 | [x] | T031 | 5 | | US5 | tests R31–R39 |
-| [ ] | T032 | 5 | | US5 | R31, R32 |
+| [x] | T032 | 5 | | US5 | R31, R32 |
 | [ ] | T033 | 5 | | US5 | R33 |
 | [ ] | T034 | 5 | | US5 | R34 |
 | [ ] | T035 | 5 | | US5 | R35 |
