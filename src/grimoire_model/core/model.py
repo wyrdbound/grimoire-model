@@ -329,7 +329,14 @@ class GrimoireModel(MutableMapping):
         field_errors = validate_model_data(dict(self._data), attributes)
         errors.extend(field_errors)
 
-        # Validate model-level validation rules
+        errors.extend(self._validate_model_rules())
+
+        return errors
+
+    def _validate_model_rules(self) -> List[str]:
+        """Errors from the model's own ``validations`` rules."""
+        errors: List[str] = []
+
         for validation_rule in self._model_def.validations:
             try:
                 # Build context for validation rule
@@ -684,7 +691,63 @@ class GrimoireModel(MutableMapping):
     def _set_with_validation(
         self, key: str, value: Any, skip_derived_update: bool = False
     ) -> None:
-        """Set a field value with validation and derived field updates."""
+        """Set a field value as a transaction.
+
+        The write is validated, applied, its dependents recomputed, and the
+        recomputed derived fields (and, for a validated model, the model-level
+        ``validations``) checked. Any failure restores the model exactly and
+        raises ``ModelValidationError``, so a write never leaves the model
+        violating a constraint (R16, D3).
+        """
+        data_snapshot = self._data
+        resolver_snapshot = self._derived_field_resolver.snapshot_state()
+        self._derived_field_resolver.take_recomputed()
+
+        try:
+            self._apply_write(key, value, skip_derived_update)
+
+            if not skip_derived_update:
+                errors = self._validate_after_write()
+                if errors:
+                    raise ModelValidationError(
+                        f"Write to '{key}' left the model invalid",
+                        field_name=key,
+                        field_value=value,
+                        validation_errors=errors,
+                    )
+        except Exception:
+            self._data = data_snapshot
+            self._derived_field_resolver.restore_state(resolver_snapshot)
+            raise
+
+    def _validate_after_write(self) -> List[str]:
+        """Errors from a write: recomputed derived fields, then model rules.
+
+        An incremental model (``create_model_without_validation``) checks the
+        leaf and the recomputed derived fields only; a rule over required
+        attributes cannot pass mid-build, so whole-model rules are left to an
+        explicit ``validate()``.
+        """
+        errors: List[str] = []
+
+        recomputed = self._derived_field_resolver.take_recomputed()
+        for path in sorted(recomputed):
+            attr_def = self.get_attribute_definition(path)
+            if attr_def is None:
+                continue
+            resolved = self._resolve_templated_ranges({path: attr_def})[path]
+            value = self._get_field_value(path)
+            errors.extend(validate_field_value(value, path, resolved))
+            if errors:
+                return errors
+
+        if not self._skip_initial_validation:
+            errors.extend(self._validate_model_rules())
+
+        return errors
+
+    def _apply_write(self, key: str, value: Any, skip_derived_update: bool) -> None:
+        """Apply a single write; the body of :meth:`_set_with_validation`."""
         # Get attribute definition
         attr_def = self.get_attribute_definition(key)
 

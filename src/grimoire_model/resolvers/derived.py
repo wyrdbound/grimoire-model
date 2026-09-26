@@ -171,6 +171,39 @@ class DerivedFieldResolver:
         # expressions (see ``unset_as_null``).
         self._declared_attributes: Dict[str, Any] = {}
 
+        # Derived fields computed since the last ``take_recomputed``. The model
+        # uses this to validate exactly the derived fields a write recomputed
+        # (R16/T020).
+        self._recomputed: Set[str] = set()
+
+    def take_recomputed(self) -> Set[str]:
+        """Return and clear the derived fields recomputed since the last call."""
+        recomputed = self._recomputed
+        self._recomputed = set()
+        return recomputed
+
+    def snapshot_state(self) -> "tuple[Dict[str, Any], Dict[str, Any]]":
+        """Return the resolver state a transaction must restore on rollback.
+
+        Storage is copy-on-write (R14), so a shallow copy of the view holds the
+        old top-level bindings and every nested container they referenced is
+        unchanged by a later write. Each observable value is recorded too.
+        """
+        view = dict(self._model_data)
+        observables = {
+            name: observable.value
+            for name, observable in self.observable_values.items()
+        }
+        return view, observables
+
+    def restore_state(self, snapshot: "tuple[Dict[str, Any], Dict[str, Any]]") -> None:
+        """Restore state captured by :meth:`snapshot_state`."""
+        view, observables = snapshot
+        self._model_data = view
+        for name, observable in self.observable_values.items():
+            if name in observables:
+                observable.value = observables[name]
+
     def set_model_data_accessor(self, model_data: Dict[str, Any]) -> None:
         """Set the model data dictionary that this resolver will read from and
         write to."""
@@ -338,6 +371,8 @@ class DerivedFieldResolver:
             # Notify callback
             if self._on_field_change:
                 self._on_field_change(field_name, value)
+
+            self._recomputed.add(field_name)
 
             logger.debug(f"Computed derived field {field_name} = {value}")
             return value

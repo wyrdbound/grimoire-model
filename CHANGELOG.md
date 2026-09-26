@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **A write is a transaction.** A write now validates, applies, recomputes
+  dependents, then validates every derived field it recomputed against its own
+  constraints and — for a model built with validation — the model-level
+  `validations`. A failure restores the model exactly and raises
+  `ModelValidationError`, so a write can no longer leave a derived field out of
+  range or a model-level rule broken. An incremental model
+  (`create_model_without_validation`) checks the leaf and the recomputed derived
+  fields; whole-model rules remain for an explicit `validate()`. Callers that
+  relied on a write succeeding and reporting the violation at the next
+  `validate()` now see the error at the write. (R16, D3)
 - **No silent keywords; `GrimoireModel` is unhashable.** `GrimoireModel.__init__`
   no longer accepts `**kwargs`, and `create_model` /
   `create_model_without_validation` accept only their documented arguments
