@@ -64,7 +64,7 @@ class TestGrimoireModel:
             name="Test Model",
             attributes={
                 "name": {"type": "str"},
-                "age": {"type": "int", "default": 0},
+                "age": {"type": "int", "optional": True},
             },
         )
 
@@ -77,7 +77,7 @@ class TestGrimoireModel:
         model["age"] = 30
         assert model["age"] == 30
 
-        # Test __delitem__
+        # Test __delitem__ unsets an optional attribute (R19)
         del model["age"]
         assert "age" not in model
 
@@ -561,7 +561,13 @@ class TestGrimoireModel:
             GrimoireModel(model_def, {})
 
     def test_delitem_with_dot_path(self):
-        """Test __delitem__ with a dot path notation."""
+        """A dotted path into a ``type: dict`` attribute is undeclared (R19).
+
+        ``stats`` is a plain ``dict`` with no leaf definitions, so
+        ``stats.strength`` is not a declared path and ``del`` raises
+        ``KeyError``. Removing a key is a whole-value write of the remaining
+        mapping.
+        """
         model_def = ModelDefinition(
             id="test_model",
             name="Test Model",
@@ -572,14 +578,16 @@ class TestGrimoireModel:
             model_def, {"stats": {"strength": 10, "dexterity": 15}, "level": 5}
         )
 
-        # Test deleting nested attribute using dot notation
-        del model["stats.strength"]
+        with pytest.raises(KeyError):
+            del model["stats.strength"]
+
+        model["stats"] = {"dexterity": 15}
         assert "strength" not in model["stats"]
         assert "dexterity" in model["stats"]
 
-        # Test deleting top-level attribute
-        del model["level"]
-        assert "level" not in model
+        # A required top-level attribute cannot be deleted (R19)
+        with pytest.raises(ModelValidationError):
+            del model["level"]
 
     def test_model_derived_field_methods(self):
         """Test get_derived_fields, get_field_dependencies, get_dependent_fields
@@ -735,7 +743,12 @@ class TestGrimoireModel:
             GrimoireModel(broken_child_def, {"name": "Failed"})
 
     def test_model_delete_with_dot_path(self):
-        """Test delete operation that triggers __delitem__ with dot notation path."""
+        """A dotted path into a ``type: dict`` attribute is undeclared (R19).
+
+        ``stats`` and ``config`` are plain dicts with no leaf definitions, so a
+        dotted ``del`` raises ``KeyError``; removing keys is a whole-value
+        write of the remaining mapping.
+        """
         model_def = ModelDefinition(
             id="nested_model",
             name="Nested Model",
@@ -763,24 +776,27 @@ class TestGrimoireModel:
         assert model["stats"]["strength"] == 10
         assert model["config"]["sound"]["volume"] == 0.8
 
-        # Test deleting nested values using dot notation
-        # (triggers __delitem__ with dot path)
-        del model["stats.strength"]
+        with pytest.raises(KeyError):
+            del model["stats.strength"]
+
+        # Remove a nested key by writing the remaining mapping
+        model["stats"] = {"agility": 8, "intelligence": 12}
         assert "strength" not in model["stats"]
         assert model["stats"]["agility"] == 8  # Other values should remain
 
-        # Test deleting deeper nested value
-        del model["config.sound.volume"]
+        # Remove a deeper nested value by writing the remaining mapping
+        model["config"] = {
+            "sound": {"muted": False},
+            "graphics": {"resolution": "1920x1080", "fullscreen": True},
+        }
         assert "volume" not in model["config"]["sound"]
-        assert model["config"]["sound"]["muted"] is False  # Other values should remain
-        assert (
-            model["config"]["graphics"]["resolution"] == "1920x1080"
-        )  # Unrelated nested data should remain
+        assert model["config"]["sound"]["muted"] is False
+        assert model["config"]["graphics"]["resolution"] == "1920x1080"
 
-        # Test deleting entire nested section
-        del model["config.graphics"]
+        # Remove an entire nested section by writing the remaining mapping
+        model["config"] = {"sound": {"muted": False}}
         assert "graphics" not in model["config"]
-        assert "sound" in model["config"]  # Other top-level nested data should remain
+        assert "sound" in model["config"]
 
 
 class TestCreateModelFactory:

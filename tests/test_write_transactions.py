@@ -289,7 +289,6 @@ class TestR17BatchIsOneTransaction:
 
 
 class TestR18DerivedNotWritable:
-    @pytest.mark.xfail(strict=True, reason="R18 — fixed by T022")
     def test_writing_a_derived_attribute_raises(self):
         definition = ModelDefinition(
             id="r18_derived",
@@ -307,7 +306,6 @@ class TestR18DerivedNotWritable:
 
 
 class TestR19Delete:
-    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
     def test_deleting_a_readonly_attribute_raises(self):
         definition = ModelDefinition(
             id="r19_ro",
@@ -319,19 +317,16 @@ class TestR19Delete:
         with pytest.raises(ModelValidationError):
             del model["id"]
 
-    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
     def test_deleting_a_required_attribute_raises(self):
         model = create_model(_write_model("r19_req"), {"a": 1})
         with pytest.raises(ModelValidationError):
             del model["a"]
 
-    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
     def test_deleting_a_derived_attribute_raises(self):
         model = create_model(_write_model("r19_derived"), {"a": 1})
         with pytest.raises(ModelValidationError):
             del model["b"]
 
-    @pytest.mark.xfail(strict=True, reason="R19 — fixed by T022")
     def test_deleting_an_optional_attribute_unsets_it(self):
         definition = ModelDefinition(
             id="r19_opt",
@@ -349,7 +344,6 @@ class TestR19Delete:
 
 
 class TestR20ReadonlyLeafInGroup:
-    @pytest.mark.xfail(strict=True, reason="R20 — fixed by T022")
     def test_a_readonly_group_leaf_cannot_be_written(self):
         definition = ModelDefinition(
             id="r20_group",

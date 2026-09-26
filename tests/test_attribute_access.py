@@ -315,7 +315,7 @@ class TestAttributeAccess:
             name="Test",
             attributes={
                 "name": {"type": "str"},
-                "value": {"type": "int", "default": 0},
+                "value": {"type": "int", "optional": True},
             },
         )
 
@@ -338,11 +338,8 @@ class TestAttributeAccess:
         assert model["name"] == "updated"
         assert model.name == "updated"  # And accessible via attribute
 
-        # Delete via dict
+        # Delete via dict unsets an optional attribute (R19)
         del model["value"]
         assert "value" not in model
-        # Accessing deleted attribute should raise AttributeError or return None
-        # depending on whether it's still in _resolved_attributes
-        # It should still be in _resolved_attributes but not have a value
         with pytest.raises(KeyError):
             _ = model["value"]
