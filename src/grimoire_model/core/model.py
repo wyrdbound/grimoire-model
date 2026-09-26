@@ -647,13 +647,40 @@ class GrimoireModel(MutableMapping):
             return None
         return attr_def
 
+    def _model_typed_prefix(
+        self, key: str
+    ) -> Optional[Tuple[str, AttributeDefinition, str]]:
+        """The shortest dotted prefix of ``key`` that is a model-typed attribute.
+
+        Walks the path from the root, so a model-typed leaf inside an anonymous
+        group (``abilities.con``) is found, not just a top-level one (R34).
+        Returns ``(prefix, definition, remainder)`` or ``None`` when no prefix
+        is model-typed.
+        """
+        parts = key.split(".")
+        attributes: Dict[str, AttributeDefinition] = self._resolved_attributes
+        for index in range(len(parts) - 1):
+            attr_def = attributes.get(parts[index])
+            if attr_def is None:
+                return None
+            if self._is_custom_model_type(attr_def.type):
+                return (
+                    ".".join(parts[: index + 1]),
+                    attr_def,
+                    ".".join(parts[index + 1 :]),
+                )
+            if not attr_def.attributes:
+                return None
+            attributes = attr_def.attributes
+        return None
+
     def _nested_model(
         self,
         name: str,
         attr_def: AttributeDefinition,
         data: Optional[Dict[str, Any]] = None,
     ) -> "GrimoireModel":
-        """The nested model at ``name``, built from ``data`` if it is not one.
+        """The nested model at top-level ``name``, built from ``data`` if needed.
 
         An existing nested ``GrimoireModel`` is returned unchanged, so a dotted
         write into an already-built attribute descends into it rather than
@@ -661,31 +688,70 @@ class GrimoireModel(MutableMapping):
         fix — is wrapped into the model, which computes its derived fields.
         ``data`` is only used to build a model where none exists yet.
         """
-        if data is not None:
-            payload: Dict[str, Any] = dict(data)
-        else:
+        if data is None:
             current = self._data.get(name)
             if isinstance(current, GrimoireModel):
                 return current
             if current is None:
-                payload = {}
+                data = {}
             elif isinstance(current, dict):
-                payload = dict(current)
+                data = dict(current)
             else:
                 raise TypeError(
                     f"Cannot write into '{name}': it holds a "
                     f"{type(current).__name__}, not a model"
                 )
-        # The nested model is built as a partial: a dotted write reaches one
-        # leaf, and the nested model's other required attributes are supplied
-        # later or not at all. Derived fields compute from what is present; the
-        # parent's full validation still runs when the whole is validated.
+        return self._make_nested_model(attr_def, data)
+
+    def _nested_model_at(
+        self, prefix: str, attr_def: AttributeDefinition
+    ) -> "GrimoireModel":
+        """The nested model at dotted ``prefix`` (possibly inside a group).
+
+        Descends through anonymous groups; a mapping there is wrapped into the
+        model (R34).
+        """
+        current: Any = self._data
+        for part in prefix.split("."):
+            if isinstance(current, GrimoireModel):
+                current = current._raw_data().get(part)
+            elif isinstance(current, Mapping):
+                current = current.get(part)
+            else:
+                current = None
+        if isinstance(current, GrimoireModel):
+            return current
+        if current is None:
+            data: Dict[str, Any] = {}
+        elif isinstance(current, dict):
+            data = dict(current)
+        else:
+            raise TypeError(
+                f"Cannot write into '{prefix}': it holds a "
+                f"{type(current).__name__}, not a model"
+            )
+        return self._make_nested_model(attr_def, data)
+
+    def _make_nested_model(
+        self, attr_def: AttributeDefinition, data: Dict[str, Any]
+    ) -> "GrimoireModel":
+        """Build a nested model as a partial.
+
+        A dotted write reaches one leaf, and the nested model's other required
+        attributes are supplied later or not at all. Derived fields compute from
+        what is present; the parent's full validation still runs when the whole
+        is validated.
+        """
         return GrimoireModel(
             model_definition=self._resolve_model_type(attr_def.type),
-            data=payload,
+            data=dict(data),
             template_resolver=self._template_resolver,
             skip_initial_validation=True,
         )
+
+    def _raw_data(self) -> Dict[str, Any]:
+        """This model's live data, for internal navigation (no copy)."""
+        return dict(self._data)
 
     def _instantiate_nested_models(self) -> None:
         """Recursively instantiate nested data as GrimoireModel objects.
@@ -698,29 +764,53 @@ class GrimoireModel(MutableMapping):
         data_dict = dict(self._data)
         modified = False
 
-        for attr_name, attr_def in self._resolved_attributes.items():
-            # Skip if this attribute doesn't have data
-            if attr_name not in data_dict:
-                continue
-
-            current_value = data_dict[attr_name]
-            if current_value is None:
-                continue
-
-            if attr_def.type == "list" and attr_def.of:
-                built = self._build_list_value(attr_def, current_value, attr_name)
-            elif self._is_custom_model_type(attr_def.type):
-                built = self._build_model_value(attr_def, current_value, attr_name)
-            else:
-                continue
-
-            if built is not current_value:
-                data_dict[attr_name] = built
+        for attr_path, attr_def in self._iter_attribute_paths(
+            self._resolved_attributes
+        ):
+            built = self._build_nested_at(data_dict, attr_path, attr_def)
+            if built:
                 modified = True
 
         # Update the data if we instantiated any nested models
         if modified:
             self._data = pmap(data_dict)
+
+    def _build_nested_at(
+        self, data_dict: Dict[str, Any], attr_path: str, attr_def: AttributeDefinition
+    ) -> bool:
+        """Build the model-typed value at dotted ``attr_path`` in ``data_dict``.
+
+        Walks through anonymous groups; a model-typed leaf inside a group is
+        built exactly as a top-level model-typed attribute is (R34). Returns
+        True if a value was replaced.
+        """
+        parts = attr_path.split(".")
+        current: Any = data_dict
+        for part in parts[:-1]:
+            if not isinstance(current, dict) or part not in current:
+                return False
+            current = current[part]
+            if not isinstance(current, dict):
+                return False
+
+        leaf = parts[-1]
+        if not isinstance(current, dict) or leaf not in current:
+            return False
+        value = current[leaf]
+        if value is None:
+            return False
+
+        if attr_def.type == "list" and attr_def.of:
+            built = self._build_list_value(attr_def, value, attr_path)
+        elif self._is_custom_model_type(attr_def.type):
+            built = self._build_model_value(attr_def, value, attr_path)
+        else:
+            return False
+
+        if built is value:
+            return False
+        current[leaf] = built
+        return True
 
     def _build_model_value(
         self, attr_def: AttributeDefinition, value: Any, path: str
@@ -1005,20 +1095,18 @@ class GrimoireModel(MutableMapping):
 
         # Update the data
         if "." in key:
-            head, _, rest = key.partition(".")
-            head_def = self._model_typed_attribute(head)
-            if head_def is not None:
-                # A write through a model-typed attribute goes into that nested
-                # model, so it validates and recomputes its own derived fields.
-                # Without this the nested value was a plain dict, its derived
-                # fields never computed, and a later write into it raised
-                # ``TypeError`` (see this module's ``_nested_model``).
-                nested = self._nested_model(head, head_def)
+            typed = self._model_typed_prefix(key)
+            if typed is not None:
+                # A write beneath a model-typed attribute -- possibly reached
+                # through anonymous groups (R34) -- goes into that nested model,
+                # so it validates and recomputes its own derived fields.
+                prefix, prefix_def, rest = typed
+                nested = self._nested_model_at(prefix, prefix_def)
                 nested[rest] = value
-                self._data = self._data.set(head, nested)
+                self._data = self._data.set(prefix, nested)
                 self._derived_field_resolver.set_model_data_accessor(dict(self._data))
                 if not skip_derived_update:
-                    self._derived_field_resolver.set_field_value(head, nested)
+                    self._derived_field_resolver.set_field_value(prefix, nested)
                 return
             data_copy = copy_on_write_set(dict(self._data), key, value)
             self._data = pmap(data_copy)
@@ -1059,8 +1147,7 @@ class GrimoireModel(MutableMapping):
         if self.get_attribute_definition(key) is not None:
             return True
         if "." in key:
-            head = key.partition(".")[0]
-            return self._model_typed_attribute(head) is not None
+            return self._model_typed_prefix(key) is not None
         return False
 
     def _has_field(self, field_name: str) -> bool:
