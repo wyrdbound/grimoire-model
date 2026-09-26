@@ -225,10 +225,10 @@ class TestJinja2TemplateResolver:
         """Test that nonexistent dotted paths raise errors."""
         resolver = Jinja2TemplateResolver()
 
-        # Test nonexistent intermediate key - returns None for undefined
+        # A missing key at any depth raises; it must never resolve to None.
         context = {"outputs": {}}
-        result = resolver.resolve_template("{{ outputs.nonexistent }}", context)
-        assert result is None  # compile_expression returns None for missing attrs
+        with pytest.raises(TemplateResolutionError):
+            resolver.resolve_template("{{ outputs.nonexistent }}", context)
 
         # Test nonexistent top-level key should still raise error
         context = {}
