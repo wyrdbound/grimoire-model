@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Groups and model-typed attributes must hold mappings.** An anonymous group
+  given a non-mapping is an error (build and write), and a model-typed
+  attribute must hold a mapping (built into the model) or a `GrimoireModel` of
+  that type. A model of a different id raises. The model enforces this itself,
+  keeping `TypeValidator` context-free (Principle IV). (R31, R32)
 - **Batches are re-entrant; `get_derived_fields()` returns dotted paths.**
   `BatchedDerivedFieldResolver` keeps a depth counter: a `start_batch()` inside
   a batch no longer clears the outer batch's pending work, and only the

@@ -708,28 +708,43 @@ class GrimoireModel(MutableMapping):
             # Get the current value
             current_value = data_dict[attr_name]
 
-            # If it's already a GrimoireModel, skip
+            # If it's already a GrimoireModel, it must be of the right type.
             if isinstance(current_value, GrimoireModel):
+                if current_value.model_definition.id != nested_model_def.id:
+                    raise ModelValidationError(
+                        f"Attribute '{attr_name}' must be a model of type "
+                        f"'{nested_model_def.id}', got "
+                        f"'{current_value.model_definition.id}'",
+                        field_name=attr_name,
+                        field_value=current_value,
+                    )
                 continue
 
             # If it's None, skip
             if current_value is None:
                 continue
 
+            # A model-typed attribute must hold a mapping or a model of that
+            # type; anything else is an error (R32).
+            if not isinstance(current_value, dict):
+                raise ModelValidationError(
+                    f"Attribute '{attr_name}' must be a mapping or a "
+                    f"'{attr_def.type}' model, got {type(current_value).__name__}",
+                    field_name=attr_name,
+                    field_value=current_value,
+                )
+
             # Instantiate dict as a GrimoireModel
-            if isinstance(current_value, dict):
-                # Recursively create the nested model
-                # Use the same template resolver to maintain consistency
-                nested_model = GrimoireModel(
-                    model_definition=nested_model_def,
-                    data=current_value,
-                    template_resolver=self._template_resolver,
-                )
-                data_dict[attr_name] = nested_model
-                modified = True
-                logger.debug(
-                    f"Instantiated nested model '{attr_name}' of type '{attr_def.type}'"
-                )
+            nested_model = GrimoireModel(
+                model_definition=nested_model_def,
+                data=current_value,
+                template_resolver=self._template_resolver,
+            )
+            data_dict[attr_name] = nested_model
+            modified = True
+            logger.debug(
+                f"Instantiated nested model '{attr_name}' of type '{attr_def.type}'"
+            )
 
         # Update the data if we instantiated any nested models
         if modified:
@@ -958,12 +973,29 @@ class GrimoireModel(MutableMapping):
             self._data = pmap(data_copy)
             self._derived_field_resolver.set_model_data_accessor(data_copy)
         else:
-            # A whole value written to a model-typed attribute is built as that
-            # model, so its derived fields compute and it validates on read
-            # (F57). A value already built, or not a mapping, is stored as is.
-            if attr_def is not None and isinstance(value, dict):
-                if self._is_custom_model_type(attr_def.type):
+            # A model-typed attribute must hold a mapping or a model of that
+            # type (R32). A mapping is built as the nested model, so its derived
+            # fields compute and it validates (F57).
+            if attr_def is not None and self._is_custom_model_type(attr_def.type):
+                nested_def = self._resolve_model_type(attr_def.type)
+                if isinstance(value, GrimoireModel):
+                    if value.model_definition.id != nested_def.id:
+                        raise ModelValidationError(
+                            f"Attribute '{key}' must be a model of type "
+                            f"'{nested_def.id}', got "
+                            f"'{value.model_definition.id}'",
+                            field_name=key,
+                            field_value=value,
+                        )
+                elif isinstance(value, dict):
                     value = self._nested_model(key, attr_def, data=value)
+                else:
+                    raise ModelValidationError(
+                        f"Attribute '{key}' must be a mapping or a "
+                        f"'{attr_def.type}' model, got {type(value).__name__}",
+                        field_name=key,
+                        field_value=value,
+                    )
             self._data = self._data.set(key, value)
             self._derived_field_resolver.set_model_data_accessor(dict(self._data))
 
