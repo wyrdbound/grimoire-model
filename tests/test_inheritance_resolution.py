@@ -208,13 +208,8 @@ class TestR41NamespaceLocalLookup:
         assert "nsb__stat" in message
 
     def test_injectable_registry(self):
-        """Lookups use the passed registry, not the global one (D10).
-
-        The injected registry's ``thing`` has a distinct default, so the built
-        nested model shows which definition was resolved. Construction
-        auto-registers globally today; T042 removes that.
-        """
-        global_thing = ModelDefinition(
+        """Lookups use the passed registry, not the global one (D10)."""
+        ModelDefinition(
             id="thing",
             name="Thing",
             namespace="local",
@@ -226,10 +221,13 @@ class TestR41NamespaceLocalLookup:
             namespace="local",
             attributes={"t": {"type": "thing"}},
         )
+        # A different `thing`, built under its own source namespace so it does
+        # not collide in the global registry, then registered as `local/thing`
+        # in the injected one.
         injected_thing = ModelDefinition(
             id="thing",
             name="Thing (injected)",
-            namespace="local",
+            namespace="local_injected",
             attributes={"v": {"type": "int", "default": 99}},
         )
         registry = ModelRegistry()
@@ -238,7 +236,6 @@ class TestR41NamespaceLocalLookup:
 
         model = create_model(holder, {"t": {}}, registry=registry)
         assert model["t"]["v"] == 99
-        assert global_thing.attributes["v"].default == 1
 
     def test_plain_dict_still_works(self):
         """Rule 6: a plain id-keyed dict still resolves inheritance."""
@@ -266,7 +263,6 @@ class TestR42NoRegistration:
         yield
         clear_registry()
 
-    @pytest.mark.xfail(strict=True, reason="R42 — fixed by T042")
     def test_resolution_does_not_register_a_default_model(self):
         ModelDefinition(
             id="item",

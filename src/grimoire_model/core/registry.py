@@ -49,11 +49,13 @@ class ModelRegistry:
         with self._lock:
             if key in self._models:
                 existing = self._models[key]
-                if existing is not model_definition:
-                    logger.warning(
-                        f"Model '{key}' already registered. "
-                        f"Overwriting with new definition."
-                    )
+                if existing == model_definition:
+                    # Reloading an equal definition (the same system twice) is a
+                    # no-op (R42).
+                    return
+                raise ValueError(
+                    f"Model '{key}' is already registered with a different definition"
+                )
 
             self._models[key] = model_definition
             self._namespaces.add(namespace)

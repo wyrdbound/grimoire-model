@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Resolution registers nothing; duplicate registration is explicit.**
+  `resolve_model_inheritance` builds the flattened definition with
+  `model_copy(update=…)`, which does not register it, so resolving inheritance
+  no longer writes a `default__<id>` entry. `ModelRegistry.register` treats an
+  equal definition under an existing key as a no-op and raises `ValueError` for
+  a different one (its documented contract), instead of silently overwriting.
+  (R42)
 - **Lookup is namespace-local; the registry is injectable.** A parent, a
   model-typed attribute and an `of` model type resolve in the requesting
   model's namespace first; another namespace is used only when exactly one has

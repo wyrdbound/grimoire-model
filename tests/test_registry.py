@@ -260,22 +260,37 @@ class TestModelRegistry:
         with pytest.raises(KeyError, match="not found"):
             registry.resolve_extends("test", ["missing"])
 
-    def test_registry_overwrite_warning(self, caplog):
-        """Test warning when overwriting existing model."""
+    def test_registry_overwrite_raises(self):
+        """A different definition under an existing key raises (R42)."""
         registry = ModelRegistry()
 
         model1 = ModelDefinition(
             id="test", name="Test 1", namespace="test", attributes={}
         )
         model2 = ModelDefinition(
-            id="test", name="Test 2", namespace="test", attributes={}
+            id="test", name="Test 2", namespace="other", attributes={}
         )
 
         registry.register("test", "test", model1)
-        registry.register("test", "test", model2)  # Should warn about overwrite
+        with pytest.raises(ValueError, match="already registered"):
+            registry.register("test", "test", model2)
+        assert registry.get("test", "test") is model1
 
-        assert "already registered" in caplog.text
-        assert registry.get("test", "test") is model2
+    def test_registry_equal_definition_is_a_no_op(self):
+        """Re-registering an equal definition does not raise (R42)."""
+        registry = ModelRegistry()
+
+        model1 = ModelDefinition(
+            id="test", name="Test", namespace="test", attributes={}
+        )
+        model2 = ModelDefinition(
+            id="test", name="Test", namespace="test", attributes={}
+        )
+        assert model1 == model2
+
+        registry.register("test", "test", model1)
+        registry.register("test", "test", model2)
+        assert registry.get("test", "test") == model1
 
     def test_registry_contains(self):
         """Test __contains__ method."""
