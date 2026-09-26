@@ -111,7 +111,6 @@ class TestR32ModelTypedHoldMappings:
 
 
 class TestR33ListOf:
-    @pytest.mark.xfail(strict=True, reason="R33 — fixed by T033")
     def test_primitive_of_validates_elements(self):
         definition = ModelDefinition(
             id="r33_int",
@@ -123,7 +122,6 @@ class TestR33ListOf:
         with pytest.raises(ModelValidationError, match=r"xs\[0\]"):
             create_model(definition, {"xs": ["a"]})
 
-    @pytest.mark.xfail(strict=True, reason="R33 — fixed by T033")
     def test_model_of_builds_elements(self):
         ModelDefinition(
             id="item_r33",
@@ -148,7 +146,6 @@ class TestR33ListOf:
         with pytest.raises(ModelValidationError, match=r"inv\[0\]"):
             create_model(definition, {"inv": [{"w": "heavy"}]})
 
-    @pytest.mark.xfail(strict=True, reason="R33 — fixed by T033")
     def test_a_write_of_a_model_list_builds_and_validates(self):
         ModelDefinition(
             id="item_r33w",

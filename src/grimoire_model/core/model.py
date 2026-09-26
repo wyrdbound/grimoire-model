@@ -8,7 +8,7 @@ into a dict-like model class that integrates with grimoire-context.
 import copy as _copy
 import threading
 import uuid
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
 from pyrsistent import pmap
@@ -32,6 +32,7 @@ from .exceptions import (
     ModelValidationError,
 )
 from .schema import (
+    BASIC_TYPES,
     AttributeDefinition,
     ModelDefinition,
     iter_leaf_attributes,
@@ -189,19 +190,22 @@ class GrimoireModel(MutableMapping):
                 return self._read_value(self._get_nested_value(key))
             return self._read_value(self._data[key])
 
-    @staticmethod
-    def _read_value(value: Any) -> Any:
+    @classmethod
+    def _read_value(cls, value: Any) -> Any:
         """Return a value safe to hand to a caller (R14).
 
         A nested ``GrimoireModel`` is copied with ``copy()`` (independent since
-        T016); a ``dict`` or ``list`` is deep-copied; a scalar is returned as
-        is. Internal reads (contexts, validation) use ``_data`` directly and
-        do not pay this cost.
+        T016); a ``dict`` or ``list`` is copied recursively, so a nested model
+        or container inside one is handled; a scalar is returned as is. Internal
+        reads (contexts, validation) use ``_data`` directly and do not pay this
+        cost.
         """
         if isinstance(value, GrimoireModel):
             return value.copy()
-        if isinstance(value, (dict, list)):
-            return _copy.deepcopy(value)
+        if isinstance(value, dict):
+            return {key: cls._read_value(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [cls._read_value(item) for item in value]
         return value
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -688,7 +692,8 @@ class GrimoireModel(MutableMapping):
 
         This method walks through the data dictionary and for any attribute
         that has a custom model type, it instantiates the nested data as a
-        GrimoireModel object with its own derived fields computed.
+        GrimoireModel object with its own derived fields computed. A list whose
+        ``of`` names a model has each element built (D16).
         """
         data_dict = dict(self._data)
         modified = False
@@ -698,57 +703,103 @@ class GrimoireModel(MutableMapping):
             if attr_name not in data_dict:
                 continue
 
-            # Skip if this is not a custom model type
-            if not self._is_custom_model_type(attr_def.type):
-                continue
-
-            # Resolve the type to a model definition
-            nested_model_def = self._resolve_model_type(attr_def.type)
-
-            # Get the current value
             current_value = data_dict[attr_name]
-
-            # If it's already a GrimoireModel, it must be of the right type.
-            if isinstance(current_value, GrimoireModel):
-                if current_value.model_definition.id != nested_model_def.id:
-                    raise ModelValidationError(
-                        f"Attribute '{attr_name}' must be a model of type "
-                        f"'{nested_model_def.id}', got "
-                        f"'{current_value.model_definition.id}'",
-                        field_name=attr_name,
-                        field_value=current_value,
-                    )
-                continue
-
-            # If it's None, skip
             if current_value is None:
                 continue
 
-            # A model-typed attribute must hold a mapping or a model of that
-            # type; anything else is an error (R32).
-            if not isinstance(current_value, dict):
-                raise ModelValidationError(
-                    f"Attribute '{attr_name}' must be a mapping or a "
-                    f"'{attr_def.type}' model, got {type(current_value).__name__}",
-                    field_name=attr_name,
-                    field_value=current_value,
-                )
+            if attr_def.type == "list" and attr_def.of:
+                built = self._build_list_value(attr_def, current_value, attr_name)
+            elif self._is_custom_model_type(attr_def.type):
+                built = self._build_model_value(attr_def, current_value, attr_name)
+            else:
+                continue
 
-            # Instantiate dict as a GrimoireModel
-            nested_model = GrimoireModel(
-                model_definition=nested_model_def,
-                data=current_value,
-                template_resolver=self._template_resolver,
-            )
-            data_dict[attr_name] = nested_model
-            modified = True
-            logger.debug(
-                f"Instantiated nested model '{attr_name}' of type '{attr_def.type}'"
-            )
+            if built is not current_value:
+                data_dict[attr_name] = built
+                modified = True
 
         # Update the data if we instantiated any nested models
         if modified:
             self._data = pmap(data_dict)
+
+    def _build_model_value(
+        self, attr_def: AttributeDefinition, value: Any, path: str
+    ) -> "GrimoireModel":
+        """Build ``value`` as the model ``attr_def.type`` names.
+
+        A mapping is built into a model; a ``GrimoireModel`` of the right id is
+        returned as it is; a model of a different id, or anything that is
+        neither, raises ``ModelValidationError`` (R32). ``path`` names the
+        attribute in errors (a list element is ``inv[0]``).
+        """
+        nested_model_def = self._resolve_model_type(attr_def.type)
+
+        if isinstance(value, GrimoireModel):
+            if value.model_definition.id != nested_model_def.id:
+                raise ModelValidationError(
+                    f"Attribute '{path}' must be a model of type "
+                    f"'{nested_model_def.id}', got '{value.model_definition.id}'",
+                    field_name=path,
+                    field_value=value,
+                )
+            return value
+
+        if not isinstance(value, Mapping):
+            raise ModelValidationError(
+                f"Attribute '{path}' must be a mapping or a "
+                f"'{attr_def.type}' model, got {type(value).__name__}",
+                field_name=path,
+                field_value=value,
+            )
+
+        nested_model = GrimoireModel(
+            model_definition=nested_model_def,
+            data=dict(value),
+            template_resolver=self._template_resolver,
+        )
+        logger.debug(f"Instantiated nested model '{path}' of type '{attr_def.type}'")
+        return nested_model
+
+    def _build_list_value(
+        self, attr_def: AttributeDefinition, value: Any, path: str
+    ) -> Any:
+        """Validate a list and build model-typed elements (R33, D16).
+
+        A primitive ``of`` validates each element with an indexed path; a
+        model-id ``of`` builds each mapping element as that model, keeps an
+        element that is already a model of that id, and rejects anything else,
+        errors named ``path[i]``.
+        """
+        if not isinstance(value, list):
+            raise ModelValidationError(
+                f"Attribute '{path}' must be a list, got {type(value).__name__}",
+                field_name=path,
+                field_value=value,
+            )
+
+        if attr_def.of is None or attr_def.of in BASIC_TYPES:
+            return value
+
+        element_def = AttributeDefinition(type=attr_def.of)
+        built_elements: List[Any] = []
+        for index, element in enumerate(value):
+            if element is None:
+                built_elements.append(element)
+                continue
+            try:
+                built_elements.append(
+                    self._build_model_value(element_def, element, f"{path}[{index}]")
+                )
+            except ModelValidationError as exc:
+                # Name the element by its indexed path (R33).
+                raise ModelValidationError(
+                    f"Invalid element {path}[{index}]: {exc.message}",
+                    field_name=f"{path}[{index}]",
+                    field_value=element,
+                    validation_errors=exc.validation_errors
+                    or [f"'{path}[{index}]' is invalid"],
+                ) from exc
+        return built_elements
 
     @staticmethod
     def _without_null_optionals(
@@ -977,25 +1028,10 @@ class GrimoireModel(MutableMapping):
             # type (R32). A mapping is built as the nested model, so its derived
             # fields compute and it validates (F57).
             if attr_def is not None and self._is_custom_model_type(attr_def.type):
-                nested_def = self._resolve_model_type(attr_def.type)
-                if isinstance(value, GrimoireModel):
-                    if value.model_definition.id != nested_def.id:
-                        raise ModelValidationError(
-                            f"Attribute '{key}' must be a model of type "
-                            f"'{nested_def.id}', got "
-                            f"'{value.model_definition.id}'",
-                            field_name=key,
-                            field_value=value,
-                        )
-                elif isinstance(value, dict):
-                    value = self._nested_model(key, attr_def, data=value)
-                else:
-                    raise ModelValidationError(
-                        f"Attribute '{key}' must be a mapping or a "
-                        f"'{attr_def.type}' model, got {type(value).__name__}",
-                        field_name=key,
-                        field_value=value,
-                    )
+                value = self._build_model_value(attr_def, value, key)
+            elif attr_def is not None and attr_def.type == "list" and attr_def.of:
+                # A list's model-typed elements are built (R33, D16).
+                value = self._build_list_value(attr_def, value, key)
             self._data = self._data.set(key, value)
             self._derived_field_resolver.set_model_data_accessor(dict(self._data))
 

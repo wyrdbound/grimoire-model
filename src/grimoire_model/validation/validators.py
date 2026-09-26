@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Any, Dict, List, Optional
 
-from ..core.schema import AttributeDefinition
+from ..core.schema import BASIC_TYPES, AttributeDefinition
 
 
 class FieldValidator(ABC):
@@ -82,6 +82,14 @@ class TypeValidator(FieldValidator):
                 errors.append(
                     f"Field '{field_name}' must be a list, got {type(value).__name__}"
                 )
+            elif attr_def.of is not None and attr_def.of in BASIC_TYPES:
+                # A primitive `of`: validate each element with indexed paths
+                # (R33). A model-typed `of` is built and checked by the model.
+                element_def = AttributeDefinition(type=attr_def.of)
+                for index, element in enumerate(value):
+                    errors.extend(
+                        self.validate(element, f"{field_name}[{index}]", element_def)
+                    )
         elif expected_type == "dict":
             if not isinstance(value, dict):
                 errors.append(
