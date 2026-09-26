@@ -5,7 +5,7 @@ merged). T002 done (expression-safety tests written). T003 done (R01). T004
 done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 passed. T009 done
 (definition-strictness tests written). T010 done (R08, Input gap 2 confirmed).
 T011 done (R09, R10; grep gate waived). T012 done (R11).
-T013 next.
+T013 done (R12; test_model.py added, grep gate waived). T014 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -416,9 +416,15 @@ the spec's, spelled one way.
   the field. A validator that raises is a validation error, not a crash.
   *Accept:* the new tests pass; `examples/07_custom_primitive_types.py` runs.
 
-- [ ] **T013** [US2] Fix R12. Files: `src/grimoire_model/core/schema.py`,
+- [x] **T013** [US2] Fix R12. Files: `src/grimoire_model/core/schema.py`,
   `tests/test_definition_strictness.py`, `tests/test_schema.py`,
-  `CHANGELOG.md` only.
+  `tests/test_model.py`, `CHANGELOG.md` only.
+
+  *Amended while executing:* the file list gained `tests/test_model.py`.
+  `test_model_validation_rules` passed `fields=["age"]`, a field this task
+  removes; the kwarg is dropped. The `grep -rn "severity" src/` acceptance
+  check is waived, for the same reason as T011: an explanatory error for the
+  two keys must name them, so the literal cannot be absent.
 
   **Check Input gap 3 first.** Remove `ValidationRule.severity`, its
   validator, and `ValidationRule.fields` (design D8). With T010's
@@ -1083,7 +1089,7 @@ now on.
 | [x] | T010 | 2 | | US2 | R08 |
 | [x] | T011 | 2 | | US2 | R09, R10 |
 | [x] | T012 | 2 | | US2 | R11 |
-| [ ] | T013 | 2 | | US2 | R12 |
+| [x] | T013 | 2 | | US2 | R12 |
 | [ ] | T014 | 2 | P | US2 | R13 |
 | [ ] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
 | [ ] | T016 | 3 | | US3 | R15 |

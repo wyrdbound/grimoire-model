@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed (breaking)
+
+- **`ValidationRule.severity` and `ValidationRule.fields` are gone.** Neither
+  is in the GRIMOIRE specification. `fields` was never read, and `severity`
+  silently behaved as `error` (a `warning` rule failed instantiation like any
+  other). Every rule is an error. Passing either key now raises a
+  `pydantic.ValidationError` naming the reason; a caller that passed
+  `fields=[...]` must simply drop it. (R12)
+
 ### Changed (breaking)
 
 - **`roll` and `roll_result` are basic types, and primitive validators run.**

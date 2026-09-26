@@ -274,7 +274,7 @@ class TestGrimoireModel:
     def test_model_validation_rules(self):
         """Test model with validation rules."""
         validation_rule = ValidationRule(
-            expression="{{ age >= 18 }}", message="Must be 18 or older", fields=["age"]
+            expression="{{ age >= 18 }}", message="Must be 18 or older"
         )
 
         model_def = ModelDefinition(

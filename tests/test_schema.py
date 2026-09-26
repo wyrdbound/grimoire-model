@@ -106,20 +106,14 @@ class TestValidationRule:
         )
         assert rule.expression == "{{ level > 0 }}"
         assert rule.message == "Level must be positive"
-        assert rule.severity == "error"  # Default
 
-    def test_validation_rule_severity(self):
-        """Test validation rule severity validation."""
-        # Valid severities
-        for severity in ["error", "warning", "info"]:
-            rule = ValidationRule(
-                expression="{{ true }}", message="Test", severity=severity
-            )
-            assert rule.severity == severity
+    def test_severity_and_fields_are_not_rule_fields(self):
+        """GRIMOIRE validations have no severity, and no `fields` list."""
+        with pytest.raises(ValidationError, match="`severity` is not a validation"):
+            ValidationRule(expression="{{ true }}", message="Test", severity="error")
 
-        # Invalid severity should raise error
-        with pytest.raises(ValidationError):
-            ValidationRule(expression="{{ true }}", message="Test", severity="invalid")
+        with pytest.raises(ValidationError, match="`fields` is not a validation"):
+            ValidationRule(expression="{{ true }}", message="Test", fields=["a"])
 
     def test_empty_expression_validation(self):
         """Test that empty expressions are rejected."""
