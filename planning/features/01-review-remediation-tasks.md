@@ -1,7 +1,7 @@
 # Review Remediation — tests first, then the fix, for every finding
 
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
-merged). T002 next.
+merged). T002 done (expression-safety tests written). T003 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -172,7 +172,7 @@ plausible-looking fix makes.
 **Purpose:** US1. The expression layer stops returning `None` for mistakes,
 stops exposing Python internals, and resolves data before methods.
 
-- [ ] **T002** [US1] Write `tests/test_expression_safety.py` (TDD) for R01–R04.
+- [x] **T002** [US1] Write `tests/test_expression_safety.py` (TDD) for R01–R04.
   Use `create_template_resolver()` and small models. Assert:
   - **R01:** `resolve_template("{{ g.missing }}", {"g": {"a": 1}})` raises
     `TemplateResolutionError`; so does `{{ g.a.b }}` with `{"g": {"a": 1}}`. A
@@ -1045,7 +1045,7 @@ now on.
 | Done | Task | Phase | [P] | Story | Fixes |
 | --- | --- | --- | --- | --- | --- |
 | [x] | T001 | 0 | | — | (rebase onto F57) |
-| [ ] | T002 | 1 | | US1 | tests R01–R04 |
+| [x] | T002 | 1 | | US1 | tests R01–R04 |
 | [ ] | T003 | 1 | | US1 | R01 |
 | [ ] | T004 | 1 | | US1 | R02 |
 | [ ] | T005 | 1 | | US1 | R03 |
