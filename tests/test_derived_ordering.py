@@ -219,7 +219,6 @@ class TestR27ExactConversion:
 class TestR28Observers:
     """Every observer runs; the first exception re-raises."""
 
-    @pytest.mark.xfail(strict=True, reason="R28 — fixed by T029")
     def test_second_observer_runs_after_the_first_raises(self):
         from grimoire_model.resolvers.derived import ObservableValue
 
