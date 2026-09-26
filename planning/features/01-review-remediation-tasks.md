@@ -18,7 +18,7 @@ Checkpoint 3 passed (coverage 92%, examples run). T025 done
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
 PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 done (R37-R39). Checkpoint 5 passed (coverage 92%,
 examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
-next.
+and T040 done (R40, R43, R44; T040 folded in). T041 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -946,10 +946,16 @@ now on.
     parent.
   *Accept:* each fails on 0.7.1 for the reason in design §3.6, `xfail(strict)`.
 
-- [ ] **T039** [US6] Fix R40: later parents win. Files:
+- [x] **T039** [US6] Fix R40: later parents win. Files:
   `src/grimoire_model/utils/inheritance.py`,
   `tests/test_inheritance_resolution.py`, `tests/test_utils.py`,
   `CHANGELOG.md` only.
+
+  *Amended while executing:* **T040 (R43, R44) is folded into T039.** Once
+  `extends` is resolved recursively in `extends` order, real depth and
+  ancestor-cycle detection come from the same walk; splitting them would mean
+  writing code only to delete it. T038's R43/R44 markers and the new
+  exactly-max-depth tests are removed/passed here.
 
   **Check Input gap 6 first.** Rule (`model_spec.md`, Inheritance Rules 4):
   "Later models override fields from earlier ones." resolved(M) = merge of
@@ -959,11 +965,16 @@ now on.
   message). Remove the "C3 linearization" claims from the docstrings. Any
   existing test asserting earlier-wins encodes the bug: change it and name it
   in the commit. `### Changed (breaking)`.
-  *Accept:* T038's R40 tests pass.
 
-- [ ] **T040** [US6] Fix R43 and R44. Files:
-  `src/grimoire_model/utils/inheritance.py`,
-  `tests/test_inheritance_resolution.py`, `CHANGELOG.md` only.
+  Input gap 6 confirmed against every system copy on disk
+  (`grimoire/systems`, `wyrdbound/systems`, `wyrdbound-systems/systems`),
+  counting grandparent-inherited attributes: only Knave's `weapon` and `armor`
+  have two parents (`[item, breakable]`), which share no attribute, so no
+  shipped model's resolved shape changes.
+  *Accept:* T038's R40, R43 and R44 tests pass.
+
+- [x] **T040** [US6] Fix R43 and R44. *Folded into T039 (amended while
+  executing): the recursive merge that fixes R40 also fixes R43 and R44.*
 
   `max_depth` bounds the length of the longest `extends` path from the model,
   not the number of models visited. Any cycle reachable from the model raises
@@ -1171,8 +1182,8 @@ now on.
 | [x] | T036 | 5 | | US5 | R36 |
 | [x] | T037 | 5 | P | US5 | R37, R38, R39 |
 | [x] | T038 | 6 | | US6 | tests R40–R45 |
-| [ ] | T039 | 6 | | US6 | R40 |
-| [ ] | T040 | 6 | | US6 | R43, R44 |
+| [x] | T039 | 6 | | US6 | R40, R43, R44 (T040 folded in) |
+| [x] | T040 | 6 | | US6 | (folded into T039) |
 | [ ] | T041 | 6 | | US6 | R41 |
 | [ ] | T042 | 6 | | US6 | R42 |
 | [ ] | T043 | 6 | P | US6 | R45 |

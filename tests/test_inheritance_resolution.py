@@ -42,7 +42,6 @@ class TestR40LaterParentsWin:
             attributes={"x": {"type": "str", "default": value}},
         )
 
-    @pytest.mark.xfail(strict=True, reason="R40 — fixed by T039")
     def test_later_parent_wins(self):
         self._parent("pb", "B")
         self._parent("pc", "C")
@@ -55,7 +54,6 @@ class TestR40LaterParentsWin:
         )
         assert create_model(kid, {})["x"] == "C"
 
-    @pytest.mark.xfail(strict=True, reason="R40 — fixed by T039")
     def test_reversed_order(self):
         self._parent("pb2", "B")
         self._parent("pc2", "C")
@@ -80,7 +78,6 @@ class TestR40LaterParentsWin:
         )
         assert create_model(kid, {})["x"] == "K"
 
-    @pytest.mark.xfail(strict=True, reason="R40 — fixed by T039")
     def test_diamond_later_sibling_wins(self):
         self._parent("base", "BASE")
         ModelDefinition(
@@ -231,8 +228,8 @@ class TestR41NamespaceLocalLookup:
         assert model["t"]["v"] == 5
         assert get_default_registry().get("local", "thing") is None
 
-    @pytest.mark.xfail(strict=True, reason="R41 — fixed by T041")
     def test_plain_dict_still_works(self):
+        """Rule 6: a plain id-keyed dict still resolves inheritance."""
         item = ModelDefinition(
             id="item_plain",
             name="Item",
@@ -290,7 +287,6 @@ class TestR43Depth:
         yield
         clear_registry()
 
-    @pytest.mark.xfail(strict=True, reason="R43 — fixed by T040")
     def test_ten_siblings_each_extending_one_base(self):
         ModelDefinition(
             id="base_depth",
@@ -315,6 +311,61 @@ class TestR43Depth:
         )
         assert create_model(kid, {})["z"] == 1
 
+    def test_a_chain_of_exactly_max_depth_builds(self):
+        ModelDefinition(
+            id="leaf_md",
+            name="Leaf",
+            namespace="inh",
+            attributes={"z": {"type": "int", "default": 1}},
+        )
+        previous = "leaf_md"
+        for depth in range(9):
+            model_id = f"level{depth}_md"
+            ModelDefinition(
+                id=model_id,
+                name=model_id,
+                namespace="inh",
+                extends=[previous],
+                attributes={},
+            )
+            previous = model_id
+        top = ModelDefinition(
+            id="top_md",
+            name="Top",
+            namespace="inh",
+            extends=[previous],
+            attributes={},
+        )
+        assert create_model(top, {})["z"] == 1
+
+    def test_one_deeper_than_max_depth_raises(self):
+        ModelDefinition(
+            id="leaf_deep",
+            name="Leaf",
+            namespace="inh",
+            attributes={"z": {"type": "int", "default": 1}},
+        )
+        previous = "leaf_deep"
+        for depth in range(11):
+            model_id = f"deep{depth}"
+            ModelDefinition(
+                id=model_id,
+                name=model_id,
+                namespace="inh",
+                extends=[previous],
+                attributes={},
+            )
+            previous = model_id
+        top = ModelDefinition(
+            id="top_deep",
+            name="Top",
+            namespace="inh",
+            extends=[previous],
+            attributes={},
+        )
+        with pytest.raises(InheritanceError, match="depth"):
+            create_model(top, {})
+
 
 class TestR44Cycles:
     @pytest.fixture(autouse=True)
@@ -323,7 +374,6 @@ class TestR44Cycles:
         yield
         clear_registry()
 
-    @pytest.mark.xfail(strict=True, reason="R44 — fixed by T040")
     def test_a_cycle_among_ancestors_raises(self):
         ModelDefinition(
             id="cy1",
