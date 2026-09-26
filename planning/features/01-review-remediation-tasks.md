@@ -16,7 +16,8 @@ rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 Checkpoint 3 passed (coverage 92%, examples run). T025 done
 (derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
-PYTHONHASHSEED 0-7). T031 next.
+PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032
+next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -796,7 +797,7 @@ now on.
 
 **Purpose:** US5.
 
-- [ ] **T031** [US5] Write `tests/test_type_validation.py` (TDD) for R31–R39.
+- [x] **T031** [US5] Write `tests/test_type_validation.py` (TDD) for R31–R39.
   Assert:
   - **R31:** `{"g": 5}` for a group `g` raises on build and on
     `m["g"] = 5`.
@@ -1155,7 +1156,7 @@ now on.
 | [x] | T028 | 4 | | US4 | R27 |
 | [x] | T029 | 4 | P | US4 | R28 |
 | [x] | T030 | 4 | P | US4 | R29, R30 |
-| [ ] | T031 | 5 | | US5 | tests R31–R39 |
+| [x] | T031 | 5 | | US5 | tests R31–R39 |
 | [ ] | T032 | 5 | | US5 | R31, R32 |
 | [ ] | T033 | 5 | | US5 | R33 |
 | [ ] | T034 | 5 | | US5 | R34 |
