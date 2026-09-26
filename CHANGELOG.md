@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`of` is enforced, and model-typed list elements become models.** For
+  `type: list, of: <basic type>`, each element is validated with an indexed
+  path (`xs[1]`). For `type: list, of: <model id>`, each mapping element is
+  built as that model (defaults, derived fields, validation), an element that
+  is already a `GrimoireModel` of that id is kept, and anything else is
+  rejected with `name[i]` in the error. Applies on build and on every write of
+  the list. This changes what `dict(model)` holds for such lists — a data-shape
+  change (D16); a serializer that deep-copies mappings (as Wyrdbound's does)
+  treats them like nested models. (R33)
 - **Groups and model-typed attributes must hold mappings.** An anonymous group
   given a non-mapping is an error (build and write), and a model-typed
   attribute must hold a mapping (built into the model) or a `GrimoireModel` of

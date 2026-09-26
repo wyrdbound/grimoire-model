@@ -16,7 +16,7 @@ rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 Checkpoint 3 passed (coverage 92%, examples run). T025 done
 (derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
-PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 next.
+PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -841,7 +841,7 @@ now on.
   commit.
   *Accept:* T031's R31 and R32 tests pass.
 
-- [ ] **T033** [US5] Fix R33: enforce `of`. Files:
+- [x] **T033** [US5] Fix R33: enforce `of`. Files:
   `src/grimoire_model/core/model.py`,
   `src/grimoire_model/validation/validators.py`,
   `tests/test_type_validation.py`, `CHANGELOG.md` only.
@@ -1110,6 +1110,12 @@ now on.
   including the `PYTHONHASHSEED` 0–7 loop and every example. Set this file's
   `**Status:**` to complete.
 
+  *Note from T033:* Wyrdbound's `LiveModel` opens a batch directly on the
+  resolver, writes dotted paths while it is open, and closes it in `flush()`.
+  When Wyrdbound moves to 0.8.0 it must confirm that T020/T021's transactional
+  write validation does not reject a legitimate write mid-batch. Add this to
+  T049's "for Justin" list.
+
   In the commit message, list for Justin: the Wyrdbound findings this release
   resolves (F35, F36, F47; and F57 if it ships in this release), the design §7
   spec findings (S1–S3), and every `### Changed (breaking)` / `### Removed
@@ -1157,7 +1163,7 @@ now on.
 | [x] | T030 | 4 | P | US4 | R29, R30 |
 | [x] | T031 | 5 | | US5 | tests R31–R39 |
 | [x] | T032 | 5 | | US5 | R31, R32 |
-| [ ] | T033 | 5 | | US5 | R33 |
+| [x] | T033 | 5 | | US5 | R33 |
 | [ ] | T034 | 5 | | US5 | R34 |
 | [ ] | T035 | 5 | | US5 | R35 |
 | [ ] | T036 | 5 | | US5 | R36 |
