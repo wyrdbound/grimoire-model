@@ -428,14 +428,15 @@ class DerivedFieldResolver:
         logger.debug(f"Computing derived fields in order: {ordered_fields}")
 
         for field_name in ordered_fields:
-            # Check if dependencies exist if requested
             if skip_on_missing_dependencies:
+                # Only a missing dependency is a reason to skip; any other
+                # failure raises (R26).
                 dep_info = self.derived_fields[field_name]
-                missing_deps = []
-                for dep in dep_info.dependencies:
-                    if not self._dependency_available(dep):
-                        missing_deps.append(dep)
-
+                missing_deps = [
+                    dep
+                    for dep in dep_info.dependencies
+                    if not self._dependency_available(dep)
+                ]
                 if missing_deps:
                     logger.debug(
                         f"Skipping derived field '{field_name}' due to missing "
@@ -443,14 +444,7 @@ class DerivedFieldResolver:
                     )
                     continue
 
-            try:
-                self.compute_derived_field(field_name)
-            except Exception as e:
-                # If we're being lenient about missing deps, just log and continue
-                if skip_on_missing_dependencies:
-                    logger.debug(f"Failed to compute derived field '{field_name}': {e}")
-                else:
-                    raise
+            self.compute_derived_field(field_name)
 
     def get_field_dependencies(self, field_name: str) -> Set[str]:
         """Get the dependencies of a specific field."""
@@ -595,22 +589,20 @@ class DerivedFieldResolver:
             ]
 
             if missing_deps:
+                # In an incremental model a dependency may not exist yet. Remove
+                # the dependent's stale value rather than leave it, so it is
+                # never quietly wrong (R26).
                 logger.debug(
-                    f"Skipping derived field '{dependent_field}' due to missing "
-                    f"dependencies: {missing_deps}"
+                    f"Removing derived field '{dependent_field}' whose "
+                    f"dependencies are missing: {missing_deps}"
                 )
+                self._remove_value(dependent_field)
+                if dependent_field in self.observable_values:
+                    self.observable_values[dependent_field].value = None
                 continue
 
             logger.debug(f"Computing derived field: {dependent_field}")
-            try:
-                self.compute_derived_field(dependent_field)
-            except Exception as e:
-                # T027 removes this catch so a recompute failure propagates and
-                # the write rolls back; T026 only fixes the ordering.
-                logger.debug(
-                    f"Failed to compute derived field '{dependent_field}': {e}"
-                )
-                continue
+            self.compute_derived_field(dependent_field)
             # After recomputing a derived field, update its dependents
             # recursively to handle dependency chains.
             self._update_dependent_fields(dependent_field)
