@@ -4,7 +4,8 @@
 merged). T002 done (expression-safety tests written). T003 done (R01). T004
 done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 passed. T009 done
 (definition-strictness tests written). T010 done (R08, Input gap 2 confirmed).
-T011 done (R09, R10; grep gate waived). T012 next.
+T011 done (R09, R10; grep gate waived). T012 done (R11).
+T013 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -388,7 +389,7 @@ the spec's, spelled one way.
   *Accept:* T009's R09 and R10 tests pass; `grep -rn '\.lower()'
   src/grimoire_model/core` prints nothing type-related.
 
-- [ ] **T012** [US2] Fix R11 (Wyrdbound F47). Files:
+- [x] **T012** [US2] Fix R11 (Wyrdbound F47). Files:
   `src/grimoire_model/core/schema.py`,
   `src/grimoire_model/core/primitive_registry.py`,
   `src/grimoire_model/validation/validators.py`,
@@ -1081,7 +1082,7 @@ now on.
 | [x] | T009 | 2 | | US2 | tests R08–R10, R12, R13 |
 | [x] | T010 | 2 | | US2 | R08 |
 | [x] | T011 | 2 | | US2 | R09, R10 |
-| [ ] | T012 | 2 | | US2 | R11 |
+| [x] | T012 | 2 | | US2 | R11 |
 | [ ] | T013 | 2 | | US2 | R12 |
 | [ ] | T014 | 2 | P | US2 | R13 |
 | [ ] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |

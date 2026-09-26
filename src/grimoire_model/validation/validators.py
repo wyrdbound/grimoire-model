@@ -86,13 +86,59 @@ class TypeValidator(FieldValidator):
                     f"Field '{field_name}' must be a dictionary, got "
                     f"{type(value).__name__}"
                 )
+        elif expected_type == "roll":
+            # The spec's dice-notation basic type: a string like "1d6". A
+            # validator registered for `roll` also runs (below).
+            if not isinstance(value, str):
+                errors.append(
+                    f"Field '{field_name}' must be a roll (a string), got "
+                    f"{type(value).__name__}"
+                )
+        elif expected_type == "roll_result":
+            # The result of rolling: its shape belongs to the dice library,
+            # so it is not type-checked here. A registered validator still runs.
+            pass
         else:
-            # A model reference or primitive type. Model-typed attributes are
-            # checked by the model (R32); a registered primitive's validator is
-            # invoked here (T012).
+            # A model-typed attribute is checked by the model (R32); a
+            # registered custom primitive's validator runs below.
             pass
 
+        # A validator registered for the type (a custom primitive, or the
+        # spec's `roll`/`roll_result`) is called with the value.
+        errors.extend(self._validate_registered_primitive(value, field_name, attr_def))
+
         return errors
+
+    @staticmethod
+    def _validate_registered_primitive(
+        value: Any, field_name: str, attr_def: AttributeDefinition
+    ) -> List[str]:
+        """Call a registered primitive's validator, if its type has one.
+
+        The contract is the one documented on ``register_primitive_type``:
+        the validator receives the value and returns
+        ``(is_valid, error_message)``. A validator that raises is a validation
+        error, not a crash. An unregistered type name is a model id; the model
+        rejects it if it cannot be resolved.
+        """
+        from ..core.primitive_registry import get_default_primitive_registry
+
+        registry = get_default_primitive_registry()
+        if not registry.is_registered(attr_def.type):
+            return []
+
+        validator = registry.get_validator(attr_def.type)
+        if validator is None:
+            return []
+
+        try:
+            is_valid, message = validator(value)
+        except Exception as exc:  # noqa: BLE001 - reported as a validation error
+            return [f"Field '{field_name}' failed validation: {exc}"]
+
+        if is_valid:
+            return []
+        return [f"Field '{field_name}': {message}"]
 
     def get_name(self) -> str:
         """Get the validator name."""

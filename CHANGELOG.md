@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`roll` and `roll_result` are basic types, and primitive validators run.**
+  The spec's dice types (`model_spec.md`, "Basic Types") were resolved as model
+  ids, and a validator passed to `register_primitive_type` was stored but never
+  called. `roll` values must be strings; `roll_result` is not type-checked
+  (its shape is the dice library's). A validator registered for any primitive
+  — including `roll`/`roll_result` and custom types — is now called with the
+  value and returns `(is_valid, message)`; a `False` result is a validation
+  error, and a validator that raises is a validation error, not a crash.
+  `register_primitive_type("roll")` and `("roll_result")` keep working; the six
+  Python basic types are still refused. (R11)
 - **One basic-type set, exact case; `any` removed.** A single `BASIC_TYPES`
   constant in `core/schema.py` (`int str float bool list dict`, plus `roll`
   and `roll_result` from T012) is used by the schema, model nesting, the

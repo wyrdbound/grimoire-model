@@ -108,3 +108,122 @@ class TestR13OfIsListOnly:
 
     def test_of_on_list_is_accepted(self):
         assert AttributeDefinition(type="list", of="str").of == "str"
+
+
+class TestR11SpecPrimitives:
+    """``roll`` and ``roll_result`` are the spec's basic types (F47)."""
+
+    def test_roll_is_a_string(self):
+        definition = ModelDefinition(
+            id="r11_roll",
+            name="t",
+            namespace="defstrict",
+            attributes={"dmg": {"type": "roll"}},
+        )
+        model = create_model(definition, {"dmg": "1d6"})
+        assert model["dmg"] == "1d6"
+        with pytest.raises(ModelValidationError):
+            create_model(definition, {"dmg": 6})
+
+    def test_roll_result_is_not_type_checked(self):
+        definition = ModelDefinition(
+            id="r11_roll_result",
+            name="t",
+            namespace="defstrict",
+            attributes={"r": {"type": "roll_result"}},
+        )
+        assert create_model(definition, {"r": {"total": 7}})["r"] == {"total": 7}
+
+        class Arbitrary:
+            pass
+
+        value = Arbitrary()
+        assert create_model(definition, {"r": value})["r"] is value
+
+    def test_register_roll_and_roll_result_do_not_raise(self):
+        from grimoire_model import register_primitive_type
+        from grimoire_model.core.primitive_registry import (
+            clear_primitive_registry,
+        )
+
+        try:
+            register_primitive_type("roll")
+            register_primitive_type("roll_result")
+        finally:
+            clear_primitive_registry()
+
+    def test_registered_roll_validator_runs(self):
+        from grimoire_model import register_primitive_type
+        from grimoire_model.core.primitive_registry import (
+            clear_primitive_registry,
+        )
+
+        def validate_dice(value):
+            if isinstance(value, str) and "d" in value:
+                return True, None
+            return False, "bad dice"
+
+        try:
+            register_primitive_type("roll", validator=validate_dice)
+            definition = ModelDefinition(
+                id="r11_roll_validator",
+                name="t",
+                namespace="defstrict",
+                attributes={"dmg": {"type": "roll"}},
+            )
+            assert create_model(definition, {"dmg": "1d6"})["dmg"] == "1d6"
+            with pytest.raises(ModelValidationError, match="bad dice"):
+                create_model(definition, {"dmg": "1x"})
+        finally:
+            clear_primitive_registry()
+
+    def test_registered_custom_primitive_validator_runs(self):
+        from grimoire_model import register_primitive_type
+        from grimoire_model.core.primitive_registry import (
+            clear_primitive_registry,
+        )
+
+        def validate_dur(value):
+            if isinstance(value, str) and value.endswith("s"):
+                return True, None
+            return False, "duration must end with s"
+
+        try:
+            register_primitive_type("dur", validator=validate_dur)
+            definition = ModelDefinition(
+                id="r11_dur",
+                name="t",
+                namespace="defstrict",
+                attributes={"t": {"type": "dur"}},
+            )
+            model = create_model(definition, {"t": "5s"})
+            assert model["t"] == "5s"
+            with pytest.raises(ModelValidationError, match="end with s"):
+                create_model(definition, {"t": "5m"})
+
+            with pytest.raises(ModelValidationError, match="end with s"):
+                model["t"] = "5m"
+        finally:
+            clear_primitive_registry()
+
+    def test_primitive_validator_that_raises_is_a_validation_error(self):
+        from grimoire_model import register_primitive_type
+        from grimoire_model.core.primitive_registry import (
+            clear_primitive_registry,
+        )
+
+        def explode(value):
+            raise RuntimeError("boom")
+
+        try:
+            register_primitive_type("boom", validator=explode)
+            definition = ModelDefinition(
+                id="r11_boom",
+                name="t",
+                namespace="defstrict",
+                attributes={"t": {"type": "boom"}},
+            )
+            with pytest.raises(ModelValidationError):
+                create_model(definition, {"t": "x"})
+        finally:
+            clear_primitive_registry()

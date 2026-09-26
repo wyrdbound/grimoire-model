@@ -12,12 +12,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .exceptions import ConfigurationError
 
-# The GRIMOIRE basic (primitive) types, exact case. One set, used by the
-# schema, nesting, the primitive registry and ``TypeValidator`` -- so a type
-# name means the same thing everywhere. ``roll`` and ``roll_result`` are the
-# spec's non-Python basic types; they are added by the task that teaches the
-# primitive registry to validate them.
-BASIC_TYPES = frozenset({"int", "str", "float", "bool", "list", "dict"})
+# The Python basic (primitive) types, exact case. A name that differs only in
+# case is a model id, not a primitive. These cannot be registered as custom
+# primitives, since they already have built-in validation.
+PYTHON_BASIC_TYPES = frozenset({"int", "str", "float", "bool", "list", "dict"})
+
+# The GRIMOIRE basic types: the Python ones above, plus the spec's non-Python
+# types. One set, used by the schema, nesting, the primitive registry and
+# ``TypeValidator``, so a type name means the same thing everywhere.
+BASIC_TYPES = PYTHON_BASIC_TYPES | frozenset({"roll", "roll_result"})
 
 
 class ValidationRule(BaseModel):
