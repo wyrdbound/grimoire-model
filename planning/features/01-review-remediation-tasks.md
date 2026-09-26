@@ -13,7 +13,7 @@ R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
 rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 (write-rule tests for R16-R21). T020 done (R16). T021 done (R17). T022 done
 (R18-R20). T023 done (R21; examples 02/03 reworked). T024 done (R24).
-Checkpoint 3 next.
+Checkpoint 3 passed (coverage 92%, examples run). T025 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
