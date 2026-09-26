@@ -55,6 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it; both recompute the nested derived fields and the parent's dependants.
   Anonymous nested groups are unchanged: they remain plain dicts
 
+- **`CachingTemplateResolver` is a real, thread-safe LRU.** It passed
+  non-string inputs to its caches, raising `TypeError` where the wrapped
+  resolver returns `False`; its "LRU" evicted oldest-inserted rather than
+  least-recently-used; and it mutated two dicts with no lock. Non-strings now
+  bypass the cache, the caches are `OrderedDict`s with `move_to_end` on a hit,
+  and one lock guards both. (R07)
+
 ## [0.7.1] - 2026-09-25
 
 ### Fixed

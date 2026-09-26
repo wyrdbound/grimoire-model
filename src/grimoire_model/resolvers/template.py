@@ -6,6 +6,8 @@ contexts, variable extraction, and caching.
 """
 
 import re
+import threading
+from collections import OrderedDict
 from collections.abc import Mapping
 from typing import Any, Dict, Protocol, Set, cast
 
@@ -283,13 +285,21 @@ class Jinja2TemplateResolver:
 
 
 class CachingTemplateResolver:
-    """Wrapper that adds caching to any TemplateResolver."""
+    """Wrapper that adds caching to any TemplateResolver.
+
+    The caches are bounded LRUs (least-recently-used) and guarded by one lock,
+    so the wrapper is thread-safe (``AGENTS.md`` AI Guidance §10). Non-string
+    inputs bypass the cache and are passed to the wrapped resolver unchanged,
+    since a template is always a string; caching them would raise on an
+    unhashable input where the wrapped resolver simply returns ``False``.
+    """
 
     def __init__(self, resolver: TemplateResolver, max_cache_size: int = 1000):
         self.resolver = resolver
         self.max_cache_size = max_cache_size
-        self._template_cache: Dict[str, bool] = {}
-        self._variable_cache: Dict[str, Set[str]] = {}
+        self._template_cache: OrderedDict[str, bool] = OrderedDict()
+        self._variable_cache: OrderedDict[str, Set[str]] = OrderedDict()
+        self._lock = threading.Lock()
 
     def resolve_template(self, template_str: str, context: Dict[str, Any]) -> Any:
         """Resolve template with caching."""
@@ -299,27 +309,35 @@ class CachingTemplateResolver:
 
     def is_template(self, value: str) -> bool:
         """Check if string is template with caching."""
-        if value not in self._template_cache:
-            if len(self._template_cache) >= self.max_cache_size:
-                # Simple LRU: remove oldest entry
-                self._template_cache.pop(next(iter(self._template_cache)))
+        if not isinstance(value, str):
+            return self.resolver.is_template(value)
 
-            self._template_cache[value] = self.resolver.is_template(value)
+        with self._lock:
+            if value in self._template_cache:
+                self._template_cache.move_to_end(value)
+                return self._template_cache[value]
 
-        return self._template_cache[value]
+            result = self.resolver.is_template(value)
+            self._template_cache[value] = result
+            if len(self._template_cache) > self.max_cache_size:
+                self._template_cache.popitem(last=False)
+            return result
 
     def extract_variables(self, template_str: str) -> Set[str]:
         """Extract variables with caching."""
-        if template_str not in self._variable_cache:
-            if len(self._variable_cache) >= self.max_cache_size:
-                # Simple LRU: remove oldest entry
-                self._variable_cache.pop(next(iter(self._variable_cache)))
+        if not isinstance(template_str, str):
+            return self.resolver.extract_variables(template_str)
 
-            self._variable_cache[template_str] = self.resolver.extract_variables(
-                template_str
-            )
+        with self._lock:
+            if template_str in self._variable_cache:
+                self._variable_cache.move_to_end(template_str)
+                return self._variable_cache[template_str]
 
-        return self._variable_cache[template_str]
+            result = self.resolver.extract_variables(template_str)
+            self._variable_cache[template_str] = result
+            if len(self._variable_cache) > self.max_cache_size:
+                self._variable_cache.popitem(last=False)
+            return result
 
 
 # Factory function for easy creation

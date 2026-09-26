@@ -354,6 +354,52 @@ class TestCachingTemplateResolver:
         result = resolver.resolve_template("Hello {{ name }}", {"name": "World"})
         assert result == "Hello World"
 
+    def test_non_string_input_bypasses_cache(self):
+        """A non-string is passed through, as the wrapped resolver does."""
+        base_resolver = Jinja2TemplateResolver()
+        resolver = CachingTemplateResolver(base_resolver)
+
+        assert resolver.is_template(["x"]) is False
+        assert resolver.extract_variables(None) == set()
+        assert resolver.is_template(["x"]) is False
+
+    def test_lru_eviction(self):
+        """max_cache_size=2: a,b,a then c evicts b, not a."""
+        base_resolver = Jinja2TemplateResolver()
+        resolver = CachingTemplateResolver(base_resolver, max_cache_size=2)
+
+        resolver.is_template("a")
+        resolver.is_template("b")
+        resolver.is_template("a")
+        resolver.is_template("c")
+
+        assert list(resolver._template_cache.keys()) == ["a", "c"]
+
+    def test_cache_is_thread_safe(self):
+        """Concurrent cache access does not raise."""
+        import threading
+
+        base_resolver = Jinja2TemplateResolver()
+        resolver = CachingTemplateResolver(base_resolver, max_cache_size=100)
+        errors = []
+
+        def worker(offset):
+            try:
+                for i in range(500):
+                    value = f"template-{offset}-{i} {{{{ x }}}}"
+                    resolver.is_template(value)
+                    resolver.extract_variables(value)
+            except Exception as exc:  # noqa: BLE001 - collected for assertion
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker, args=(n,)) for n in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert errors == []
+
 
 class TestCreateTemplateResolver:
     """Test create_template_resolver factory function."""
