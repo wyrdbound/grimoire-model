@@ -12,7 +12,8 @@ PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
 R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
 rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 (write-rule tests for R16-R21). T020 done (R16). T021 done (R17). T022 done
-(R18-R20). T023 done (R21; examples 02/03 reworked). T024 next.
+(R18-R20). T023 done (R21; examples 02/03 reworked). T024 done (R24).
+Checkpoint 3 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -647,7 +648,7 @@ either leaves the model valid or leaves it untouched.
   fixture change. `### Changed (breaking)`.
   *Accept:* T019's R21 tests pass; every example runs.
 
-- [ ] **T024** [US3] Fix R24: thread safety. Files:
+- [x] **T024** [US3] Fix R24: thread safety. Files:
   `src/grimoire_model/core/model.py`,
   `src/grimoire_model/validation/validators.py`,
   `tests/test_write_transactions.py`, `CHANGELOG.md` only.
@@ -1144,7 +1145,7 @@ now on.
 | [x] | T021 | 3 | | US3 | R17 |
 | [x] | T022 | 3 | | US3 | R18, R19, R20 |
 | [x] | T023 | 3 | | US3 | R21 |
-| [ ] | T024 | 3 | | US3 | R24 |
+| [x] | T024 | 3 | | US3 | R24 |
 | [ ] | T025 | 4 | | US4 | tests R25–R30 |
 | [ ] | T026 | 4 | | US4 | R25 |
 | [ ] | T027 | 4 | | US4 | R26 |

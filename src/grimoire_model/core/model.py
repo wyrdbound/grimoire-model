@@ -6,6 +6,7 @@ into a dict-like model class that integrates with grimoire-context.
 """
 
 import copy as _copy
+import threading
 import uuid
 from collections.abc import MutableMapping
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
@@ -84,6 +85,11 @@ class GrimoireModel(MutableMapping):
             instance_id: Unique identifier for this model instance
             skip_initial_validation: If True, skip validation during initialization
         """
+        # Every public read and write takes this lock, so a model is safe to
+        # share across threads (AGENTS.md AI Guidance §10). It is re-entrant:
+        # a derived-field callback and a nested-model write re-enter.
+        self._lock = threading.RLock()
+
         self._model_def = model_definition
         self._instance_id = instance_id or str(uuid.uuid4())
         self._skip_initial_validation = skip_initial_validation
@@ -156,18 +162,19 @@ class GrimoireModel(MutableMapping):
         stateless apart from its lock-protected cache. The copy is built in the
         same validation mode as the original.
         """
-        new_data = dict(self._data)
-        new_data.update(overrides)
+        with self._lock:
+            new_data = dict(self._data)
+            new_data.update(overrides)
 
-        derived_resolver = _make_derived_resolver_like(self._derived_field_resolver)
+            derived_resolver = _make_derived_resolver_like(self._derived_field_resolver)
 
-        return GrimoireModel(
-            model_definition=self._model_def,
-            data=new_data,
-            template_resolver=self._template_resolver,
-            derived_field_resolver=derived_resolver,
-            skip_initial_validation=self._skip_initial_validation,
-        )
+            return GrimoireModel(
+                model_definition=self._model_def,
+                data=new_data,
+                template_resolver=self._template_resolver,
+                derived_field_resolver=derived_resolver,
+                skip_initial_validation=self._skip_initial_validation,
+            )
 
     # MutableMapping interface
     def __getitem__(self, key: str) -> Any:
@@ -177,9 +184,10 @@ class GrimoireModel(MutableMapping):
         independent copy, so a caller cannot mutate the model's storage through
         what it was handed (R14, D2). Scalars are returned as they are.
         """
-        if "." in key:
-            return self._read_value(self._get_nested_value(key))
-        return self._read_value(self._data[key])
+        with self._lock:
+            if "." in key:
+                return self._read_value(self._get_nested_value(key))
+            return self._read_value(self._data[key])
 
     @staticmethod
     def _read_value(value: Any) -> Any:
@@ -198,7 +206,8 @@ class GrimoireModel(MutableMapping):
 
     def __setitem__(self, key: str, value: Any) -> None:
         """Set item by key with validation and derived field updates."""
-        self._set_with_validation(key, value)
+        with self._lock:
+            self._set_with_validation(key, value)
 
     def __delitem__(self, key: str) -> None:
         """Delete an item, following the write rules (R19).
@@ -208,6 +217,11 @@ class GrimoireModel(MutableMapping):
         An undeclared or absent key raises ``KeyError`` (the ``MutableMapping``
         contract). Dependents of an unset attribute recompute.
         """
+        with self._lock:
+            self._delitem_locked(key)
+
+    def _delitem_locked(self, key: str) -> None:
+        """``__delitem__`` body, run under the lock."""
         attr_def = self.get_attribute_definition(key)
 
         if attr_def is None:
@@ -237,18 +251,21 @@ class GrimoireModel(MutableMapping):
         self._unset_field(key)
 
     def __iter__(self) -> Iterator[str]:
-        """Iterate over keys."""
-        return iter(self._data)
+        """Iterate over a snapshot of the keys."""
+        with self._lock:
+            return iter(list(self._data))
 
     def __len__(self) -> int:
         """Get number of items."""
-        return len(self._data)
+        with self._lock:
+            return len(self._data)
 
     def __contains__(self, key: Any) -> bool:
         """Check if key exists."""
-        if isinstance(key, str) and "." in key:
-            return self._has_nested_value(key)
-        return key in self._data
+        with self._lock:
+            if isinstance(key, str) and "." in key:
+                return self._has_nested_value(key)
+            return key in self._data
 
     def __repr__(self) -> str:
         """String representation."""
@@ -345,6 +362,11 @@ class GrimoireModel(MutableMapping):
 
     def validate(self) -> List[str]:
         """Validate the current model data and return list of errors."""
+        with self._lock:
+            return self._validate_locked()
+
+    def _validate_locked(self) -> List[str]:
+        """``validate`` body, run under the lock."""
         errors = []
 
         # Validate fields using validation engine. Templated ranges
@@ -398,7 +420,8 @@ class GrimoireModel(MutableMapping):
 
     def recompute_derived_fields(self) -> None:
         """Recompute all derived fields."""
-        self._derived_field_resolver.compute_all_derived_fields()
+        with self._lock:
+            self._derived_field_resolver.compute_all_derived_fields()
 
     def batch_update(self, updates: Dict[str, Any]) -> None:
         """Apply several writes as one transaction (R17, D3).
@@ -410,6 +433,11 @@ class GrimoireModel(MutableMapping):
         field against its own constraints, and — for a validated model — the
         model-level rules. Any failure restores the model and raises.
         """
+        with self._lock:
+            self._batch_update_locked(updates)
+
+    def _batch_update_locked(self, updates: Dict[str, Any]) -> None:
+        """``batch_update`` body, run under the lock."""
         from ..resolvers.derived import BatchedDerivedFieldResolver
 
         for key in updates:

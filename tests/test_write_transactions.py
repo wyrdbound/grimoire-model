@@ -401,3 +401,89 @@ class TestR21UndeclaredKeys:
             definition, {"strength": 1, "dexterity": 3}
         )
         assert any("dexterity" in error for error in model.validate())
+
+
+class TestR24ThreadSafety:
+    """Every public API is thread-safe (AGENTS.md AI Guidance §10)."""
+
+    def test_concurrent_writes_to_distinct_fields_are_not_lost(self):
+        """8 threads x 300 writes; every field ends at its last value.
+
+        On 0.7.1 (no lock) a final value was lost in about 1 of 240 fields
+        over 30 trials. The race is rare; the trial count was raised until it
+        failed on 0.7.1 (30 trials of 8 fields).
+        """
+        import sys
+        import threading
+
+        definition = ModelDefinition(
+            id="r24_fields",
+            name="Fields",
+            namespace="write_tx",
+            attributes={f"f{i}": {"type": "int", "default": 0} for i in range(8)},
+        )
+
+        old_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            for _ in range(30):
+                model = create_model(definition, {})
+
+                def writer(field, target=model):
+                    for value in range(1, 301):
+                        target[field] = value
+
+                threads = [
+                    threading.Thread(target=writer, args=(f"f{i}",)) for i in range(8)
+                ]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join()
+
+                for i in range(8):
+                    assert model[f"f{i}"] == 300
+        finally:
+            sys.setswitchinterval(old_interval)
+
+    def test_concurrent_read_write_does_not_raise(self):
+        """One thread writes while another validates and iterates."""
+        import threading
+
+        definition = ModelDefinition(
+            id="r24_rw",
+            name="RW",
+            namespace="write_tx",
+            attributes={
+                "a": {"type": "int", "default": 0},
+                "b": {"type": "int", "derived": "{{ a + 1 }}"},
+            },
+        )
+        model = create_model(definition, {})
+        errors = []
+
+        def writer():
+            try:
+                for i in range(1000):
+                    model["a"] = i
+            except Exception as exc:  # noqa: BLE001 - collected for assertion
+                errors.append(exc)
+
+        def reader():
+            try:
+                for _ in range(1000):
+                    model.validate()
+                    dict(model)
+            except Exception as exc:  # noqa: BLE001 - collected for assertion
+                errors.append(exc)
+
+        threads = [
+            threading.Thread(target=writer),
+            threading.Thread(target=reader),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        assert errors == []

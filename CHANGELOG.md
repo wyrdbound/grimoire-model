@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Every public API on a model is thread-safe.** A per-model `threading.RLock`
+  (re-entrant, so derived callbacks and nested writes re-enter) is held by
+  every public read and write, `validate`, `copy`, `batch_update`,
+  `__iter__` (over a snapshot of the keys), `__len__` and `__contains__`. The
+  global `ValidationEngine`'s registration methods take a lock, and
+  `validate_field` iterates a snapshot of the validators. (R24)
 - **Undeclared keys are errors.** A key that is not declared is reported by
   `validate()`, and a write to an undeclared path raises
   `ModelValidationError`; a model built with one raises. Checked at the model

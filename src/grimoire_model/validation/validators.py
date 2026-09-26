@@ -6,6 +6,7 @@ data types and constraints, plus support for custom validation rules.
 """
 
 import re
+import threading
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -361,6 +362,7 @@ class ValidationEngine:
 
     def __init__(self):
         self.validators: Dict[str, FieldValidator] = {}
+        self._lock = threading.RLock()
         self._register_default_validators()
 
     def _register_default_validators(self) -> None:
@@ -379,12 +381,14 @@ class ValidationEngine:
 
     def register_validator(self, validator: FieldValidator) -> None:
         """Register a field validator."""
-        self.validators[validator.get_name()] = validator
+        with self._lock:
+            self.validators[validator.get_name()] = validator
 
     def unregister_validator(self, name: str) -> None:
         """Unregister a field validator."""
-        if name in self.validators:
-            del self.validators[name]
+        with self._lock:
+            if name in self.validators:
+                del self.validators[name]
 
     def validate_field(
         self,
@@ -405,13 +409,19 @@ class ValidationEngine:
             List of validation error messages
         """
         errors = []
-        validators_to_run = enabled_validators or list(self.validators.keys())
+        with self._lock:
+            validators_to_run = enabled_validators or list(self.validators.keys())
+            # A snapshot of the validator objects, so a concurrent
+            # register/unregister cannot change the set mid-iteration.
+            selected = [
+                self.validators[name]
+                for name in validators_to_run
+                if name in self.validators
+            ]
 
-        for validator_name in validators_to_run:
-            if validator_name in self.validators:
-                validator = self.validators[validator_name]
-                field_errors = validator.validate(value, field_name, attr_def)
-                errors.extend(field_errors)
+        for validator in selected:
+            field_errors = validator.validate(value, field_name, attr_def)
+            errors.extend(field_errors)
 
         return errors
 
