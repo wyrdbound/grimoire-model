@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Definitions are closed.** `AttributeDefinition`, `ModelDefinition` and
+  `ValidationRule` reject unknown keys (`extra="forbid"`). A misspelled key
+  such as `optinal: true`, `rnage: "1..3"` or `validatons:` is now a
+  `pydantic.ValidationError` (or `ConfigurationError` inside a model), never a
+  silent drop that leaves the attribute required and unconstrained. Free-form
+  data belongs in `ModelDefinition.metadata`. `required` keeps its explanatory
+  error. (R08)
 - **Nothing but the model's data is in scope in an expression.** The derived
   and validation contexts no longer carry an instance-id key, so
   `{{ model.name }}` (or `{{ <instance_id>.name }}`) raises instead of

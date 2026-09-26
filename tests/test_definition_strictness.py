@@ -25,22 +25,18 @@ from grimoire_model.core.exceptions import ConfigurationError, ModelValidationEr
 class TestR08ClosedDefinitions:
     """A misspelled key in a definition is an error, not a silent drop."""
 
-    @pytest.mark.xfail(strict=True, reason="R08 — fixed by T010")
     def test_unknown_attribute_key_raises(self):
         with pytest.raises(ValidationError):
             AttributeDefinition(type="str", optinal=True)
 
-    @pytest.mark.xfail(strict=True, reason="R08 — fixed by T010")
     def test_unknown_model_key_raises(self):
         with pytest.raises(ValidationError):
             ModelDefinition(id="r08_t", name="t", attributes={}, validatons=[])
 
-    @pytest.mark.xfail(strict=True, reason="R08 — fixed by T010")
     def test_unknown_validation_rule_key_raises(self):
         with pytest.raises(ValidationError):
             ValidationRule(expression="a", message="m", sevrity="x")
 
-    @pytest.mark.xfail(strict=True, reason="R08 — fixed by T010")
     def test_unknown_key_in_group_raises_naming_the_attribute(self):
         with pytest.raises(ConfigurationError) as excinfo:
             ModelDefinition(

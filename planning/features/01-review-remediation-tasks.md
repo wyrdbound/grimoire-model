@@ -3,7 +3,8 @@
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
 merged). T002 done (expression-safety tests written). T003 done (R01). T004
 done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 passed. T009 done
-(definition-strictness tests written). T010 next.
+(definition-strictness tests written). T010 done (R08, Input gap 2 confirmed).
+T011 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -341,7 +342,7 @@ the spec's, spelled one way.
   *Accept:* each fails on 0.7.1 for the reason in design §3.2, marked
   `xfail(strict=True)`.
 
-- [ ] **T010** [US2] Fix R08. Files: `src/grimoire_model/core/schema.py`,
+- [x] **T010** [US2] Fix R08. Files: `src/grimoire_model/core/schema.py`,
   `tests/test_definition_strictness.py`, `tests/test_schema.py`,
   `CHANGELOG.md` only.
 
@@ -1071,7 +1072,7 @@ now on.
 | [x] | T007 | 1 | | US1 | R05, R06 |
 | [x] | T008 | 1 | P | US1 | R07 |
 | [x] | T009 | 2 | | US2 | tests R08–R10, R12, R13 |
-| [ ] | T010 | 2 | | US2 | R08 |
+| [x] | T010 | 2 | | US2 | R08 |
 | [ ] | T011 | 2 | | US2 | R09, R10 |
 | [ ] | T012 | 2 | | US2 | R11 |
 | [ ] | T013 | 2 | | US2 | R12 |
