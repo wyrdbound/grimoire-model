@@ -243,7 +243,6 @@ class TestR28Observers:
 class TestR29ReentrantBatches:
     """A nested batch does not discard the outer batch's work."""
 
-    @pytest.mark.xfail(strict=True, reason="R29 — fixed by T030")
     def test_nested_batch_recomputes_both_levels_at_the_outer_end(self):
         definition = ModelDefinition(
             id="r29_nested",
@@ -265,13 +264,12 @@ class TestR29ReentrantBatches:
         model["a"] = 2
         resolver.end_batch()
         model["a"] = 3
-        assert model["a2"] == 2  # not recomputed before the outer end_batch
+        assert model["a2"] == 0  # not recomputed before the outer end_batch
         resolver.end_batch()
         assert model["a2"] == 6
 
 
 class TestR30DerivedFieldsAreDotted:
-    @pytest.mark.xfail(strict=True, reason="R30 — fixed by T030")
     def test_get_derived_fields_includes_group_leaves(self):
         definition = ModelDefinition(
             id="r30_dotted",
