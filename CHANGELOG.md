@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Derived-field dependencies use full reference paths.** A library function,
+  `extract_reference_paths`, parses an expression with Jinja2 and returns every
+  maximal dotted path (`p.mod`, `abilities.strength.bonus`, `xs`); the derived
+  resolver records these, not top-level names, so nested derived fields
+  compute in a deterministic dependency order instead of one that followed
+  `PYTHONHASHSEED`. Two paths overlap when equal or one is a dotted prefix of
+  the other; the topological sort breaks ties by sorted path. The injected
+  resolver protocol is unchanged. (R25, D4)
 - **Every public API on a model is thread-safe.** A per-model `threading.RLock`
   (re-entrant, so derived callbacks and nested writes re-enter) is held by
   every public read and write, `validate`, `copy`, `batch_update`,
