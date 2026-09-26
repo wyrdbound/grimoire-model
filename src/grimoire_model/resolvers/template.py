@@ -5,8 +5,6 @@ Provides template resolution capabilities using Jinja2 with support for model
 contexts, variable extraction, and caching.
 """
 
-import ast
-import json
 import re
 from collections.abc import Mapping
 from typing import Any, Dict, Protocol, Set, cast
@@ -156,15 +154,13 @@ class Jinja2TemplateResolver:
                     )
                 return result
 
-            # Render template as string
+            # Render template as string. Only a template that is exactly one
+            # `{{ expression }}` keeps its value's type (handled above); text
+            # around an expression renders to text and stays text. Never
+            # recover a type by parsing the rendered result -- `"[1]"` is the
+            # string "[1]", not the list `[1]`.
             template = self.env.from_string(template_str)
             result = template.render(enhanced_context)
-
-            # Try to parse as structured data if it looks like it
-            parsed_result = self._try_parse_structured_data(result)
-            if parsed_result is not None:
-                return parsed_result
-
             return result
 
         except Exception as e:
@@ -284,34 +280,6 @@ class Jinja2TemplateResolver:
                 return (False, None)
 
         return (False, None)
-
-    def _try_parse_structured_data(self, value: str) -> Any:
-        """Try to parse a string as structured data."""
-        if not isinstance(value, str):
-            return None
-
-        # Only try parsing if it looks like structured data
-        stripped = value.strip()
-        if not (stripped.startswith(("[", "{")) and stripped.endswith(("]", "}"))):
-            return None
-
-        # Try JSON first
-        try:
-            parsed = json.loads(value)
-            if isinstance(parsed, (list, dict)):
-                return parsed
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # Try Python literal evaluation
-        try:
-            parsed = ast.literal_eval(value)
-            if isinstance(parsed, (list, dict)):
-                return parsed
-        except (ValueError, SyntaxError):
-            pass
-
-        return None
 
 
 class CachingTemplateResolver:

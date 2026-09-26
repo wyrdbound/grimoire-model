@@ -75,17 +75,14 @@ class TestJinja2TemplateResolver:
         assert result == 15  # Returns actual int from expression
 
     def test_structured_data_parsing(self):
-        """Test parsing of structured data from templates."""
+        """A rendered mix stays text; it is not re-parsed into a dict."""
         resolver = Jinja2TemplateResolver()
 
-        # JSON-like output should be parsed
         result = resolver.resolve_template(
             "{{ data | tojson }}", {"data": {"key": "value"}}
         )
-        # This should be parsed back to dict if it looks like JSON
-        if isinstance(result, str) and result.startswith("{"):
-            # The _try_parse_structured_data method should handle this
-            pass
+        assert result == '{"key": "value"}'
+        assert isinstance(result, str)
 
     def test_template_error_handling(self):
         """Test template error handling."""

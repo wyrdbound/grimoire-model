@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **A mixed template renders to text and stays text.** Only a template that is
+  exactly one `{{ expression }}` keeps its value's type; `"[{{ a }}]"` with
+  `a == 1` is the string `"[1]"`, not the list `[1]`. Rendered output was
+  previously re-parsed with `json.loads` / `ast.literal_eval`, so text that
+  merely looked like a literal changed type. (R04)
 - **A mapping exposes its data, not its methods, in an expression.** In
   `x.name`, `name` is looked up as a key on a `dict` or `GrimoireModel` before
   anything else, so an attribute named `items`, `keys`, `values`, `get`,

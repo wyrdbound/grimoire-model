@@ -128,7 +128,6 @@ class TestR03DataBeforeMethods:
 class TestR04MixedTemplatesAreStrings:
     """Only a single ``{{ expression }}`` keeps its value's type."""
 
-    @pytest.mark.xfail(strict=True, reason="R04 — fixed by T006")
     def test_text_around_expression_is_a_string(self):
         assert R.resolve_template("[{{ a }}]", {"a": 1}) == "[1]"
 
