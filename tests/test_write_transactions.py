@@ -188,14 +188,12 @@ def _write_model(model_id, namespace="write_tx"):
 class TestR16WriteIsATransaction:
     """A write either leaves the model valid or leaves it untouched."""
 
-    @pytest.mark.xfail(strict=True, reason="R16 — fixed by T020")
     def test_a_recomputed_derived_field_out_of_its_range_rolls_back(self):
         model = create_model(_write_model("r16_range"), {"a": 1})
         with pytest.raises(ModelValidationError):
             model["a"] = 50
-        assert model == {"a": 1, "b": 2}
+        assert dict(model) == {"a": 1, "b": 2}
 
-    @pytest.mark.xfail(strict=True, reason="R16 — fixed by T020")
     def test_a_model_level_rule_is_checked_on_write(self):
         definition = ModelDefinition(
             id="r16_rule",
@@ -229,7 +227,6 @@ class TestR16WriteIsATransaction:
         model["n"] = 3
         assert model["d"] == 6
 
-    @pytest.mark.xfail(strict=True, reason="R16 — fixed by T020")
     def test_incremental_model_checks_a_recomputed_derived_range(self):
         definition = ModelDefinition(
             id="r16_inc_range",
