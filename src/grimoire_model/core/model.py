@@ -72,7 +72,6 @@ class GrimoireModel(MutableMapping):
         derived_field_resolver: Optional[DerivedFieldResolver] = None,
         instance_id: Optional[str] = None,
         skip_initial_validation: bool = False,
-        **kwargs,
     ):
         """Initialize GrimoireModel with dependency injection.
 
@@ -84,7 +83,6 @@ class GrimoireModel(MutableMapping):
                 dependency)
             instance_id: Unique identifier for this model instance
             skip_initial_validation: If True, skip validation during initialization
-            **kwargs: Additional configuration options
         """
         self._model_def = model_definition
         self._instance_id = instance_id or str(uuid.uuid4())
@@ -882,9 +880,10 @@ class GrimoireModel(MutableMapping):
             other._data
         )
 
-    def __hash__(self) -> int:
-        """Make GrimoireModel hashable."""
-        return hash((self._model_def.id, tuple(sorted(dict(self._data).items()))))
+    # A mutable mapping must not be hashable: its hash would change when it is
+    # written, and today's hash already raises for any model holding a dict or
+    # list (R23). Setting __hash__ to None makes it unhashable for every model.
+    __hash__ = None  # type: ignore[assignment]
 
 
 # Factory function for easy model creation
@@ -892,7 +891,12 @@ def create_model(
     model_definition: ModelDefinition,
     data: Optional[Dict[str, Any]] = None,
     template_resolver_type: str = "jinja2",
-    **kwargs,
+    template_resolver: Optional[TemplateResolver] = None,
+    derived_field_resolver: Optional[DerivedFieldResolver] = None,
+    instance_id: Optional[str] = None,
+    skip_initial_validation: bool = False,
+    template_resolver_kwargs: Optional[Dict[str, Any]] = None,
+    derived_resolver_kwargs: Optional[Dict[str, Any]] = None,
 ) -> GrimoireModel:
     """Factory function to create GrimoireModel instances.
 
@@ -900,26 +904,38 @@ def create_model(
         model_definition: The model schema definition
         data: Initial model data
         template_resolver_type: Type of template resolver to use
-        **kwargs: Additional configuration options
+        template_resolver: A pre-built template resolver (overrides the type)
+        derived_field_resolver: A pre-built derived-field resolver
+        instance_id: Unique identifier for this model instance
+        skip_initial_validation: If True, do not validate on creation
+        template_resolver_kwargs: Extra kwargs for the template resolver
+        derived_resolver_kwargs: Extra kwargs for the derived-field resolver
 
     Returns:
         Configured GrimoireModel instance
-    """
-    template_resolver = create_template_resolver(
-        resolver_type=template_resolver_type,
-        **kwargs.pop("template_resolver_kwargs", {}),
-    )
 
-    derived_resolver = create_derived_field_resolver(
-        template_resolver=template_resolver, **kwargs.pop("derived_resolver_kwargs", {})
-    )
+    Raises:
+        TypeError: If an unknown keyword argument is passed.
+    """
+    if template_resolver is None:
+        template_resolver = create_template_resolver(
+            resolver_type=template_resolver_type,
+            **(template_resolver_kwargs or {}),
+        )
+
+    if derived_field_resolver is None:
+        derived_field_resolver = create_derived_field_resolver(
+            template_resolver=template_resolver,
+            **(derived_resolver_kwargs or {}),
+        )
 
     return GrimoireModel(
         model_definition=model_definition,
         data=data,
         template_resolver=template_resolver,
-        derived_field_resolver=derived_resolver,
-        **kwargs,
+        derived_field_resolver=derived_field_resolver,
+        instance_id=instance_id,
+        skip_initial_validation=skip_initial_validation,
     )
 
 
@@ -927,7 +943,11 @@ def create_model_without_validation(
     model_definition: ModelDefinition,
     data: Optional[Dict[str, Any]] = None,
     template_resolver_type: str = "jinja2",
-    **kwargs,
+    template_resolver: Optional[TemplateResolver] = None,
+    derived_field_resolver: Optional[DerivedFieldResolver] = None,
+    instance_id: Optional[str] = None,
+    template_resolver_kwargs: Optional[Dict[str, Any]] = None,
+    derived_resolver_kwargs: Optional[Dict[str, Any]] = None,
 ) -> GrimoireModel:
     """Factory function to create GrimoireModel instances without validation.
 
@@ -938,10 +958,17 @@ def create_model_without_validation(
         model_definition: The model schema definition
         data: Initial model data (can be partial)
         template_resolver_type: Type of template resolver to use
-        **kwargs: Additional configuration options
+        template_resolver: A pre-built template resolver (overrides the type)
+        derived_field_resolver: A pre-built derived-field resolver
+        instance_id: Unique identifier for this model instance
+        template_resolver_kwargs: Extra kwargs for the template resolver
+        derived_resolver_kwargs: Extra kwargs for the derived-field resolver
 
     Returns:
         Configured GrimoireModel instance (unvalidated)
+
+    Raises:
+        TypeError: If an unknown keyword argument is passed.
 
     Note:
         - Required field validation is skipped
@@ -962,20 +989,23 @@ def create_model_without_validation(
         >>> character["level"] = 5
         >>> errors = character.validate()
     """
-    template_resolver = create_template_resolver(
-        resolver_type=template_resolver_type,
-        **kwargs.pop("template_resolver_kwargs", {}),
-    )
+    if template_resolver is None:
+        template_resolver = create_template_resolver(
+            resolver_type=template_resolver_type,
+            **(template_resolver_kwargs or {}),
+        )
 
-    derived_resolver = create_derived_field_resolver(
-        template_resolver=template_resolver, **kwargs.pop("derived_resolver_kwargs", {})
-    )
+    if derived_field_resolver is None:
+        derived_field_resolver = create_derived_field_resolver(
+            template_resolver=template_resolver,
+            **(derived_resolver_kwargs or {}),
+        )
 
     return GrimoireModel(
         model_definition=model_definition,
         data=data,
         template_resolver=template_resolver,
-        derived_field_resolver=derived_resolver,
+        derived_field_resolver=derived_field_resolver,
+        instance_id=instance_id,
         skip_initial_validation=True,
-        **kwargs,
     )

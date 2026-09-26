@@ -123,7 +123,6 @@ class TestR15CopyIsIndependent:
 class TestR22NoSilentKeywords:
     """Unknown keywords are errors, not silently ignored."""
 
-    @pytest.mark.xfail(strict=True, reason="R22 — fixed by T018")
     def test_typo_keyword_on_the_model_raises(self):
         definition = ModelDefinition(
             id="r22_model",
@@ -134,7 +133,6 @@ class TestR22NoSilentKeywords:
         with pytest.raises(TypeError):
             GrimoireModel(definition, {}, skip_initial_validaton=True)
 
-    @pytest.mark.xfail(strict=True, reason="R22 — fixed by T018")
     def test_unknown_factory_keyword_raises(self):
         definition = ModelDefinition(
             id="r22_factory",
@@ -149,7 +147,6 @@ class TestR22NoSilentKeywords:
 class TestR23Unhashable:
     """A mutable mapping must not be hashable."""
 
-    @pytest.mark.xfail(strict=True, reason="R23 — fixed by T018")
     def test_hash_raises_for_a_flat_model(self):
         definition = ModelDefinition(
             id="r23_flat",
@@ -167,6 +164,5 @@ class TestR23Unhashable:
         with pytest.raises(TypeError):
             hash(model)
 
-    @pytest.mark.xfail(strict=True, reason="R23 — fixed by T018")
     def test_hash_is_disabled_on_the_class(self):
         assert GrimoireModel.__hash__ is None

@@ -830,10 +830,17 @@ class TestCreateModelFactory:
             )
 
     def test_create_model_with_model_registry(self):
-        """Test factory with model registry for inheritance."""
+        """Test factory with inheritance; it resolves through the global
+        registry.
+
+        The test used to pass ``model_registry=...``, which no factory
+        parameter ever consumed -- it was silently ignored, and inheritance
+        has always resolved through the global registry. That keyword is
+        dropped. Real ``registry=`` support and its coverage arrive in T041.
+        """
         from grimoire_model.core.model import create_model
 
-        base_model_def = ModelDefinition(
+        ModelDefinition(
             id="base_character",
             name="Base Character",
             attributes={
@@ -852,12 +859,9 @@ class TestCreateModelFactory:
             },
         )
 
-        model_registry = {"base_character": base_model_def, "warrior": child_model_def}
-
         model = create_model(
             child_model_def,
             {"name": "Conan", "strength": 18},
-            model_registry=model_registry,
         )
 
         assert model["name"] == "Conan"
