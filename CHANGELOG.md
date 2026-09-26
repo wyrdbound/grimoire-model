@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Nothing but the model's data is in scope in an expression.** The derived
+  and validation contexts no longer carry an instance-id key, so
+  `{{ model.name }}` (or `{{ <instance_id>.name }}`) raises instead of
+  resolving. An attribute named `model` is now an ordinary dependency, and an
+  attribute named `round`, `max`, `sum`, `len`, `int` or `str` is tracked and
+  recomputes dependents on write (they were wrongly skipped as builtins).
+  (R05, R06)
 - **A mixed template renders to text and stays text.** Only a template that is
   exactly one `{{ expression }}` keeps its value's type; `"[{{ a }}]"` with
   `a == 1` is the string `"[1]"`, not the list `[1]`. Rendered output was

@@ -820,17 +820,15 @@ class GrimoireModel(MutableMapping):
         return resolved
 
     def _build_validation_context(self) -> Dict[str, Any]:
-        """Build context for validation rule evaluation."""
-        # Unset optional attributes read as None; stored data is untouched.
-        # (No "$" key: `$` is not a valid Jinja2 identifier, so a "$" entry here
-        # was unreachable from any expression.)
-        data = unset_as_null(dict(self._data), self._resolved_attributes)
-        context: Dict[str, Any] = {self._instance_id: data}
+        """Build context for validation rule evaluation.
 
-        # Add individual fields at top level
-        context.update(data)
-
-        return context
+        The context is the model's data and nothing else. An unset optional
+        attribute reads as None; stored data is untouched. (No instance-id key:
+        an instance prefix is not part of the expression language, and adding
+        one made ``{{ model.name }}`` resolve and then dropped ``model`` from
+        dependency tracking.)
+        """
+        return unset_as_null(dict(self._data), self._resolved_attributes)
 
     def __eq__(self, other: Any) -> bool:
         """Test equality with another object."""

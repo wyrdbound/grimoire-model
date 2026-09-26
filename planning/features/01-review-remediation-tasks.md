@@ -2,7 +2,8 @@
 
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
 merged). T002 done (expression-safety tests written). T003 done (R01). T004
-done (R02). T005 done (R03, amended). T006 done (R04). T007 next.
+done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06).
+T008 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -272,7 +273,7 @@ stops exposing Python internals, and resolves data before methods.
   *Accept:* T002's R04 tests pass; `grep -n "literal_eval\|json.loads"
   src/grimoire_model/resolvers/template.py` prints nothing.
 
-- [ ] **T007** [US1] Fix R05 and R06. Files:
+- [x] **T007** [US1] Fix R05 and R06. Files:
   `src/grimoire_model/resolvers/derived.py`, `src/grimoire_model/core/model.py`,
   `tests/test_expression_safety.py`, `CHANGELOG.md` only.
 
@@ -1067,7 +1068,7 @@ now on.
 | [x] | T004 | 1 | | US1 | R02 |
 | [x] | T005 | 1 | | US1 | R03 |
 | [x] | T006 | 1 | | US1 | R04 |
-| [ ] | T007 | 1 | | US1 | R05, R06 |
+| [x] | T007 | 1 | | US1 | R05, R06 |
 | [ ] | T008 | 1 | P | US1 | R07 |
 | [ ] | T009 | 2 | | US2 | tests R08–R10, R12, R13 |
 | [ ] | T010 | 2 | | US2 | R08 |
