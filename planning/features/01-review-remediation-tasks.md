@@ -14,7 +14,8 @@ rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 (write-rule tests for R16-R21). T020 done (R16). T021 done (R17). T022 done
 (R18-R20). T023 done (R21; examples 02/03 reworked). T024 done (R24).
 Checkpoint 3 passed (coverage 92%, examples run). T025 done
-(derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 next.
+(derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
+Checkpoint 4 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -774,7 +775,7 @@ either leaves the model valid or leaves it untouched.
   that removes itself does not skip the next one.
   *Accept:* T025's R28 test passes.
 
-- [ ] **T030** [P] [US4] Fix R29 and R30. Files:
+- [x] **T030** [P] [US4] Fix R29 and R30. Files:
   `src/grimoire_model/resolvers/derived.py`, `src/grimoire_model/core/model.py`,
   `tests/test_derived_ordering.py`, `CHANGELOG.md` only.
 
@@ -1152,7 +1153,7 @@ now on.
 | [x] | T027 | 4 | | US4 | R26 |
 | [x] | T028 | 4 | | US4 | R27 |
 | [x] | T029 | 4 | P | US4 | R28 |
-| [ ] | T030 | 4 | P | US4 | R29, R30 |
+| [x] | T030 | 4 | P | US4 | R29, R30 |
 | [ ] | T031 | 5 | | US5 | tests R31–R39 |
 | [ ] | T032 | 5 | | US5 | R31, R32 |
 | [ ] | T033 | 5 | | US5 | R33 |

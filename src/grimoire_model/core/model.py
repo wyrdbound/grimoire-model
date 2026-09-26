@@ -345,11 +345,11 @@ class GrimoireModel(MutableMapping):
         return attributes.get(parts[-1])
 
     def get_derived_fields(self) -> Set[str]:
-        """Get names of all derived fields."""
+        """Get the dotted paths of all derived fields, including group leaves."""
         return {
-            name
-            for name, attr in self._resolved_attributes.items()
-            if isinstance(attr, AttributeDefinition) and attr.derived
+            path
+            for path, attr in iter_leaf_attributes(self._resolved_attributes)
+            if attr.derived
         }
 
     def get_field_dependencies(self, field_name: str) -> Set[str]:

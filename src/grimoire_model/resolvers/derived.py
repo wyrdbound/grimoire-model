@@ -719,20 +719,31 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
 
     def __init__(self, template_resolver: TemplateResolver, instance_id: str = "model"):
         super().__init__(template_resolver, instance_id)
-        self._batching = False
+        self._batch_depth = 0
         self._pending_updates: Set[str] = set()
 
+    @property
+    def _batching(self) -> bool:
+        """Whether a batch is open."""
+        return self._batch_depth > 0
+
     def start_batch(self) -> None:
-        """Start batching field updates."""
-        self._batching = True
-        self._pending_updates.clear()
+        """Start (or nest) batching field updates.
+
+        A depth counter, so a batch started inside a batch does not discard the
+        outer batch's pending work; only the outermost ``end_batch`` recomputes
+        (R29).
+        """
+        self._batch_depth += 1
 
     def end_batch(self) -> None:
-        """End batching and process all pending updates."""
-        if not self._batching:
+        """End batching and, at the outermost level, process pending updates."""
+        if self._batch_depth == 0:
             return
 
-        self._batching = False
+        self._batch_depth -= 1
+        if self._batch_depth > 0:
+            return
 
         if self._pending_updates:
             # Get all dependent fields
@@ -752,11 +763,12 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
     def abort_batch(self) -> None:
         """Discard a batch without recomputing (a rolled-back transaction).
 
-        Balances the batch flag and clears pending updates, so a failed batch
+        Balances the batch counter and clears pending updates, so a failed batch
         does not leave batching on or trigger a recompute against data that has
         just been restored.
         """
-        self._batching = False
+        if self._batch_depth > 0:
+            self._batch_depth -= 1
         self._pending_updates.clear()
 
     def set_field_value(self, field_name: str, value: Any) -> None:

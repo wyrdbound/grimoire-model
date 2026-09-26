@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Batches are re-entrant; `get_derived_fields()` returns dotted paths.**
+  `BatchedDerivedFieldResolver` keeps a depth counter: a `start_batch()` inside
+  a batch no longer clears the outer batch's pending work, and only the
+  outermost `end_batch()` recomputes. `get_derived_fields()` now returns every
+  derived leaf's dotted path (`power.modifier`), not just top-level names.
+  (R29, R30)
 - **Every derived-field observer runs; the first exception re-raises.**
   `ObservableValue` no longer swallows an observer exception and logs it. All
   observers are called (over a copy, so one that removes itself does not skip
