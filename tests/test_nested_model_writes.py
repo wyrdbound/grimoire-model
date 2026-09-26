@@ -108,7 +108,6 @@ class TestDottedWriteIntoBuiltModelTypedAttribute:
         character = create_model(
             character_def,
             {"name": "Wren", "abilities": {"constitution": {"bonus": 2}}},
-            partial=True,
         )
 
         character["abilities.constitution.bonus"] = 5
@@ -120,7 +119,6 @@ class TestDottedWriteIntoBuiltModelTypedAttribute:
         character = create_model(
             character_def,
             {"name": "Wren", "abilities": {"constitution": {"bonus": 2}}},
-            partial=True,
         )
 
         character["abilities.constitution.bonus"] = 5

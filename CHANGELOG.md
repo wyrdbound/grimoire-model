@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **No silent keywords; `GrimoireModel` is unhashable.** `GrimoireModel.__init__`
+  no longer accepts `**kwargs`, and `create_model` /
+  `create_model_without_validation` accept only their documented arguments
+  (`template_resolver_type`, `template_resolver`, `derived_field_resolver`,
+  `instance_id`, `skip_initial_validation`, `template_resolver_kwargs`,
+  `derived_resolver_kwargs`). An unknown keyword now raises `TypeError` naming
+  it; before, a typo like `skip_initial_validaton=True` was silently ignored.
+  `GrimoireModel.__hash__` is `None` (a mutable mapping must not be hashable;
+  the old hash already raised for any model holding a dict or list). (R22, R23)
 - **Storage is private; reads return copies.** No code path mutates a dict or
   list reachable from a previous `_data`: a dotted write (including the derived
   resolver's own nested writes) copies the containers on its path and shares

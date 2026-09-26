@@ -10,7 +10,7 @@ Checkpoint 2 passed (coverage 91%, examples run; Wyrdbound
 `engine/tests/unit/test_model_translation.py` 17 passed against this branch via
 PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
 R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
-rewritten). T018 next.
+rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -523,9 +523,18 @@ either leaves the model valid or leaves it untouched.
   *Accept:* T015's R14 tests pass; `tests/test_nested_model_writes.py` passes
   unchanged.
 
-- [ ] **T018** [P] [US3] Fix R22 and R23. Files:
+- [x] **T018** [P] [US3] Fix R22 and R23. Files:
   `src/grimoire_model/core/model.py`, `tests/test_write_transactions.py`,
-  `CHANGELOG.md` only.
+  `tests/test_model.py`, `tests/test_nested_model_writes.py`, `CHANGELOG.md`
+  only.
+
+  *Amended while executing:* the file list gained `tests/test_model.py` and
+  `tests/test_nested_model_writes.py`, which each passed a keyword no factory
+  consumed (silently ignored). `test_create_model_with_model_registry` dropped
+  `model_registry=`; `test_nested_model_writes.py` dropped `partial=True` rather
+  than switching to `skip_initial_validation=True`, so its behaviour is
+  unchanged (no assertion changes) and later tasks' "passes unchanged" checks
+  still hold. T041 gained a note to assert a real `registry=` once it exists.
 
   Remove `**kwargs` from `GrimoireModel.__init__`. In `create_model` and
   `create_model_without_validation`, keep `**kwargs` only for the keys they
@@ -955,6 +964,11 @@ now on.
   `GrimoireModel`, `create_model` and `create_model_without_validation` take
   `registry: Optional[ModelRegistry] = None` (default: the global registry),
   and nested models inherit their parent's registry.
+
+  *Note from T018:* `tests/test_model.py::test_create_model_with_model_registry`
+  used to pass `model_registry=...`, which was silently ignored. It was dropped;
+  once `registry=` exists, that test should gain a real assertion that a passed
+  registry is the one used.
   *Accept:* T038's R41 tests pass.
 
 - [ ] **T042** [US6] Fix R42. Files: `src/grimoire_model/core/schema.py`,
@@ -1107,7 +1121,7 @@ now on.
 | [x] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
 | [x] | T016 | 3 | | US3 | R15 |
 | [x] | T017 | 3 | | US3 | R14 |
-| [ ] | T018 | 3 | P | US3 | R22, R23 |
+| [x] | T018 | 3 | P | US3 | R22, R23 |
 | [ ] | T019 | 3 | | US3 | tests R16–R21 |
 | [ ] | T020 | 3 | | US3 | R16 |
 | [ ] | T021 | 3 | | US3 | R17 |
