@@ -8,6 +8,7 @@ contexts, variable extraction, and caching.
 import ast
 import json
 import re
+from collections.abc import Mapping
 from typing import Any, Dict, Protocol, Set, cast
 
 import jinja2
@@ -18,6 +19,29 @@ from ..core.exceptions import TemplateResolutionError
 from ..logging import get_logger
 
 logger = get_logger("resolvers.template")
+
+
+class _ModelSandboxedEnvironment(SandboxedEnvironment):
+    """Sandboxed environment where a mapping exposes its data, not its methods.
+
+    In an expression, ``x.name`` on a mapping means the data at ``name``. For
+    a plain ``dict`` or a ``GrimoireModel``, Jinja2's ``getattr`` would find
+    ``items`` / ``keys`` / ``values`` / ``get`` before the key, so the two
+    evaluation paths disagreed and an attribute with one of those names was
+    unreachable. This override looks the key up first.
+
+    A name that is not a key is undefined, **not** a dict method: a mapping's
+    methods are not the model's data, and returning one would be a silent
+    failure (``{{ g.values }}`` rendering a bound method). Non-mappings keep
+    the sandbox's ``getattr``, and with it its safety checks.
+    """
+
+    def getattr(self, obj: Any, attribute: str) -> Any:
+        if isinstance(obj, Mapping):
+            if attribute in obj:
+                return obj[attribute]
+            return self.undefined(obj=obj, name=attribute)
+        return super().getattr(obj, attribute)
 
 
 class TemplateResolver(Protocol):
@@ -76,7 +100,7 @@ class Jinja2TemplateResolver:
         # (`{{ ''.__class__.__mro__[1].__subclasses__() }}`); the sandbox
         # blocks attribute access to unsafe names. Clearing globals below is
         # still required -- sandboxing does not remove them.
-        self.env = SandboxedEnvironment(**cast(Any, env_kwargs))
+        self.env = _ModelSandboxedEnvironment(**cast(Any, env_kwargs))
 
         # Jinja2 ships globals (range, dict, namespace, cycler, joiner,
         # lipsum) that are reachable from any expression. In a model

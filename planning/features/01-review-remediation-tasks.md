@@ -2,7 +2,7 @@
 
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
 merged). T002 done (expression-safety tests written). T003 done (R01). T004
-done (R02). T005 next.
+done (R02). T005 done (R03, amended). T006 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -232,8 +232,17 @@ stops exposing Python internals, and resolves data before methods.
   *Accept:* T002's R02 tests pass; `tests/test_expression_environment.py`
   passes unchanged.
 
-- [ ] **T005** [US1] Fix R03. Files: `src/grimoire_model/resolvers/template.py`,
+- [x] **T005** [US1] Fix R03. Files: `src/grimoire_model/resolvers/template.py`,
   `tests/test_expression_safety.py`, `CHANGELOG.md` only.
+
+  *Amended while executing:* T002 and T005 contradicted each other on an
+  absent key. T002 requires `{{ g.values }}` on `{"g": {}}` to raise; T005's
+  original accept check said `{{ g.items() }}` still calls the method. Resolved
+  in favour of the stricter rule: a `Mapping` exposes its data, not its
+  methods, so an absent name is `Undefined` and both `{{ g.items() }}` and
+  `{{ g.values }}` raise. The accept check is now "`{{ g.items() }}` and
+  `{{ g.values }}` raise; `{{ g | items | list }}`, `{{ g | length }}` and
+  `{{ 'k' in g }}` work". T002's `g.values` assertion is unchanged.
 
   Rule: in an expression, `x.name` on a mapping means the data at `name`.
   Subclass the sandboxed environment and override `getattr(obj, attribute)`:
@@ -1056,7 +1065,7 @@ now on.
 | [x] | T002 | 1 | | US1 | tests R01–R04 |
 | [x] | T003 | 1 | | US1 | R01 |
 | [x] | T004 | 1 | | US1 | R02 |
-| [ ] | T005 | 1 | | US1 | R03 |
+| [x] | T005 | 1 | | US1 | R03 |
 | [ ] | T006 | 1 | | US1 | R04 |
 | [ ] | T007 | 1 | | US1 | R05, R06 |
 | [ ] | T008 | 1 | P | US1 | R07 |
