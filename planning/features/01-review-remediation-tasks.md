@@ -16,7 +16,7 @@ rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 Checkpoint 3 passed (coverage 92%, examples run). T025 done
 (derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
-PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 next.
+PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 done (R37-R39). Checkpoint 5 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -895,7 +895,7 @@ now on.
   any assertion that expected an unparseable length range to be ignored, and
   name it in the commit).
 
-- [ ] **T037** [P] [US5] Fix R37, R38, R39. Files:
+- [x] **T037** [P] [US5] Fix R37, R38, R39. Files:
   `src/grimoire_model/validation/validators.py`, `tests/test_type_validation.py`,
   `tests/test_validators.py`, `CHANGELOG.md` only.
 
@@ -1167,7 +1167,7 @@ now on.
 | [x] | T034 | 5 | | US5 | R34 |
 | [x] | T035 | 5 | | US5 | R35 |
 | [x] | T036 | 5 | | US5 | R36 |
-| [ ] | T037 | 5 | P | US5 | R37, R38, R39 |
+| [x] | T037 | 5 | P | US5 | R37, R38, R39 |
 | [ ] | T038 | 6 | | US6 | tests R40–R45 |
 | [ ] | T039 | 6 | | US6 | R40 |
 | [ ] | T040 | 6 | | US6 | R43, R44 |

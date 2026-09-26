@@ -47,8 +47,8 @@ class TypeValidator(FieldValidator):
     ) -> List[str]:
         """Validate that the value matches the expected type."""
         if value is None:
-            if not attr_def.optional and not attr_def.computed:
-                return [f"Required field '{field_name}' cannot be None"]
+            # A missing required value is reported by RequiredValidator alone
+            # (R38), so it names the field once.
             return []
 
         expected_type = attr_def.type
@@ -318,7 +318,11 @@ class EnumValidator(FieldValidator):
 
 
 class PatternValidator(FieldValidator):
-    """Validates string patterns using regular expressions."""
+    """Validates string patterns using regular expressions.
+
+    ``pattern`` is a **full match**: the whole value must match, as
+    ``re.fullmatch`` does, so ``[a-z]+`` rejects ``abc123!`` (R37, D9).
+    """
 
     def validate(
         self, value: Any, field_name: str, attr_def: AttributeDefinition
@@ -334,7 +338,7 @@ class PatternValidator(FieldValidator):
         pattern = attr_def.pattern
 
         try:
-            if not re.match(pattern, value):
+            if re.fullmatch(pattern, value) is None:
                 errors.append(
                     f"Field '{field_name}' value '{value}' does not match "
                     f"pattern '{pattern}'"
@@ -447,7 +451,11 @@ class ValidationEngine:
         """
         errors = []
         with self._lock:
-            validators_to_run = enabled_validators or list(self.validators.keys())
+            validators_to_run = (
+                list(self.validators.keys())
+                if enabled_validators is None
+                else enabled_validators
+            )
             # A snapshot of the validator objects, so a concurrent
             # register/unregister cannot change the set mid-iteration.
             selected = [

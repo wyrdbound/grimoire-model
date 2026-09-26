@@ -146,24 +146,21 @@ class TestTypeValidator:
             assert validator.validate(value, "test_field", attr_def) == []
 
     def test_none_value_handling(self):
-        """Test None value handling for required fields."""
+        """None is not a type error; RequiredValidator reports a missing value.
+
+        TypeValidator no longer reports None, so a missing required attribute is
+        named once, by RequiredValidator (R38).
+        """
         validator = TypeValidator()
 
-        # Required field with None should produce error
         required_attr = AttributeDefinition(type="str")
-        errors = validator.validate(None, "test_field", required_attr)
-        assert len(errors) == 1
-        assert "cannot be None" in errors[0]
+        assert validator.validate(None, "test_field", required_attr) == []
 
-        # Optional field with None should be OK
         optional_attr = AttributeDefinition(type="str", optional=True)
-        errors = validator.validate(None, "test_field", optional_attr)
-        assert len(errors) == 0
+        assert validator.validate(None, "test_field", optional_attr) == []
 
-        # Computed field with None should be OK
         computed_attr = AttributeDefinition(type="str", derived="computed_value")
-        errors = validator.validate(None, "test_field", computed_attr)
-        assert len(errors) == 0
+        assert validator.validate(None, "test_field", computed_attr) == []
 
 
 class TestRequiredValidator:
