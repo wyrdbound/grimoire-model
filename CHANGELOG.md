@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **A mapping exposes its data, not its methods, in an expression.** In
+  `x.name`, `name` is looked up as a key on a `dict` or `GrimoireModel` before
+  anything else, so an attribute named `items`, `keys`, `values`, `get`,
+  `copy`, `pop` or `update` is reachable. A name that is not a key is
+  undefined, so `{{ g.values }}` and `{{ g.items() }}` raise rather than
+  resolving to a bound method (a silent, wrong value). Use filters:
+  `g | items | list`, `g | length`, `'k' in g`. (R03)
 - **The expression environment is sandboxed.** Model definitions are content;
   once distributed they are third-party input. A plain Jinja2 `Environment`
   let an expression walk to arbitrary Python classes

@@ -81,14 +81,12 @@ class TestR02Sandboxed:
 class TestR03DataBeforeMethods:
     """``x.name`` on a mapping means the data at ``name``."""
 
-    @pytest.mark.xfail(strict=True, reason="R03 — fixed by T005")
     def test_key_shadows_dict_methods(self):
         ctx = {"g": {"items": 3, "keys": 4, "get": 5}}
         assert R.resolve_template("{{ g.items + 1 }}", ctx) == 4
         assert R.resolve_template("{{ g.keys }}", ctx) == 4
         assert R.resolve_template("{{ g.get * 2 }}", ctx) == 10
 
-    @pytest.mark.xfail(strict=True, reason="R03 — fixed by T005")
     def test_model_attribute_named_items(self):
         ModelDefinition(
             id="r03_bag",
@@ -101,17 +99,30 @@ class TestR03DataBeforeMethods:
             name="Parent",
             namespace="exprsafe",
             attributes={
-                "bag": {"type": "bag"},
+                "bag": {"type": "r03_bag"},
                 "n": {"type": "int", "derived": "{{ bag.items | length }}"},
             },
         )
         model = create_model(parent, {"bag": {"items": [1, 2]}})
         assert model["n"] == 2
 
-    @pytest.mark.xfail(strict=True, reason="R03 — fixed by T005")
     def test_absent_key_does_not_fall_back_to_method(self):
         with pytest.raises(TemplateResolutionError):
             R.resolve_template("{{ g.values }}", {"g": {}})
+
+    def test_method_call_on_mapping_raises(self):
+        """A mapping exposes data, not methods; use filters instead."""
+        with pytest.raises(TemplateResolutionError):
+            R.resolve_template("{{ g.items() }}", {"g": {}})
+
+    def test_filters_replace_mapping_methods(self):
+        ctx = {"g": {"k": 1, "j": 2}}
+        assert R.resolve_template("{{ g | items | list }}", ctx) == [
+            ("k", 1),
+            ("j", 2),
+        ]
+        assert R.resolve_template("{{ g | length }}", ctx) == 2
+        assert R.resolve_template("{{ 'k' in g }}", ctx) is True
 
 
 class TestR04MixedTemplatesAreStrings:
