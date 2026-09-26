@@ -380,9 +380,34 @@ class GrimoireModel(MutableMapping):
         field_errors = validate_model_data(dict(self._data), attributes)
         errors.extend(field_errors)
 
+        errors.extend(self._validate_nested_models())
         errors.extend(self._validate_model_rules())
 
         return errors
+
+    def _validate_nested_models(self) -> List[str]:
+        """Errors from nested models, prefixed with the path to each (R35)."""
+        errors: List[str] = []
+        for path, value in self._iter_nested_model_values():
+            for error in value.validate():
+                errors.append(f"{path}: {error}")
+        return errors
+
+    def _iter_nested_model_values(self) -> Iterator[Tuple[str, "GrimoireModel"]]:
+        """Yield ``(dotted_path, nested_model)`` for every built nested model."""
+        for path, attr_def in iter_leaf_attributes(self._resolved_attributes):
+            value = self._get_field_value(path)
+            if isinstance(value, GrimoireModel):
+                yield path, value
+            elif (
+                attr_def.type == "list"
+                and attr_def.of
+                and attr_def.of not in BASIC_TYPES
+                and isinstance(value, list)
+            ):
+                for index, element in enumerate(value):
+                    if isinstance(element, GrimoireModel):
+                        yield f"{path}[{index}]", element
 
     def _validate_model_rules(self) -> List[str]:
         """Errors from the model's own ``validations`` rules."""
@@ -846,6 +871,7 @@ class GrimoireModel(MutableMapping):
             model_definition=nested_model_def,
             data=dict(value),
             template_resolver=self._template_resolver,
+            skip_initial_validation=self._skip_initial_validation,
         )
         logger.debug(f"Instantiated nested model '{path}' of type '{attr_def.type}'")
         return nested_model
