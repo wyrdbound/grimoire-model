@@ -17,7 +17,8 @@ Checkpoint 3 passed (coverage 92%, examples run). T025 done
 (derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
 PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 done (R37-R39). Checkpoint 5 passed (coverage 92%,
-examples run, seeds 0-7). T038 next.
+examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
+next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -915,7 +916,7 @@ now on.
 
 **Purpose:** US6.
 
-- [ ] **T038** [US6] Write `tests/test_inheritance_resolution.py` (TDD) for
+- [x] **T038** [US6] Write `tests/test_inheritance_resolution.py` (TDD) for
   R40–R45. Assert:
   - **R40:** `pb.x` default `"B"`, `pc.x` default `"C"`, `kid extends [pb,
     pc]` → `x == "C"`; `kid2 extends [pc, pb]` → `"B"`; the child's own
@@ -1169,7 +1170,7 @@ now on.
 | [x] | T035 | 5 | | US5 | R35 |
 | [x] | T036 | 5 | | US5 | R36 |
 | [x] | T037 | 5 | P | US5 | R37, R38, R39 |
-| [ ] | T038 | 6 | | US6 | tests R40–R45 |
+| [x] | T038 | 6 | | US6 | tests R40–R45 |
 | [ ] | T039 | 6 | | US6 | R40 |
 | [ ] | T040 | 6 | | US6 | R43, R44 |
 | [ ] | T041 | 6 | | US6 | R41 |
