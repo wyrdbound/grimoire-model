@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **One range parser for numbers and lengths.** Every documented range form
+  (`a..b`, `a..`, `..b`, `>=a`, `<=b`, `>a`, `<b`, `=a`, with optional spaces)
+  is parsed by one function; `RangeValidator` (numbers) and `LengthValidator`
+  (`len()` of `str`/`list`/`dict`) both use it. An unparseable range is now an
+  error for every type, not a skipped check (previously `>=2` on a list and
+  `a..b` on a string were silently ignored). A length bound must be a whole
+  number. (R36)
 - **A nested model inherits its parent's validation mode.** An incremental
   parent (`create_model_without_validation`) builds its nested models —
   top-level, group leaf, list element — incrementally too. A validated parent's
