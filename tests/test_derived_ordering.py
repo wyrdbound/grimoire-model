@@ -127,7 +127,6 @@ class TestR26RecomputeFailure:
 class TestR27ExactConversion:
     """Derived values are converted exactly; a bad value raises."""
 
-    @pytest.mark.xfail(strict=True, reason="R27 — fixed by T028")
     def test_int_of_a_fraction_raises(self):
         definition = ModelDefinition(
             id="r27_frac",
@@ -165,7 +164,6 @@ class TestR27ExactConversion:
         )
         assert create_model(definition, {})["n"] == 4
 
-    @pytest.mark.xfail(strict=True, reason="R27 — fixed by T028")
     def test_int_of_a_non_numeric_raises_and_stores_nothing(self):
         definition = ModelDefinition(
             id="r27_bad_int",
@@ -179,7 +177,6 @@ class TestR27ExactConversion:
         with pytest.raises(ModelValidationError):
             create_model_without_validation(definition, {})
 
-    @pytest.mark.xfail(strict=True, reason="R27 — fixed by T028")
     def test_bool_of_an_arbitrary_string_raises(self):
         definition = ModelDefinition(
             id="r27_bool",
@@ -193,7 +190,6 @@ class TestR27ExactConversion:
         with pytest.raises(ModelValidationError):
             create_model(definition, {})
 
-    @pytest.mark.xfail(strict=True, reason="R27 — fixed by T028")
     def test_str_of_an_unset_optional_is_none(self):
         definition = ModelDefinition(
             id="r27_str_none",
@@ -206,7 +202,6 @@ class TestR27ExactConversion:
         )
         assert create_model(definition, {})["s"] is None
 
-    @pytest.mark.xfail(strict=True, reason="R27 — fixed by T028")
     def test_str_of_a_dict_raises(self):
         definition = ModelDefinition(
             id="r27_str_dict",

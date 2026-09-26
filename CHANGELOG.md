@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Derived-value conversion is exact.** A derived `int` accepts an `int`, an
+  integral `float` (`4.0`) or a string that parses to one — `{{ (s - 10) / 2 }}`
+  with `s == 9` now raises instead of truncating to `0`; use `//`, `| round |
+  int` or `| int`. `float` accepts numbers and numeric strings. `bool` accepts a
+  bool or exactly `true/false/1/0/yes/no/on/off` (any case); anything else
+  raises. `str` accepts scalars (not a dict or list). `None` stays `None` for
+  every type. A bad value raises `ModelValidationError` naming the field and is
+  never stored unconverted. (R27)
 - **A derived recompute failure propagates.** `_update_dependent_fields` no
   longer catches every exception and logs it: a recompute failure raises
   `TemplateResolutionError`, and the write's transaction rolls back (R16). In an
