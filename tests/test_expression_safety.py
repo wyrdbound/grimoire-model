@@ -65,12 +65,10 @@ class TestR01UnresolvedRaises:
 class TestR02Sandboxed:
     """Model expressions cannot reach Python internals."""
 
-    @pytest.mark.xfail(strict=True, reason="R02 — fixed by T004")
     def test_class_attribute_raises(self):
         with pytest.raises(TemplateResolutionError):
             R.resolve_template("{{ ''.__class__ }}", {})
 
-    @pytest.mark.xfail(strict=True, reason="R02 — fixed by T004")
     def test_subclasses_walk_raises(self):
         with pytest.raises(TemplateResolutionError):
             R.resolve_template("{{ ''.__class__.__mro__[1].__subclasses__() }}", {})

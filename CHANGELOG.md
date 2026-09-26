@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **The expression environment is sandboxed.** Model definitions are content;
+  once distributed they are third-party input. A plain Jinja2 `Environment`
+  let an expression walk to arbitrary Python classes
+  (`{{ ''.__class__.__mro__[1].__subclasses__() }}`). The resolver now builds a
+  `jinja2.sandbox.SandboxedEnvironment`; filters are unchanged. (R02)
 - **An expression that cannot be resolved raises.** A pure-expression template
   (`{{ ... }}`) was compiled with Jinja2's default `undefined_to_none=True`, so
   `{{ g.missing }}` — a misspelled nested leaf — returned `None` and the model

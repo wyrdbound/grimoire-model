@@ -2,7 +2,7 @@
 
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
 merged). T002 done (expression-safety tests written). T003 done (R01). T004
-next.
+done (R02). T005 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -221,7 +221,7 @@ stops exposing Python internals, and resolves data before methods.
   *Accept:* T002's R01 tests pass with the `xfail` removed; the full suite
   passes.
 
-- [ ] **T004** [US1] Fix R02. Files: `src/grimoire_model/resolvers/template.py`,
+- [x] **T004** [US1] Fix R02. Files: `src/grimoire_model/resolvers/template.py`,
   `tests/test_expression_safety.py`, `CHANGELOG.md` only.
 
   Build the environment from `jinja2.sandbox.SandboxedEnvironment` (design
@@ -1055,7 +1055,7 @@ now on.
 | [x] | T001 | 0 | | — | (rebase onto F57) |
 | [x] | T002 | 1 | | US1 | tests R01–R04 |
 | [x] | T003 | 1 | | US1 | R01 |
-| [ ] | T004 | 1 | | US1 | R02 |
+| [x] | T004 | 1 | | US1 | R02 |
 | [ ] | T005 | 1 | | US1 | R03 |
 | [ ] | T006 | 1 | | US1 | R04 |
 | [ ] | T007 | 1 | | US1 | R05, R06 |
