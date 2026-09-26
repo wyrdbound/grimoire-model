@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`pattern` is a full match.** `PatternValidator` uses `re.fullmatch`, so
+  `pattern: "[a-z]+"` rejects `abc123!` (it previously used `re.match`, which
+  anchors only the start). A caller whose pattern relied on prefix matching must
+  anchor it or add the trailing wildcard. `pattern` is a library extension, not
+  spec. (R37, D9)
+- **One error per missing required attribute, and `enabled_validators=[]` runs
+  none.** `TypeValidator` no longer reports a `None` value, so a missing
+  required attribute is named once by `RequiredValidator`. `validate_field`
+  treats `enabled_validators=None` as "all" and `[]` as "none". (R38, R39)
 - **One range parser for numbers and lengths.** Every documented range form
   (`a..b`, `a..`, `..b`, `>=a`, `<=b`, `>a`, `<b`, `=a`, with optional spaces)
   is parsed by one function; `RangeValidator` (numbers) and `LengthValidator`

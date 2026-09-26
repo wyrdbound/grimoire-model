@@ -257,7 +257,6 @@ class TestR36OneRangeParser:
 
 
 class TestR37Pattern:
-    @pytest.mark.xfail(strict=True, reason="R37 — fixed by T037")
     def test_pattern_is_a_full_match(self):
         definition = ModelDefinition(
             id="r37_pattern",
@@ -271,7 +270,6 @@ class TestR37Pattern:
 
 
 class TestR38OneMissingRequiredError:
-    @pytest.mark.xfail(strict=True, reason="R38 — fixed by T037")
     def test_a_missing_required_field_produces_one_error(self):
         definition = ModelDefinition(
             id="r38_req",
@@ -284,7 +282,6 @@ class TestR38OneMissingRequiredError:
 
 
 class TestR39EnabledValidatorsEmpty:
-    @pytest.mark.xfail(strict=True, reason="R39 — fixed by T037")
     def test_empty_list_runs_no_validators(self):
         assert (
             validate_field_value(
