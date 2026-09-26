@@ -11,7 +11,7 @@ import threading
 from typing import Callable
 
 from ..logging import get_logger
-from .schema import BASIC_TYPES
+from .schema import PYTHON_BASIC_TYPES
 
 logger = get_logger("core.primitive_registry")
 
@@ -50,9 +50,12 @@ class PrimitiveTypeRegistry:
         if not type_name or not isinstance(type_name, str):
             raise ValueError("type_name must be a non-empty string")
 
-        # Prevent overriding built-in primitives. The spec's basic types are
-        # matched exactly; a name that differs only in case is not one of them.
-        if type_name in BASIC_TYPES:
+        # Prevent overriding the Python basic primitives, which already have
+        # built-in validation. The spec's non-Python basic types (``roll``,
+        # ``roll_result``) may be registered -- Wyrdbound calls
+        # ``register_primitive_type("roll")`` at every system load, and a
+        # validator registered for one is invoked by ``TypeValidator``.
+        if type_name in PYTHON_BASIC_TYPES:
             raise ValueError(
                 f"Cannot register '{type_name}' as it is a built-in primitive type"
             )

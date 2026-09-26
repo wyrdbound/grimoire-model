@@ -249,12 +249,14 @@ class TestPrimitiveTypeIntegration:
         assert isinstance(weapon["damage"], str)
 
     def test_unregistered_type_treated_as_model(self):
-        """Test that unregistered types are still treated as custom models."""
-        # Don't register 'roll' - it should be treated as a custom model
+        """An unknown type name is treated as a custom model, not a primitive.
 
+        ``roll`` is now a spec basic type (R11/T012), so an unknown name is
+        used here to prove an unregistered type still resolves as a model.
+        """
         weapon_attrs = {
             "name": AttributeDefinition(type="str"),
-            "damage": AttributeDefinition(type="roll"),
+            "damage": AttributeDefinition(type="unknown_primitive"),
         }
 
         weapon_def = ModelDefinition(
@@ -268,8 +270,11 @@ class TestPrimitiveTypeIntegration:
 
         weapon_data = {"model": "weapon", "name": "Dagger", "damage": "1d4"}
 
-        # This should fail because 'roll' is not registered as a model
-        with pytest.raises(ModelValidationError, match="Invalid model type 'roll'"):
+        # This should fail because 'unknown_primitive' is not registered as a
+        # model
+        with pytest.raises(
+            ModelValidationError, match="Invalid model type 'unknown_primitive'"
+        ):
             create_model_without_validation(weapon_def, weapon_data)
 
     def test_multiple_custom_primitives(self):
