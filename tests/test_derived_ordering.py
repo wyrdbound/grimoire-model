@@ -105,7 +105,6 @@ class TestR25Ordering:
 class TestR26RecomputeFailure:
     """A derived recompute failure is not swallowed."""
 
-    @pytest.mark.xfail(strict=True, reason="R26 — fixed by T027")
     def test_division_by_zero_raises_and_rolls_back(self):
         definition = ModelDefinition(
             id="r26_divide",

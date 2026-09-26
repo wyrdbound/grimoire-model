@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **A derived recompute failure propagates.** `_update_dependent_fields` no
+  longer catches every exception and logs it: a recompute failure raises
+  `TemplateResolutionError`, and the write's transaction rolls back (R16). In an
+  incremental model, a derived field whose dependency is no longer available is
+  removed rather than left stale. `compute_all_derived_fields(
+  skip_on_missing_dependencies=True)` skips only on a missing dependency; any
+  other failure raises. (R26)
 - **Derived-field dependencies use full reference paths.** A library function,
   `extract_reference_paths`, parses an expression with Jinja2 and returns every
   maximal dotted path (`p.mod`, `abilities.strength.bonus`, `xs`); the derived
