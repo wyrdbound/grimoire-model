@@ -99,7 +99,6 @@ class TestR12SeverityAndFieldsRemoved:
 class TestR13OfIsListOnly:
     """``of`` is valid only when ``type`` is ``list``."""
 
-    @pytest.mark.xfail(strict=True, reason="R13 — fixed by T014")
     def test_of_on_non_list_raises(self):
         with pytest.raises(ValidationError):
             AttributeDefinition(type="int", of="str")
