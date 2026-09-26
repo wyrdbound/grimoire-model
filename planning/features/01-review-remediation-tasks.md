@@ -6,7 +6,10 @@ done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T00
 (definition-strictness tests written). T010 done (R08, Input gap 2 confirmed).
 T011 done (R09, R10; grep gate waived). T012 done (R11).
 T013 done (R12; test_model.py added, grep gate waived). T014 done (R13).
-Checkpoint 2 next.
+Checkpoint 2 passed (coverage 91%, examples run; Wyrdbound
+`engine/tests/unit/test_model_translation.py` 17 passed against this branch via
+PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
+R15, R22, R23). T016 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -456,7 +459,7 @@ checkpoint commit message. Do not change Wyrdbound.
 **Purpose:** US3. Nothing outside the model can change its data, and a write
 either leaves the model valid or leaves it untouched.
 
-- [ ] **T015** [US3] Write `tests/test_write_transactions.py` (TDD), part 1:
+- [x] **T015** [US3] Write `tests/test_write_transactions.py` (TDD), part 1:
   storage, `copy()`, keywords, hashing — R14, R15, R22, R23. Assert:
   - **R14:** (a) `m["g"]["x"] = 99` does not change `m["g.x"]`; (b) a value
     read before a write is unchanged by the write (`old = m["g"]; m["g.x"] = 2;
@@ -1092,7 +1095,7 @@ now on.
 | [x] | T012 | 2 | | US2 | R11 |
 | [x] | T013 | 2 | | US2 | R12 |
 | [x] | T014 | 2 | P | US2 | R13 |
-| [ ] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
+| [x] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
 | [ ] | T016 | 3 | | US3 | R15 |
 | [ ] | T017 | 3 | | US3 | R14 |
 | [ ] | T018 | 3 | P | US3 | R22, R23 |
