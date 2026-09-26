@@ -5,18 +5,36 @@ Manages derived fields and their dependencies using the Observer pattern with
 topological sorting for correct evaluation order.
 """
 
-from collections import defaultdict, deque
+from collections import deque
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Set
 
 from ..core.exceptions import DependencyError, TemplateResolutionError
 from ..core.schema import unset_as_null
 from ..logging import get_logger
+from .template import extract_reference_paths
 
 if TYPE_CHECKING:
     from ..core.schema import AttributeDefinition
 
 logger = get_logger("resolvers.derived")
+
+_MISSING: Any = object()
+
+
+def _get_by_path(data: Any, path: str) -> Any:
+    """Return ``data`` at dotted ``path``, or ``_MISSING`` if absent.
+
+    Walks ``Mapping`` values (a plain dict or a nested ``GrimoireModel``), so a
+    path through a model-typed attribute resolves.
+    """
+    current = data
+    for part in path.split("."):
+        if not isinstance(current, Mapping) or part not in current:
+            return _MISSING
+        current = current[part]
+    return current
 
 
 def copy_on_write_set(
@@ -157,9 +175,6 @@ class DerivedFieldResolver:
 
         # Track derived fields and their dependencies
         self.derived_fields: Dict[str, DependencyInfo] = {}
-        self.dependency_graph: Dict[str, Set[str]] = defaultdict(
-            set
-        )  # field -> fields that depend on it
         self.observable_values: Dict[str, ObservableValue] = {}
         self._computing: Set[str] = set()  # Prevent circular dependencies
 
@@ -242,27 +257,16 @@ class DerivedFieldResolver:
         )
         self.derived_fields[field_name] = dep_info
 
-        # Update dependency graph
-        for dep in dependencies:
-            self.dependency_graph[dep].add(field_name)
-
         # Create observable value if it doesn't exist
         if field_name not in self.observable_values:
             self.observable_values[field_name] = ObservableValue(field_name)
 
         logger.debug(f"Dependencies for {field_name}: {dependencies}")
-        logger.debug(f"Updated dependency graph: {dict(self.dependency_graph)}")
 
     def unregister_derived_field(self, field_name: str) -> None:
         """Unregister a derived field."""
         if field_name not in self.derived_fields:
             return
-
-        dep_info = self.derived_fields[field_name]
-
-        # Remove from dependency graph
-        for dep in dep_info.dependencies:
-            self.dependency_graph[dep].discard(field_name)
 
         # Remove derived field
         del self.derived_fields[field_name]
@@ -272,27 +276,48 @@ class DerivedFieldResolver:
             del self.observable_values[field_name]
 
     @staticmethod
-    def _trigger_keys(field_name: str) -> List[str]:
-        """Dependency-graph keys a write to ``field_name`` should trigger.
+    def _paths_overlap(a: str, b: str) -> bool:
+        """Whether two reference paths overlap.
 
-        Dependencies are recorded by top-level name -- ``{{ power.score }}``
-        depends on ``power`` -- so a nested write to ``power.score`` must also
-        trigger ``power``, or nothing that depends on it recomputes.
+        Two paths overlap when they are equal, or one is a dotted prefix of the
+        other: ``p`` and ``p.mod`` overlap; ``p.mod`` and ``p.modifier`` do not.
         """
-        root = field_name.split(".", 1)[0]
-        return [field_name] if root == field_name else [field_name, root]
+        return a == b or a.startswith(b + ".") or b.startswith(a + ".")
+
+    def _dependent_fields_for(self, write_path: str) -> Set[str]:
+        """Every derived field whose dependencies overlap ``write_path``.
+
+        A derived field D depends on derived field E when one of D's
+        dependencies overlaps E's path. A write to ``write_path`` triggers
+        every D with a dependency overlapping it.
+        """
+        dependents: Set[str] = set()
+        for name, dep_info in self.derived_fields.items():
+            if name == write_path:
+                # A derived field never depends on itself.
+                continue
+            for dep in dep_info.dependencies:
+                if self._paths_overlap(dep, write_path):
+                    dependents.add(name)
+                    break
+        return dependents
 
     def _dependency_available(self, dep: str) -> bool:
-        """Whether an expression can see ``dep``.
+        """Whether an expression can see ``dep`` (a possibly-dotted path).
 
-        True if it is in the data, or if it is an unset optional attribute --
-        which reads as None (see ``unset_as_null``). A dependent of an optional
-        attribute that has just been emptied must recompute, not keep its old
-        value.
+        True if the path is present in the data, or if it names an unset
+        optional attribute -- which reads as None (see ``unset_as_null``). A
+        dependent of an optional attribute that has just been emptied must
+        recompute, not keep its old value.
         """
-        if dep in self._model_data:
+        if _get_by_path(self._model_data, dep) is not _MISSING:
             return True
-        return dep in unset_as_null(self._model_data, self._declared_attributes)
+        return (
+            _get_by_path(
+                unset_as_null(self._model_data, self._declared_attributes), dep
+            )
+            is not _MISSING
+        )
 
     def _remove_value(self, field_name: str) -> None:
         """Remove ``field_name`` (possibly dotted) from the model data view.
@@ -315,8 +340,7 @@ class DerivedFieldResolver:
         self._remove_value(field_name)
         if field_name in self.observable_values:
             self.observable_values[field_name].value = None
-        for key in self._trigger_keys(field_name):
-            self._update_dependent_fields(key)
+        self._update_dependent_fields(field_name)
 
     def set_field_value(self, field_name: str, value: Any) -> None:
         """Set a field value and trigger derived field updates."""
@@ -329,10 +353,7 @@ class DerivedFieldResolver:
         if field_name in self.observable_values:
             self.observable_values[field_name].value = value
 
-        # Trigger dependent field updates (including the top-level name of a
-        # nested write, which is how dependencies are recorded)
-        for key in self._trigger_keys(field_name):
-            self._update_dependent_fields(key)
+        self._update_dependent_fields(field_name)
 
     def compute_derived_field(self, field_name: str) -> Any:
         """Compute the value of a specific derived field."""
@@ -438,18 +459,20 @@ class DerivedFieldResolver:
         return set()
 
     def get_dependent_fields(self, field_name: str) -> Set[str]:
-        """Get fields that depend on the given field."""
-        return self.dependency_graph.get(field_name, set()).copy()
+        """Get derived fields whose dependencies overlap ``field_name``."""
+        return self._dependent_fields_for(field_name)
 
     def _extract_dependencies(self, expression: str) -> Set[str]:
-        """Extract variable dependencies from a template expression.
+        """Every maximal dotted reference path in a template expression.
 
-        Every name the expression references is a dependency -- including one
-        named like a Python builtin (``round``, ``max``). Nothing but the
-        model's data is in scope (``AGENTS.md`` Principle II), so there is no
-        name to skip.
+        Uses the library's own Jinja2 parse (``extract_reference_paths``), not
+        the injected resolver's ``extract_variables``, so dependencies are
+        recorded by full path and the topological sort can order nested derived
+        fields (R25, D4). The injected protocol is untouched (README L3).
         """
-        dependencies = set(self.template_resolver.extract_variables(expression))
+        dependencies = extract_reference_paths(expression)
+        logger.debug(f"Extracted dependencies from '{expression}': {dependencies}")
+        return dependencies
 
         logger.debug(f"Extracted dependencies from '{expression}': {dependencies}")
         return dependencies
@@ -498,57 +521,60 @@ class DerivedFieldResolver:
             return value
 
     def _topological_sort(self, fields: Set[str]) -> List[str]:
-        """Sort fields in dependency order using topological sort."""
-        # Build a dependency graph for just the fields we need to sort
-        local_deps = {}
-        for field_name in fields:
-            if field_name in self.derived_fields:
-                local_deps[field_name] = (
-                    self.derived_fields[field_name].dependencies & fields
-                )
+        """Sort fields in dependency order, deterministically.
 
-        # Kahn's algorithm for topological sorting
-        # in_degree[field] = number of dependencies this field has
-        # (fields it depends on)
-        in_degree = dict.fromkeys(fields, 0)
+        Derived field D depends on derived field E when one of D's dependency
+        paths overlaps E's field path. Ties are broken by sorted path, so the
+        order never depends on ``set`` iteration (R25).
+        """
+        fields = set(fields)
+        local_deps: Dict[str, Set[str]] = {}
         for field_name in fields:
-            if field_name in local_deps:
-                in_degree[field_name] = len(local_deps[field_name])
+            deps: Set[str] = set()
+            dep_info = self.derived_fields.get(field_name)
+            if dep_info is not None:
+                for other in fields:
+                    if other == field_name:
+                        continue
+                    if any(
+                        self._paths_overlap(dep, other) for dep in dep_info.dependencies
+                    ):
+                        deps.add(other)
+            local_deps[field_name] = deps
 
-        # Start with fields that have no dependencies (in_degree = 0)
-        queue = deque([
-            field_name for field_name in fields if in_degree[field_name] == 0
-        ])
+        in_degree = {name: len(local_deps[name]) for name in fields}
+
+        # Start with fields that have no dependencies (in_degree = 0). The
+        # sorted seed and sorted queue make the result independent of set
+        # iteration order.
+        queue = deque(sorted(name for name in fields if in_degree[name] == 0))
         result = []
 
         while queue:
             current_field = queue.popleft()
             result.append(current_field)
 
-            # For each field that depends on the current field, decrease its in_degree
-            if current_field in local_deps:
-                for dependent_field in fields:
-                    if (
-                        dependent_field in local_deps
-                        and current_field in local_deps[dependent_field]
-                    ):
-                        in_degree[dependent_field] -= 1
-                        if in_degree[dependent_field] == 0:
-                            queue.append(dependent_field)
+            newly_ready = []
+            for dependent_field in fields:
+                if current_field in local_deps[dependent_field]:
+                    in_degree[dependent_field] -= 1
+                    if in_degree[dependent_field] == 0:
+                        newly_ready.append(dependent_field)
+            queue.extend(sorted(newly_ready))
 
         if len(result) != len(fields):
             # Circular dependency detected
             remaining = fields - set(result)
             raise DependencyError(
                 f"Circular dependency detected among fields: {remaining}",
-                dependency_chain=list(remaining),
+                dependency_chain=sorted(remaining),
             )
 
         return result
 
     def _update_dependent_fields(self, field_name: str) -> None:
-        """Update all fields that depend on the given field."""
-        dependent_fields = self.dependency_graph.get(field_name, set())
+        """Update every field whose dependencies overlap ``field_name``."""
+        dependent_fields = self._dependent_fields_for(field_name)
         if not dependent_fields:
             return
 
@@ -558,33 +584,36 @@ class DerivedFieldResolver:
         ordered_fields = self._topological_sort(dependent_fields)
 
         for dependent_field in ordered_fields:
-            if dependent_field in self.derived_fields:
-                # Check if all dependencies are available before computing
-                dep_info = self.derived_fields[dependent_field]
-                missing_deps = []
-                for dep in dep_info.dependencies:
-                    if not self._dependency_available(dep):
-                        missing_deps.append(dep)
+            # Check if all dependencies are available before computing
+            dep_info = self.derived_fields.get(dependent_field)
+            if dep_info is None:
+                continue
+            missing_deps = [
+                dep
+                for dep in dep_info.dependencies
+                if not self._dependency_available(dep)
+            ]
 
-                if missing_deps:
-                    logger.debug(
-                        f"Skipping derived field '{dependent_field}' due to missing "
-                        f"dependencies: {missing_deps}"
-                    )
-                    continue
+            if missing_deps:
+                logger.debug(
+                    f"Skipping derived field '{dependent_field}' due to missing "
+                    f"dependencies: {missing_deps}"
+                )
+                continue
 
-                try:
-                    logger.debug(f"Computing derived field: {dependent_field}")
-                    self.compute_derived_field(dependent_field)
-                    # CRITICAL FIX: After recomputing a derived field, we need to
-                    # update its dependent fields recursively to handle dependency
-                    # chains
-                    self._update_dependent_fields(dependent_field)
-                except Exception as e:
-                    # Log but don't fail if a derived field can't be computed
-                    logger.debug(
-                        f"Failed to compute derived field '{dependent_field}': {e}"
-                    )
+            logger.debug(f"Computing derived field: {dependent_field}")
+            try:
+                self.compute_derived_field(dependent_field)
+            except Exception as e:
+                # T027 removes this catch so a recompute failure propagates and
+                # the write rolls back; T026 only fixes the ordering.
+                logger.debug(
+                    f"Failed to compute derived field '{dependent_field}': {e}"
+                )
+                continue
+            # After recomputing a derived field, update its dependents
+            # recursively to handle dependency chains.
+            self._update_dependent_fields(dependent_field)
 
     def _on_field_updated(
         self, field_name: str, old_value: Any, new_value: Any
@@ -678,7 +707,7 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
             self._set_nested_value(self._model_data, field_name, value)
             if field_name in self.observable_values:
                 self.observable_values[field_name].value = value
-            self._pending_updates.update(self._trigger_keys(field_name))
+            self._pending_updates.add(field_name)
         else:
             # Normal processing
             super().set_field_value(field_name, value)
@@ -689,7 +718,7 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
             self._remove_value(field_name)
             if field_name in self.observable_values:
                 self.observable_values[field_name].value = None
-            self._pending_updates.update(self._trigger_keys(field_name))
+            self._pending_updates.add(field_name)
         else:
             super().field_unset(field_name)
 
@@ -705,7 +734,7 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
                 continue
             visited.add(current)
 
-            dependents = self.dependency_graph.get(current, set())
+            dependents = self._dependent_fields_for(current)
             all_dependents.update(dependents)
             queue.extend(dependents)
 

@@ -431,3 +431,34 @@ class TestCreateTemplateResolver:
         # For now, just ensure it doesn't crash
         resolver = create_template_resolver("jinja2", caching=False, trim_blocks=False)
         assert isinstance(resolver, Jinja2TemplateResolver)
+
+
+class TestExtractReferencePaths:
+    """``extract_reference_paths`` parses Jinja2 for maximal dotted paths."""
+
+    def test_simple_and_dotted(self):
+        from grimoire_model.resolvers.template import extract_reference_paths
+
+        assert extract_reference_paths("{{ p.mod + 1 }}") == {"p.mod"}
+        assert extract_reference_paths("{{ a.b.c.d }}") == {"a.b.c.d"}
+        assert extract_reference_paths("{{ x }}") == {"x"}
+
+    def test_filter_attribute_reference(self):
+        from grimoire_model.resolvers.template import extract_reference_paths
+
+        assert extract_reference_paths("{{ xs | map(attribute='w') | sum }}") == {"xs"}
+
+    def test_bracket_with_constant_key(self):
+        from grimoire_model.resolvers.template import extract_reference_paths
+
+        assert extract_reference_paths("{{ a['b'].c }}") == {"a.b.c"}
+
+    def test_bracket_with_variable_key_stops_the_path(self):
+        from grimoire_model.resolvers.template import extract_reference_paths
+
+        assert extract_reference_paths("{{ a[i] }}") == {"a", "i"}
+
+    def test_invalid_expression_returns_empty(self):
+        from grimoire_model.resolvers.template import extract_reference_paths
+
+        assert extract_reference_paths("{{ a + }}") == set()

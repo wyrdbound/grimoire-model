@@ -54,7 +54,6 @@ print(m["total"])
 class TestR25Ordering:
     """Nested derived fields compute in dependency order, whatever the seed."""
 
-    @pytest.mark.xfail(strict=True, reason="R25 — fixed by T026")
     def test_order_does_not_depend_on_pythonhashseed(self):
         for seed in range(8):
             env = dict(os.environ)
@@ -69,7 +68,6 @@ class TestR25Ordering:
             lines = result.stdout.split()
             assert lines == ["105", "110"], f"seed {seed} printed {lines}"
 
-    @pytest.mark.xfail(strict=True, reason="R25 — fixed by T026")
     def test_full_path_dependencies(self):
         definition = ModelDefinition(
             id="r25_deps",
@@ -87,7 +85,6 @@ class TestR25Ordering:
         assert model.get_field_dependencies("total") == {"p.mod"}
         assert model.get_dependent_fields("p.mod") == {"total"}
 
-    @pytest.mark.xfail(strict=True, reason="R25 — fixed by T026")
     def test_chain_across_groups_recomputes_in_order(self):
         definition = ModelDefinition(
             id="r25_chain",

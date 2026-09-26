@@ -9,7 +9,7 @@ import re
 import threading
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import Any, Dict, Protocol, Set, cast
+from typing import Any, Dict, Optional, Protocol, Set, cast
 
 import jinja2
 from jinja2 import BaseLoader, Environment, TemplateError, meta
@@ -19,6 +19,74 @@ from ..core.exceptions import TemplateResolutionError
 from ..logging import get_logger
 
 logger = get_logger("resolvers.template")
+
+
+def _maximal_reference_path(node: Any) -> Optional[str]:
+    """The maximal dotted path ending at ``node``, or None if there is none.
+
+    Descends through ``Getattr`` (``a.b``) and ``Getitem`` with a constant
+    string key (``a['b']``) to the ``Name`` at the root, joining them with
+    ".". Returns None when the base is not a free ``Name``.
+    """
+    parts = []
+    current = node
+    while current is not None:
+        if isinstance(current, jinja2.nodes.Getattr):
+            parts.append(current.attr)
+            current = current.node
+        elif isinstance(current, jinja2.nodes.Getitem):
+            key = current.arg
+            if isinstance(key, jinja2.nodes.Const) and isinstance(key.value, str):
+                parts.append(key.value)
+                current = current.node
+            else:
+                return None
+        elif isinstance(current, jinja2.nodes.Name):
+            parts.append(current.name)
+            return ".".join(reversed(parts))
+        else:
+            return None
+    return None
+
+
+def _collect_reference_paths(node: Any, paths: Set[str]) -> None:
+    """Collect maximal reference paths from one AST subtree into ``paths``."""
+    if isinstance(node, (jinja2.nodes.Getattr, jinja2.nodes.Getitem)):
+        path = _maximal_reference_path(node)
+        if path is not None:
+            paths.add(path)
+            return
+    if isinstance(node, jinja2.nodes.Name):
+        paths.add(node.name)
+        return
+    for child in node.iter_child_nodes():
+        _collect_reference_paths(child, paths)
+
+
+def extract_reference_paths(expression: str) -> Set[str]:
+    """Return every maximal dotted reference path in a Jinja2 expression.
+
+    Parses with a plain ``jinja2.Environment`` (Principle II: the syntax is
+    Jinja2 whatever resolver is injected) and returns each free variable's
+    maximal dotted path, formed by the ``Getattr`` nodes -- and ``Getitem``
+    nodes with a constant string key -- directly above it:
+
+    - ``{{ p.mod + 1 }}`` -> ``{"p.mod"}``
+    - ``{{ xs | map(attribute='w') | sum }}`` -> ``{"xs"}``
+    - ``{{ a['b'].c }}`` -> ``{"a.b.c"}``
+    - ``{{ a[i] }}`` -> ``{"a", "i"}``
+
+    A ``Getitem`` with a non-constant key stops the path at the base.
+    """
+    env = Environment()
+    try:
+        ast_tree = env.parse(expression)
+    except jinja2.TemplateSyntaxError:
+        return set()
+
+    paths: Set[str] = set()
+    _collect_reference_paths(ast_tree, paths)
+    return paths
 
 
 class _ModelSandboxedEnvironment(SandboxedEnvironment):
