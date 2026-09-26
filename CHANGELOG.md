@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Derived attributes are not writable; `del` follows the write rules.**
+  Writing a derived attribute raises `ModelValidationError` at any path.
+  `del model[key]` unsets an optional attribute (exactly `model[key] = None`) and
+  recomputes dependents; a required, readonly or derived attribute raises
+  `ModelValidationError`; an undeclared or absent key raises `KeyError`. A
+  dotted `del` into a plain `type: dict` attribute (no leaf definitions) is
+  undeclared, so it raises; remove a key with a whole-value write. Readonly is
+  now decided by the attribute definition at the full path, so a readonly leaf
+  in a group can no longer be written. (R18, R19, R20)
 - **`batch_update` is one transaction.** It stages every write, recomputes
   derived fields once, then validates every written leaf against the recomputed
   data, every recomputed derived field, and the model-level rules. A failure

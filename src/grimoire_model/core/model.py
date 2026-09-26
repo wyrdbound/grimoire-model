@@ -201,15 +201,40 @@ class GrimoireModel(MutableMapping):
         self._set_with_validation(key, value)
 
     def __delitem__(self, key: str) -> None:
-        """Delete item by key."""
-        if "." in key:
-            if not self._has_nested_value(key):
-                return
-        elif key not in self._data:
-            return
-        data_copy = copy_on_write_delete(dict(self._data), key)
-        self._data = pmap(data_copy)
-        self._derived_field_resolver.set_model_data_accessor(data_copy)
+        """Delete an item, following the write rules (R19).
+
+        An optional attribute is unset (exactly ``model[key] = None``); a
+        required, readonly or derived attribute raises ``ModelValidationError``.
+        An undeclared or absent key raises ``KeyError`` (the ``MutableMapping``
+        contract). Dependents of an unset attribute recompute.
+        """
+        attr_def = self.get_attribute_definition(key)
+
+        if attr_def is None:
+            raise KeyError(key)
+
+        if attr_def.derived:
+            raise ModelValidationError(
+                f"Cannot delete derived field '{key}'",
+                field_name=key,
+                validation_errors=[f"Field '{key}' is derived and cannot be deleted"],
+            )
+        if attr_def.readonly:
+            raise ModelValidationError(
+                f"Cannot delete readonly field '{key}'",
+                field_name=key,
+                validation_errors=[f"Field '{key}' is readonly and cannot be deleted"],
+            )
+        if not attr_def.optional:
+            raise ModelValidationError(
+                f"Cannot delete required field '{key}'",
+                field_name=key,
+                validation_errors=[f"Field '{key}' is required and cannot be deleted"],
+            )
+
+        if not self._has_field(key):
+            raise KeyError(key)
+        self._unset_field(key)
 
     def __iter__(self) -> Iterator[str]:
         """Iterate over keys."""
@@ -831,8 +856,20 @@ class GrimoireModel(MutableMapping):
         # Get attribute definition
         attr_def = self.get_attribute_definition(key)
 
-        # Check if field is readonly (but allow initial setting during constructor)
-        if attr_def and attr_def.readonly and key in self._data:
+        # A derived attribute is not writable at any path (R18). The derived
+        # resolver writes computed values directly, not through this method.
+        if attr_def is not None and attr_def.derived:
+            raise ModelValidationError(
+                f"Cannot write to derived field '{key}'",
+                field_name=key,
+                field_value=value,
+                validation_errors=[f"Field '{key}' is derived and cannot be written"],
+            )
+
+        # A readonly leaf cannot be written once it has a value, at any group
+        # depth. Checked against the definition at the full path, not
+        # `key in self._data`, which is never true for a dotted key (R20).
+        if attr_def is not None and attr_def.readonly and self._has_field(key):
             raise ModelValidationError(
                 f"Cannot modify readonly field '{key}'",
                 field_name=key,
