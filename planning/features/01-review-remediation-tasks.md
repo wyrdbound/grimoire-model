@@ -12,7 +12,7 @@ PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
 R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
 rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 (write-rule tests for R16-R21). T020 done (R16). T021 done (R17). T022 done
-(R18-R20). T023 next.
+(R18-R20). T023 done (R21; examples 02/03 reworked). T024 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -628,19 +628,23 @@ either leaves the model valid or leaves it untouched.
     `KeyError` (the `MutableMapping` contract).
   *Accept:* T019's R18, R19, R20 tests pass.
 
-- [ ] **T023** [US3] Fix R21: undeclared keys are errors. Files:
+- [x] **T023** [US3] Fix R21: undeclared keys are errors. Files:
   `src/grimoire_model/core/model.py`,
   `src/grimoire_model/validation/validators.py`,
-  `tests/test_write_transactions.py`, `tests/test_model.py`, `CHANGELOG.md`
-  only.
+  `tests/test_write_transactions.py`, `tests/test_model.py`,
+  `examples/02_advanced_usage.py`, `examples/03_inheritance_polymorphism.py`,
+  `CHANGELOG.md` only.
 
-  **Check Input gap 2 first** (design D6). `ValidationEngine.validate_data`
-  and `_validate_group` report every key that is not declared, by full dotted
-  path. Writes to an undeclared path raise before anything is applied. A path
-  that passes *into* a nested model (a model-typed attribute) is checked by
-  that model, not by the parent. Existing tests that build models with
-  undeclared keys relied on the silent acceptance: correct their fixtures and
-  list them in the commit. `### Changed (breaking)`.
+  *Amended while executing:* the file list gained `examples/02_advanced_usage.py`
+  and `examples/03_inheritance_polymorphism.py`. Both built an `item` model from
+  weapon data (extra fields) to demo polymorphism, exactly what R21 forbids.
+  Reworked per Justin: build each object from its own most specific definition
+  (weapon data through the weapon model) and show polymorphism by reading every
+  subtype through the item interface, so no subtype data is discarded. Input gap
+  2's D6 half confirmed: the shipped flows use dotted writes to declared paths.
+  A `type: dict` attribute has no declared interior, so its keys stay free-form
+  (`examples/02`'s `equipment` relies on this). `tests/test_model.py` needed no
+  fixture change. `### Changed (breaking)`.
   *Accept:* T019's R21 tests pass; every example runs.
 
 - [ ] **T024** [US3] Fix R24: thread safety. Files:
@@ -1139,7 +1143,7 @@ now on.
 | [x] | T020 | 3 | | US3 | R16 |
 | [x] | T021 | 3 | | US3 | R17 |
 | [x] | T022 | 3 | | US3 | R18, R19, R20 |
-| [ ] | T023 | 3 | | US3 | R21 |
+| [x] | T023 | 3 | | US3 | R21 |
 | [ ] | T024 | 3 | | US3 | R24 |
 | [ ] | T025 | 4 | | US4 | tests R25–R30 |
 | [ ] | T026 | 4 | | US4 | R25 |

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Undeclared keys are errors.** A key that is not declared is reported by
+  `validate()`, and a write to an undeclared path raises
+  `ModelValidationError`; a model built with one raises. Checked at the model
+  root and inside anonymous groups, by full dotted path. A path into a nested
+  *model* is that model's business; a `type: dict` attribute has no declared
+  interior, so its keys are free-form. A misspelled key (`strenght`) is no
+  longer stored silently. (R21, D6)
 - **Derived attributes are not writable; `del` follows the write rules.**
   Writing a derived attribute raises `ModelValidationError` at any path.
   `del model[key]` unsets an optional attribute (exactly `model[key] = None`) and
