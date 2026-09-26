@@ -17,6 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validated the raw range, so every such write failed as an invalid range
   specification, in range or not. The write now resolves the attribute's own
   range first; out-of-range values are still rejected
+- **A write into a nested model-typed attribute builds the nested model.** An
+  attribute whose `type` names a model (Knave's
+  `abilities.constitution: {type: character_ability}`) was instantiated as a
+  nested model only when supplied at construction. A write — a leaf
+  (`model["abilities.constitution.bonus"] = 3`) or the whole slot
+  (`model["abilities.constitution"] = {"bonus": 3}`) — stored a plain `dict`
+  instead, so the nested model's derived fields never computed and a later
+  dotted write into a built attribute raised
+  `TypeError: Cannot access key ...: value is not a dictionary`. A dotted write
+  now descends into (or builds) the nested model, and a whole-slot write builds
+  it; both recompute the nested derived fields and the parent's dependants.
+  Anonymous nested groups are unchanged: they remain plain dicts
 
 ## [0.7.0] - 2026-09-24
 
