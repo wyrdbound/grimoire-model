@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Every derived-field observer runs; the first exception re-raises.**
+  `ObservableValue` no longer swallows an observer exception and logs it. All
+  observers are called (over a copy, so one that removes itself does not skip
+  the next); the first exception raised is re-raised afterwards. (R28)
 - **Derived-value conversion is exact.** A derived `int` accepts an `int`, an
   integral `float` (`4.0`) or a string that parses to one — `{{ (s - 10) / 2 }}`
   with `s == 9` now raises instead of truncating to `0`; use `//`, `| round |

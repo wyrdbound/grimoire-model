@@ -149,16 +149,25 @@ class ObservableValue:
 
     @value.setter
     def value(self, new_value: Any) -> None:
-        """Set a new value and notify observers."""
+        """Set a new value and notify every observer.
+
+        Every observer runs, even if an earlier one raises; the first exception
+        is re-raised after the last observer has run (R28). The observers are
+        iterated over a copy, so one that removes itself does not skip the next.
+        """
         old_value = self._value
         self._value = new_value
 
-        # Notify observers of the change
-        for observer in self._observers:
+        first_error: Optional[BaseException] = None
+        for observer in list(self._observers):
             try:
                 observer(self.field_name, old_value, new_value)
-            except Exception as e:
-                logger.error(f"Observer error for field {self.field_name}: {e}")
+            except Exception as exc:  # noqa: BLE001 - re-raised below
+                if first_error is None:
+                    first_error = exc
+
+        if first_error is not None:
+            raise first_error
 
     def add_observer(self, observer: Callable[[str, Any, Any], None]) -> None:
         """Add an observer that will be called when the value changes."""
