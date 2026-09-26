@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`extends` is resolved later-parent-wins, with real depth and full cycle
+  detection.** Per the spec (`model_spec.md`, Inheritance Rules 4), "later
+  models override fields from earlier ones": resolved(M) = merge of resolved(P1)
+  … resolved(Pn) in `extends` order, then M's own attributes, each later source
+  replacing an earlier attribute of the same name. The previous order was the
+  reverse, so the earlier parent won. Validations accumulate in the same order,
+  de-duplicated. A child of several parents that declare the same attribute now
+  resolves by the spec's order. (R40, D11)
+- **`max_depth` bounds the longest `extends` path, not the number of models
+  visited; any reachable cycle raises.** A model with many parents each
+  extending one base no longer trips the depth limit, and a cycle among a
+  model's ancestors raises `InheritanceError` naming the cycle's ids in order
+  (previously it was skipped). (R43, R44)
 - **`pattern` is a full match.** `PatternValidator` uses `re.fullmatch`, so
   `pattern: "[a-z]+"` rejects `abc123!` (it previously used `re.match`, which
   anchors only the start). A caller whose pattern relied on prefix matching must

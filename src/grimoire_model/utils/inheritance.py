@@ -72,14 +72,22 @@ def resolve_model_inheritance(
 ) -> ModelDefinition:
     """Resolve inheritance for a model definition.
 
+    Per the specification (`model_spec.md`, Inheritance Rules 4): "Later models
+    override fields from earlier ones." resolved(M) = merge of resolved(P1) …
+    resolved(Pn) in ``extends`` order, then M's own attributes; each later
+    source replaces an earlier attribute of the same name (R40, D11).
+    Validations accumulate in the same order, de-duplicated by (expression,
+    message).
+
     Args:
         model_def: The model definition to resolve inheritance for
         model_registry: Registry of all available model definitions (dict or
             ModelRegistry)
-        max_depth: Maximum inheritance depth to prevent infinite recursion
+        max_depth: Maximum inheritance depth (the longest ``extends`` path)
 
     Returns:
-        New ModelDefinition with resolved inheritance
+        New ModelDefinition with resolved inheritance. The result is not
+        registered.
 
     Raises:
         InheritanceError: If inheritance cannot be resolved
@@ -89,22 +97,11 @@ def resolve_model_inheritance(
 
     logger.debug(f"Resolving inheritance for model '{model_def.id}'")
 
-    # Normalize registry to dict format for backward compatibility
     registry_dict = _normalize_registry(model_registry)
 
-    # Get inheritance chain
-    inheritance_chain = _get_inheritance_chain(model_def, registry_dict, max_depth)
-    logger.debug(f"Inheritance chain for '{model_def.id}': {inheritance_chain}")
-
-    # Resolve attributes from inheritance chain
-    resolved_attributes = _resolve_attributes(inheritance_chain, registry_dict)
-
-    # Resolve validation rules
-    resolved_validations = _resolve_validations(inheritance_chain, registry_dict)
-
-    # Create resolved model definition
-    # Use resolved_attributes directly since it contains AttributeDefinition objects
-    attributes_union: dict[str, AttributeDefinition] = resolved_attributes
+    resolved_attributes, resolved_validations = _resolve_sources(
+        model_def, registry_dict, max_depth
+    )
 
     resolved_model = ModelDefinition(
         id=model_def.id,
@@ -113,7 +110,7 @@ def resolve_model_inheritance(
         description=model_def.description,
         version=model_def.version,
         extends=[],  # Clear extends since we've resolved inheritance
-        attributes=attributes_union,
+        attributes=resolved_attributes,
         validations=resolved_validations,
         tags=model_def.tags.copy(),
         metadata=model_def.metadata.copy(),
@@ -125,32 +122,110 @@ def resolve_model_inheritance(
     return resolved_model
 
 
+def _resolve_sources(
+    model_def: ModelDefinition,
+    model_registry: dict[str, ModelDefinition],
+    max_depth: int,
+) -> tuple[dict[str, AttributeDefinition], list[ValidationRule]]:
+    """Merge a model's own and its ancestors' attributes and validations.
+
+    resolved(M) = merge(resolved(P1) … resolved(Pn), own(M)) in ``extends``
+    order: each parent's fully resolved sources first, then M's own, each later
+    source replacing an earlier attribute of the same name (R40, D11). Each
+    ancestor is resolved once (a diamond does not double-merge a shared base).
+    ``max_depth`` bounds the longest ``extends`` path from M (R43), and any
+    cycle reachable from M raises ``InheritanceError`` naming the cycle (R44).
+    """
+    cache: dict[str, tuple[dict[str, AttributeDefinition], list[ValidationRule]]] = {}
+    path: list[str] = []
+
+    def _resolve(current: ModelDefinition, depth: int) -> tuple:
+        if current.id in cache:
+            return cache[current.id]
+
+        if current.id in path:
+            cycle = path[path.index(current.id) :] + [current.id]
+            raise InheritanceError(
+                f"Circular inheritance detected: {' -> '.join(cycle)}",
+                model_id=model_def.id,
+                inheritance_chain=cycle,
+            )
+        if depth > max_depth:
+            raise InheritanceError(
+                f"Maximum inheritance depth ({max_depth}) exceeded",
+                model_id=model_def.id,
+                inheritance_chain=path + [current.id],
+            )
+
+        path.append(current.id)
+        try:
+            attributes: dict[str, AttributeDefinition] = {}
+            validations: list[ValidationRule] = []
+            seen_rules: set[tuple[str, str]] = set()
+
+            for parent_id in current.extends:
+                parent = _find_model_in_registry(parent_id, model_registry)
+                if parent is None:
+                    raise InheritanceError(
+                        f"Parent model '{parent_id}' not found in registry",
+                        model_id=current.id,
+                        parent_ids=[parent_id],
+                    )
+                parent_attrs, parent_rules = _resolve(parent, depth + 1)
+                attributes.update(parent_attrs)
+                for rule in parent_rules:
+                    rule_key = (rule.expression, rule.message)
+                    if rule_key not in seen_rules:
+                        validations.append(rule)
+                        seen_rules.add(rule_key)
+
+            for attr_name, attr_def in current.attributes.items():
+                if isinstance(attr_def, AttributeDefinition):
+                    attributes[attr_name] = attr_def
+                else:
+                    attributes[attr_name] = AttributeDefinition(**attr_def)
+            for rule in current.validations:
+                rule_key = (rule.expression, rule.message)
+                if rule_key not in seen_rules:
+                    validations.append(rule)
+                    seen_rules.add(rule_key)
+
+            result = (attributes, validations)
+            cache[current.id] = result
+            return result
+        finally:
+            path.pop()
+
+    return _resolve(model_def, 0)
+
+
 def _get_inheritance_chain(
     model_def: ModelDefinition,
     model_registry: dict[str, ModelDefinition],
     max_depth: int,
 ) -> list[str]:
-    """Get the complete inheritance chain for a model using method resolution order.
+    """Get the set of model IDs reachable from a model via ``extends``.
 
-    Uses C3 linearization algorithm for multiple inheritance resolution.
+    A breadth-first walk over the ``extends`` graph. Used by the registry
+    analysis helpers, not by :func:`resolve_model_inheritance`, which resolves
+    recursively in ``extends`` order.
 
     Args:
-        model_def: The model definition to get chain for
+        model_def: The model definition to get the chain for
         model_registry: Registry of all available model definitions
-        max_depth: Maximum inheritance depth
+        max_depth: Maximum number of nodes to visit
 
     Returns:
-        List of model IDs in method resolution order (child to parent)
+        List of model IDs reachable from the model (including itself)
 
     Raises:
-        InheritanceError: If inheritance chain cannot be resolved
+        InheritanceError: If a parent is missing or a cycle reaches the model
     """
     # Start with the model itself
     chain = [model_def.id]
     visited = {model_def.id}
     depth = 0
 
-    # Process inheritance using breadth-first search with C3 linearization
     queue = deque([(model_def.id, model_def.extends)])
 
     while queue and depth < max_depth:
@@ -185,8 +260,7 @@ def _get_inheritance_chain(
             chain.append(parent_id)
             visited.add(parent_id)
 
-            # Queue parent's parents for processing (parent_model already resolved
-            # above)
+            # Queue parent's parents for processing
             if parent_model.extends:
                 queue.append((parent_id, parent_model.extends))
 
@@ -198,92 +272,6 @@ def _get_inheritance_chain(
         )
 
     return chain
-
-
-def _resolve_attributes(
-    inheritance_chain: list[str], model_registry: dict[str, ModelDefinition]
-) -> dict[str, AttributeDefinition]:
-    """Resolve attributes from inheritance chain using method resolution order.
-
-    Attributes are resolved in reverse inheritance order (parent to child),
-    with child attributes overriding parent attributes.
-
-    Args:
-        inheritance_chain: List of model IDs in inheritance order
-        model_registry: Registry of all available model definitions
-
-    Returns:
-        Dictionary of resolved attribute definitions
-    """
-    resolved_attributes = {}
-
-    # Process inheritance chain in reverse order (parent to child)
-    for model_id in reversed(inheritance_chain):
-        model_def = _find_model_in_registry(model_id, model_registry)
-        if model_def is None:
-            raise InheritanceError(
-                f"Model '{model_id}' not found in registry during attribute resolution",
-                model_id=model_id,
-            )
-
-        for attr_name, attr_def in model_def.attributes.items():
-            if isinstance(attr_def, AttributeDefinition):
-                # Child attributes override parent attributes
-                resolved_attributes[attr_name] = attr_def
-                logger.debug(
-                    f"Inherited attribute '{attr_name}' from model '{model_id}'"
-                )
-            else:
-                # Convert dict to AttributeDefinition if needed
-                resolved_attributes[attr_name] = AttributeDefinition(**attr_def)
-                logger.debug(
-                    f"Inherited and converted attribute '{attr_name}' from "
-                    f"model '{model_id}'"
-                )
-
-    return resolved_attributes
-
-
-def _resolve_validations(
-    inheritance_chain: list[str], model_registry: dict[str, ModelDefinition]
-) -> list[ValidationRule]:
-    """Resolve validation rules from inheritance chain.
-
-    Validation rules are accumulated from all models in the inheritance chain.
-
-    Args:
-        inheritance_chain: List of model IDs in inheritance order
-        model_registry: Registry of all available model definitions
-
-    Returns:
-        List of all validation rules from the inheritance chain
-    """
-    resolved_validations = []
-    seen_rules = set()  # Track unique rules to avoid duplicates
-
-    # Process inheritance chain in reverse order (parent to child)
-    for model_id in reversed(inheritance_chain):
-        model_def = _find_model_in_registry(model_id, model_registry)
-        if model_def is None:
-            raise InheritanceError(
-                f"Model '{model_id}' not found in registry during validation "
-                f"resolution",
-                model_id=model_id,
-            )
-
-        for validation in model_def.validations:
-            # Create a unique key for the validation rule
-            rule_key = (validation.expression, validation.message)
-
-            if rule_key not in seen_rules:
-                resolved_validations.append(validation)
-                seen_rules.add(rule_key)
-                logger.debug(
-                    f"Inherited validation rule from model '{model_id}': "
-                    f"{validation.expression}"
-                )
-
-    return resolved_validations
 
 
 def check_inheritance_conflicts(
