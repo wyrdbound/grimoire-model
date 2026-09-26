@@ -119,17 +119,15 @@ def resolve_model_inheritance(
         model_def, model_registry, max_depth
     )
 
-    resolved_model = ModelDefinition(
-        id=model_def.id,
-        name=model_def.name,
-        kind=model_def.kind,
-        description=model_def.description,
-        version=model_def.version,
-        extends=[],  # Clear extends since we've resolved inheritance
-        attributes=resolved_attributes,
-        validations=resolved_validations,
-        tags=model_def.tags.copy(),
-        metadata=model_def.metadata.copy(),
+    # Build the flattened definition without registering it (R42): model_copy
+    # does not run model_post_init, so it never touches the registry. The
+    # child's namespace is kept.
+    resolved_model = model_def.model_copy(
+        update={
+            "extends": [],
+            "attributes": resolved_attributes,
+            "validations": resolved_validations,
+        }
     )
 
     logger.debug(

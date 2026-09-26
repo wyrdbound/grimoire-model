@@ -19,7 +19,7 @@ Checkpoint 4 passed (coverage 92%, examples run, suite green under
 PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 done (R37-R39). Checkpoint 5 passed (coverage 92%,
 examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
 and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
-confirmed). T042 next.
+confirmed). T042 done (R42; Input gap 8 confirmed). T043 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -1010,11 +1010,18 @@ now on.
   instead of resolving from another.
   *Accept:* T038's R41 tests pass.
 
-- [ ] **T042** [US6] Fix R42. Files: `src/grimoire_model/core/schema.py`,
+- [x] **T042** [US6] Fix R42. Files: `src/grimoire_model/core/schema.py`,
   `src/grimoire_model/core/registry.py`,
   `src/grimoire_model/utils/inheritance.py`,
   `tests/test_inheritance_resolution.py`, `tests/test_registry.py`,
-  `tests/conftest.py`, `CHANGELOG.md` only.
+  `tests/test_logging.py`, `tests/conftest.py`, `CHANGELOG.md` only.
+
+  *Amended while executing:* the file list gained `tests/test_logging.py`,
+  whose `test_model_registration_conflict_warning`,
+  `test_global_register_model_logging` and `test_end_to_end_logging_scenario`
+  encoded the overwrite-with-warning. The first two now assert the `ValueError`
+  (each definition built under its own source namespace so the auto-register
+  does not collide); the third is reworked to a conflict-free scenario.
 
   Many existing tests construct a different `ModelDefinition` under the same
   id in the `default` namespace (`character`, for one). Today the second
@@ -1027,12 +1034,11 @@ now on.
 
   **Check Input gap 8 first.** The flattened definition built by
   `resolve_model_inheritance` keeps the child's `namespace` and is **not**
-  registered. Choose the mechanism (for example `model_copy(update=…)`, which
-  does not run `model_post_init`, or a private construction path) and say
-  which in the commit. `ModelRegistry.register`: an equal definition under an
-  existing key is a no-op; a different one raises `ValueError`, as its
-  docstring already says. Tests in `tests/test_registry.py` asserting the
-  overwrite-with-warning encode the bug: change them and name them.
+  registered. Mechanism: `model_copy(update=…)`, which does not run
+  `model_post_init`. `ModelRegistry.register`: an equal definition (Pydantic
+  `==`) under an existing key is a no-op; a different one raises `ValueError`,
+  as its docstring already says. Tests in `tests/test_registry.py` asserting the
+  overwrite-with-warning encode the bug: changed and named.
   `### Changed (breaking)`.
   *Accept:* T038's R42 tests pass.
 
@@ -1190,7 +1196,7 @@ now on.
 | [x] | T039 | 6 | | US6 | R40, R43, R44 (T040 folded in) |
 | [x] | T040 | 6 | | US6 | (folded into T039) |
 | [x] | T041 | 6 | | US6 | R41 |
-| [ ] | T042 | 6 | | US6 | R42 |
+| [x] | T042 | 6 | | US6 | R42 |
 | [ ] | T043 | 6 | P | US6 | R45 |
 | [ ] | T044 | 7 | P | US7 | R46 |
 | [ ] | T045 | 7 | P | US7 | R47, R48 |

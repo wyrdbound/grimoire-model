@@ -3,6 +3,23 @@
 import pytest
 
 from grimoire_model import AttributeDefinition, ModelDefinition, ValidationRule
+from grimoire_model.core.primitive_registry import clear_primitive_registry
+from grimoire_model.core.registry import clear_registry
+
+
+@pytest.fixture(autouse=True)
+def _clear_registries():
+    """Clear the default model and primitive registries after every test.
+
+    A ``ModelDefinition`` registers itself on construction, and before R42 the
+    registry silently overwrote an existing key -- so a test could rely on the
+    previous test's state. Clearing after each test makes a result depend only
+    on the test itself, which lets T042 make a conflicting re-registration an
+    error.
+    """
+    yield
+    clear_registry()
+    clear_primitive_registry()
 
 
 @pytest.fixture
