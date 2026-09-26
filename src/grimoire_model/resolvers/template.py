@@ -12,6 +12,7 @@ from typing import Any, Dict, Protocol, Set, cast
 
 import jinja2
 from jinja2 import BaseLoader, Environment, TemplateError, meta
+from jinja2.sandbox import SandboxedEnvironment
 
 from ..core.exceptions import TemplateResolutionError
 from ..logging import get_logger
@@ -69,7 +70,13 @@ class Jinja2TemplateResolver:
         }
         env_kwargs.update(jinja_kwargs)
 
-        self.env = Environment(**cast(Any, env_kwargs))
+        # Model definitions are content: once GRIMOIRE systems are distributed
+        # they are third-party input. A plain `Environment` lets an expression
+        # walk to arbitrary Python classes
+        # (`{{ ''.__class__.__mro__[1].__subclasses__() }}`); the sandbox
+        # blocks attribute access to unsafe names. Clearing globals below is
+        # still required -- sandboxing does not remove them.
+        self.env = SandboxedEnvironment(**cast(Any, env_kwargs))
 
         # Jinja2 ships globals (range, dict, namespace, cycler, joiner,
         # lipsum) that are reachable from any expression. In a model
