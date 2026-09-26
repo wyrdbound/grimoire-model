@@ -9,7 +9,8 @@ T013 done (R12; test_model.py added, grep gate waived). T014 done (R13).
 Checkpoint 2 passed (coverage 91%, examples run; Wyrdbound
 `engine/tests/unit/test_model_translation.py` 17 passed against this branch via
 PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
-R15, R22, R23). T016 done (R15). T017 next.
+R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
+rewritten). T018 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -487,9 +488,17 @@ either leaves the model valid or leaves it untouched.
   validation mode (a copy of an incremental model is incremental).
   *Accept:* T015's R15 tests pass.
 
-- [ ] **T017** [US3] Fix R14 (Wyrdbound F36). Files:
+- [x] **T017** [US3] Fix R14 (Wyrdbound F36). Files:
   `src/grimoire_model/core/model.py`, `src/grimoire_model/resolvers/derived.py`,
-  `tests/test_write_transactions.py`, `CHANGELOG.md` only.
+  `tests/test_write_transactions.py`, `tests/test_nested_models.py`,
+  `CHANGELOG.md` only.
+
+  *Amended while executing:* the file list gained `tests/test_nested_models.py`.
+  `test_nested_model_update_triggers_parent_derived_fields` read
+  `character["constitution"]` and mutated it, encoding R14; it now writes
+  `character["constitution.value"] = 18`. The resolver's own nested writes copy
+  along the path (option 1) while its top-level view dict is mutated in place,
+  which the resolver's own tests require.
 
   Two rules (design §4.3, D2):
   1. **Copy-on-write.** No code path mutates a dict or list reachable from a
@@ -1097,7 +1106,7 @@ now on.
 | [x] | T014 | 2 | P | US2 | R13 |
 | [x] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
 | [x] | T016 | 3 | | US3 | R15 |
-| [ ] | T017 | 3 | | US3 | R14 |
+| [x] | T017 | 3 | | US3 | R14 |
 | [ ] | T018 | 3 | P | US3 | R22, R23 |
 | [ ] | T019 | 3 | | US3 | tests R16–R21 |
 | [ ] | T020 | 3 | | US3 | R16 |

@@ -34,20 +34,17 @@ def _group_model(model_id, namespace="write_tx"):
 class TestR14PrivateStorage:
     """No code path mutates storage reachable from a previous read."""
 
-    @pytest.mark.xfail(strict=True, reason="R14 — fixed by T017")
     def test_mutating_a_read_dict_does_not_change_the_model(self):
         model = create_model(_group_model("r14_mutate"), {"g": {"x": 1}})
         model["g"]["x"] = 99
         assert model["g.x"] == 1
 
-    @pytest.mark.xfail(strict=True, reason="R14 — fixed by T017")
     def test_a_reference_taken_earlier_is_not_changed_by_a_write(self):
         model = create_model(_group_model("r14_ref"), {"g": {"x": 1}})
         old = model["g"]
         model["g.x"] = 2
         assert old == {"x": 1}
 
-    @pytest.mark.xfail(strict=True, reason="R14 — fixed by T017")
     def test_default_list_is_not_shared_between_instances(self):
         definition = ModelDefinition(
             id="r14_default_list",
@@ -62,7 +59,6 @@ class TestR14PrivateStorage:
         assert second["tags"] == []
         assert definition.attributes["tags"].default == []
 
-    @pytest.mark.xfail(strict=True, reason="R14 — fixed by T017")
     def test_appending_to_a_read_list_does_not_change_the_model(self):
         definition = ModelDefinition(
             id="r14_append",
@@ -74,7 +70,6 @@ class TestR14PrivateStorage:
         model["tags"].append(2)
         assert model["tags"] == [1]
 
-    @pytest.mark.xfail(strict=True, reason="R14 — fixed by T017")
     def test_mutating_a_read_nested_model_does_not_change_it(self):
         ModelDefinition(
             id="r14_weapon",
@@ -90,7 +85,7 @@ class TestR14PrivateStorage:
         )
         model = create_model(definition, {"w": {"name": "axe"}})
         model["w"]["name"] = "hammer"
-        assert model["w.name"] == "axe"
+        assert model["w"]["name"] == "axe"
 
 
 class TestR15CopyIsIndependent:

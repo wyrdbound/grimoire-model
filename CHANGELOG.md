@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **Storage is private; reads return copies.** No code path mutates a dict or
+  list reachable from a previous `_data`: a dotted write (including the derived
+  resolver's own nested writes) copies the containers on its path and shares
+  everything else. `__getitem__` (and so `get`, `values`, `items`, attribute
+  access) returns a `deepcopy` of a `dict`/`list` value and an independent
+  `copy()` of a nested model, so a write through a value read earlier no longer
+  reaches the model. `_apply_defaults` stores a `deepcopy` of the definition's
+  default, so a mutable default is no longer shared by every instance. Callers
+  that did `model["inventory"].append(x)` must write a new whole value or use a
+  dotted path. (R14, D2)
+
 ### Removed (breaking)
 
 - **`ValidationRule.severity` and `ValidationRule.fields` are gone.** Neither

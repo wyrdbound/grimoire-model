@@ -371,10 +371,11 @@ class TestNestedModelInstantiation:
 
         assert character["hit_points"] == 12  # 10 + 2
 
-        # Update the nested model's value
-        character["constitution"]["value"] = 18
+        # Update the nested model's value through a dotted write; a value read
+        # from the model is a copy, so mutating it would not reach storage (R14).
+        character["constitution.value"] = 18
 
-        # Parent's derived field should update (once we trigger recomputation)
+        # Parent's derived field should update
         character.recompute_derived_fields()
         assert character["hit_points"] == 14  # 10 + 4
 
