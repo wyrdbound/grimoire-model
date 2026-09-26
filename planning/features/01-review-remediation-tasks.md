@@ -10,7 +10,8 @@ Checkpoint 2 passed (coverage 91%, examples run; Wyrdbound
 `engine/tests/unit/test_model_translation.py` 17 passed against this branch via
 PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
 R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
-rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 next.
+rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
+(write-rule tests for R16-R21). T020 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -544,7 +545,7 @@ either leaves the model valid or leaves it untouched.
   the `__hash__` method (design D13). Both are `### Changed (breaking)`.
   *Accept:* T015's R22 and R23 tests pass; `examples/` all run.
 
-- [ ] **T019** [US3] Write `tests/test_write_transactions.py` part 2: the write
+- [x] **T019** [US3] Write `tests/test_write_transactions.py` part 2: the write
   rules — R16, R17, R18, R19, R20, R21. Assert, on models built with
   `create_model` unless stated:
   - **R16:** with `b: {type: int, range: "0..10", derived: "{{ a * 2 }}"}`,
@@ -1122,7 +1123,7 @@ now on.
 | [x] | T016 | 3 | | US3 | R15 |
 | [x] | T017 | 3 | | US3 | R14 |
 | [x] | T018 | 3 | P | US3 | R22, R23 |
-| [ ] | T019 | 3 | | US3 | tests R16–R21 |
+| [x] | T019 | 3 | | US3 | tests R16–R21 |
 | [ ] | T020 | 3 | | US3 | R16 |
 | [ ] | T021 | 3 | | US3 | R17 |
 | [ ] | T022 | 3 | | US3 | R18, R19, R20 |
