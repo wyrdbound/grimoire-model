@@ -445,6 +445,62 @@ class GrimoireModel(MutableMapping):
             },
         )
 
+    def _model_typed_attribute(self, name: str) -> Optional[AttributeDefinition]:
+        """The attribute definition at ``name`` if its type is a model.
+
+        The counterpart to :meth:`get_attribute_definition` for writes: a
+        **model-typed** attribute (``abilities``) is not a group of leaf
+        definitions but a nested model, and a write beneath it belongs to that
+        model. Returns ``None`` for a primitive, an anonymous group or an
+        unknown name.
+        """
+        attr_def = self._resolved_attributes.get(name)
+        if attr_def is None or not attr_def.type:
+            return None
+        if not self._is_custom_model_type(attr_def.type):
+            return None
+        return attr_def
+
+    def _nested_model(
+        self,
+        name: str,
+        attr_def: AttributeDefinition,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> "GrimoireModel":
+        """The nested model at ``name``, built from ``data`` if it is not one.
+
+        An existing nested ``GrimoireModel`` is returned unchanged, so a dotted
+        write into an already-built attribute descends into it rather than
+        replacing it. A plain mapping — the shape a write produces before this
+        fix — is wrapped into the model, which computes its derived fields.
+        ``data`` is only used to build a model where none exists yet.
+        """
+        if data is not None:
+            payload: Dict[str, Any] = dict(data)
+        else:
+            current = self._data.get(name)
+            if isinstance(current, GrimoireModel):
+                return current
+            if current is None:
+                payload = {}
+            elif isinstance(current, dict):
+                payload = dict(current)
+            else:
+                raise TypeError(
+                    f"Cannot write into '{name}': it holds a "
+                    f"{type(current).__name__}, not a model"
+                )
+        # The nested model is built as a partial: a dotted write reaches one
+        # leaf, and the nested model's other required attributes are supplied
+        # later or not at all. Derived fields compute from what is present; the
+        # parent's full validation still runs when the whole is validated.
+        return GrimoireModel(
+            model_definition=self._resolve_model_type(attr_def.type),
+            data=payload,
+            template_resolver=self._template_resolver,
+            skip_initial_validation=True,
+        )
+
     def _instantiate_nested_models(self) -> None:
         """Recursively instantiate nested data as GrimoireModel objects.
 
@@ -617,11 +673,32 @@ class GrimoireModel(MutableMapping):
 
         # Update the data
         if "." in key:
+            head, _, rest = key.partition(".")
+            head_def = self._model_typed_attribute(head)
+            if head_def is not None:
+                # A write through a model-typed attribute goes into that nested
+                # model, so it validates and recomputes its own derived fields.
+                # Without this the nested value was a plain dict, its derived
+                # fields never computed, and a later write into it raised
+                # ``TypeError`` (see this module's ``_nested_model``).
+                nested = self._nested_model(head, head_def)
+                nested[rest] = value
+                self._data = self._data.set(head, nested)
+                self._derived_field_resolver.set_model_data_accessor(dict(self._data))
+                if not skip_derived_update:
+                    self._derived_field_resolver.set_field_value(head, nested)
+                return
             data_copy = dict(self._data)
             set_nested_value(data_copy, key, value)
             self._data = pmap(data_copy)
             self._derived_field_resolver.set_model_data_accessor(data_copy)
         else:
+            # A whole value written to a model-typed attribute is built as that
+            # model, so its derived fields compute and it validates on read
+            # (F57). A value already built, or not a mapping, is stored as is.
+            if attr_def is not None and isinstance(value, dict):
+                if self._is_custom_model_type(attr_def.type):
+                    value = self._nested_model(key, attr_def, data=value)
             self._data = self._data.set(key, value)
             self._derived_field_resolver.set_model_data_accessor(dict(self._data))
 
