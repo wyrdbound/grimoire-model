@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **A model-typed attribute inside an anonymous group is built.** Construction
+  walks every leaf (not just top-level attributes), so a model-typed leaf in a
+  group gets its defaults, derived fields and validation; and a dotted write
+  through a group into that model descends into it (F57's mechanism, reached
+  through groups). (R34)
 - **`of` is enforced, and model-typed list elements become models.** For
   `type: list, of: <basic type>`, each element is validated with an indexed
   path (`xs[1]`). For `type: list, of: <model id>`, each mapping element is

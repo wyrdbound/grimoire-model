@@ -185,7 +185,6 @@ class TestR34ModelTypedLeafInGroup:
             attributes={"abilities": {"con": {"type": "abil_r34"}}},
         )
 
-    @pytest.mark.xfail(strict=True, reason="R34 — fixed by T034")
     def test_the_nested_model_is_built_on_construction(self):
         model = create_model(
             self._definition(),
@@ -194,7 +193,6 @@ class TestR34ModelTypedLeafInGroup:
         )
         assert model["abilities"]["con"]["defense"] == 13
 
-    @pytest.mark.xfail(strict=True, reason="R34 — fixed by T034")
     def test_a_dotted_write_descends_into_it(self):
         model = create_model(
             self._definition(),

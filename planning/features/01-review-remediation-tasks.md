@@ -16,7 +16,7 @@ rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
 Checkpoint 3 passed (coverage 92%, examples run). T025 done
 (derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
 Checkpoint 4 passed (coverage 92%, examples run, suite green under
-PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 next.
+PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -857,7 +857,7 @@ now on.
   namespace-local for all three uses at once).
   *Accept:* T031's R33 tests pass; every example runs.
 
-- [ ] **T034** [US5] Fix R34: model-typed leaves inside groups. Files:
+- [x] **T034** [US5] Fix R34: model-typed leaves inside groups. Files:
   `src/grimoire_model/core/model.py`, `tests/test_type_validation.py`,
   `CHANGELOG.md` only.
 
@@ -1164,7 +1164,7 @@ now on.
 | [x] | T031 | 5 | | US5 | tests R31–R39 |
 | [x] | T032 | 5 | | US5 | R31, R32 |
 | [x] | T033 | 5 | | US5 | R33 |
-| [ ] | T034 | 5 | | US5 | R34 |
+| [x] | T034 | 5 | | US5 | R34 |
 | [ ] | T035 | 5 | | US5 | R35 |
 | [ ] | T036 | 5 | | US5 | R36 |
 | [ ] | T037 | 5 | P | US5 | R37, R38, R39 |
