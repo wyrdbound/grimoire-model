@@ -111,29 +111,19 @@ class Jinja2TemplateResolver:
                 return value
 
             # Check if this is a pure expression template (just {{ expression }})
-            # If so, use compile_expression to preserve object types
+            # If so, compile it to preserve the value's type. An expression
+            # that cannot be resolved must raise: `undefined_to_none=False`
+            # keeps a `StrictUndefined` result as an `Undefined` (rather than
+            # turning it into `None`), and an `Undefined` result is an error.
             is_pure_expr, expr_str = self._check_pure_expression(template_str)
             if is_pure_expr:
-                # Validate that all required variables exist before compiling
-                # This ensures we get proper error messages for undefined variables
-                try:
-                    # Parse to check for undefined variables
-                    ast_tree = self.env.parse(template_str)
-                    undefined_vars = meta.find_undeclared_variables(ast_tree)
-                    missing_vars = [
-                        v for v in undefined_vars if v not in enhanced_context
-                    ]
-                    if missing_vars:
-                        # Let the normal render path handle this to get proper error
-                        raise ValueError(f"Undefined variables: {missing_vars}")
-
-                    # All variables exist, safe to use compile_expression
-                    expr = self.env.compile_expression(expr_str)
-                    result = expr(**enhanced_context)
-                    return result
-                except ValueError:
-                    # Fall back to render for proper error handling
-                    pass
+                expr = self.env.compile_expression(expr_str, undefined_to_none=False)
+                result = expr(**enhanced_context)
+                if isinstance(result, jinja2.Undefined):
+                    raise jinja2.UndefinedError(
+                        f"'{template_str}' references an undefined name"
+                    )
+                return result
 
             # Render template as string
             template = self.env.from_string(template_str)

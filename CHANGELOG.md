@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **An expression that cannot be resolved raises.** A pure-expression template
+  (`{{ ... }}`) was compiled with Jinja2's default `undefined_to_none=True`, so
+  `{{ g.missing }}` — a misspelled nested leaf — returned `None` and the model
+  instantiated, quietly wrong. Such an expression now raises
+  `TemplateResolutionError`. An unset optional attribute still reads as `None`
+  (that comes from `unset_as_null`, not from the undefined handling). (R01)
+
 ### Fixed
 
 - **A write into a nested model-typed attribute builds the nested model.** An

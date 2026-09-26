@@ -1,7 +1,8 @@
 # Review Remediation — tests first, then the fix, for every finding
 
 **Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
-merged). T002 done (expression-safety tests written). T003 next.
+merged). T002 done (expression-safety tests written). T003 done (R01). T004
+next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -195,8 +196,15 @@ stops exposing Python internals, and resolves data before methods.
   §3.1 (R01 returns `None`; R02 renders; R03 `TypeError` from a method; R04 a
   list), marked `xfail(strict=True)` per group.
 
-- [ ] **T003** [US1] Fix R01. Files: `src/grimoire_model/resolvers/template.py`,
-  `tests/test_expression_safety.py`, `CHANGELOG.md` only.
+- [x] **T003** [US1] Fix R01. Files: `src/grimoire_model/resolvers/template.py`,
+  `tests/test_expression_safety.py`, `tests/test_template_resolver.py`,
+  `CHANGELOG.md` only.
+
+  *Amended while executing:* the file list gained
+  `tests/test_template_resolver.py`. Its `test_dotted_path_nonexistent`
+  asserted the R01 defect itself (`{{ outputs.nonexistent }}` with an empty
+  `outputs` returning `None`); that assertion now expects
+  `TemplateResolutionError`. Only that test's assertion changed.
 
   Rule: an expression that cannot be resolved raises; it never becomes `None`
   (`AGENTS.md` Principle I). Compile pure expressions with
@@ -1046,7 +1054,7 @@ now on.
 | --- | --- | --- | --- | --- | --- |
 | [x] | T001 | 0 | | — | (rebase onto F57) |
 | [x] | T002 | 1 | | US1 | tests R01–R04 |
-| [ ] | T003 | 1 | | US1 | R01 |
+| [x] | T003 | 1 | | US1 | R01 |
 | [ ] | T004 | 1 | | US1 | R02 |
 | [ ] | T005 | 1 | | US1 | R03 |
 | [ ] | T006 | 1 | | US1 | R04 |

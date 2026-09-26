@@ -22,17 +22,14 @@ R = create_template_resolver()
 class TestR01UnresolvedRaises:
     """An expression that cannot be resolved raises, never becomes None."""
 
-    @pytest.mark.xfail(strict=True, reason="R01 — fixed by T003")
     def test_missing_nested_name_raises(self):
         with pytest.raises(TemplateResolutionError):
             R.resolve_template("{{ g.missing }}", {"g": {"a": 1}})
 
-    @pytest.mark.xfail(strict=True, reason="R01 — fixed by T003")
     def test_dotted_access_into_scalar_raises(self):
         with pytest.raises(TemplateResolutionError):
             R.resolve_template("{{ g.a.b }}", {"g": {"a": 1}})
 
-    @pytest.mark.xfail(strict=True, reason="R01 — fixed by T003")
     def test_misspelled_derived_leaf_fails_create_model(self):
         definition = ModelDefinition(
             id="r01_misspelled",
