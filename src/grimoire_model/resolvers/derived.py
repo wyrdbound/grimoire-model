@@ -19,6 +19,77 @@ if TYPE_CHECKING:
 logger = get_logger("resolvers.derived")
 
 
+def copy_on_write_set(
+    data: Dict[str, Any], path: str, value: Any, separator: str = "."
+) -> Dict[str, Any]:
+    """Return ``data`` with ``path`` set, copying every container on the path.
+
+    No container reachable from ``data`` is mutated: a new dict is built for
+    each level of the path, sharing everything off the path (R14). Raises
+    ``TypeError`` where an intermediate key exists but is not a dict, matching
+    :func:`grimoire_model.utils.paths.set_nested_value`.
+    """
+    if not path:
+        raise ValueError("Path cannot be empty")
+
+    if separator not in path:
+        result = dict(data)
+        result[path] = value
+        return result
+
+    keys = path.split(separator)
+    result = dict(data)
+    new_parent: Dict[str, Any] = result
+    old_parent: Any = data
+    for key in keys[:-1]:
+        child = old_parent.get(key) if isinstance(old_parent, dict) else None
+        if child is None:
+            child_copy: Dict[str, Any] = {}
+        elif isinstance(child, dict):
+            child_copy = dict(child)
+        else:
+            raise TypeError(f"Cannot access key '{key}': value is not a dictionary")
+        new_parent[key] = child_copy
+        new_parent = child_copy
+        old_parent = child
+    new_parent[keys[-1]] = value
+    return result
+
+
+def copy_on_write_delete(
+    data: Dict[str, Any], path: str, separator: str = "."
+) -> Dict[str, Any]:
+    """Return ``data`` with ``path`` removed, copying containers on the path.
+
+    A missing path is returned unchanged. Like :func:`copy_on_write_set`, no
+    container reachable from ``data`` is mutated (R14).
+    """
+    if not path:
+        return data
+
+    if separator not in path:
+        if path in data:
+            result = dict(data)
+            del result[path]
+            return result
+        return data
+
+    keys = path.split(separator)
+    result = dict(data)
+    new_parent: Dict[str, Any] = result
+    old_parent: Any = data
+    for key in keys[:-1]:
+        child = old_parent.get(key) if isinstance(old_parent, dict) else None
+        if not isinstance(child, dict):
+            return data
+        child_copy = dict(child)
+        new_parent[key] = child_copy
+        new_parent = child_copy
+        old_parent = child
+    new_parent.pop(keys[-1], None)
+    return result
+
+
 class TemplateResolver(Protocol):
     """Protocol for template resolution - matches the interface from template.py"""
 
@@ -191,15 +262,20 @@ class DerivedFieldResolver:
         return dep in unset_as_null(self._model_data, self._declared_attributes)
 
     def _remove_value(self, field_name: str) -> None:
-        """Remove ``field_name`` (possibly dotted) from the model data."""
-        parts = field_name.split(".")
-        current: Any = self._model_data
-        for part in parts[:-1]:
-            if not isinstance(current, dict) or part not in current:
-                return
-            current = current[part]
-        if isinstance(current, dict):
-            current.pop(parts[-1], None)
+        """Remove ``field_name`` (possibly dotted) from the model data view.
+
+        The view's top-level dict is mutated in place (it is the resolver's
+        own, always a fresh dict), but a nested container on the path is
+        replaced rather than mutated, so a caller or a transaction snapshot
+        holding it is not changed (R14).
+        """
+        if "." not in field_name:
+            self._model_data.pop(field_name, None)
+            return
+        head, _, rest = field_name.partition(".")
+        child = self._model_data.get(head)
+        if isinstance(child, dict):
+            self._model_data[head] = copy_on_write_delete(child, rest)
 
     def field_unset(self, field_name: str) -> None:
         """Record that a field no longer has a value, and update dependents."""
@@ -483,18 +559,21 @@ class DerivedFieldResolver:
         self._update_dependent_fields(field_name)
 
     def _set_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
-        """Set a nested value using dot notation."""
+        """Set ``path`` in the model data view.
+
+        The view's top-level dict is mutated in place (it is the resolver's own,
+        always a fresh dict), but a nested container on the path is replaced
+        rather than mutated, so a caller or a transaction snapshot holding it is
+        not changed (R14).
+        """
         if "." not in path:
             data[path] = value
             return
 
-        keys = path.split(".")
-        current = data
-        for key in keys[:-1]:
-            if key not in current:
-                current[key] = {}
-            current = current[key]
-        current[keys[-1]] = value
+        head, _, rest = path.partition(".")
+        child = data.get(head)
+        child = child if isinstance(child, dict) else {}
+        data[head] = copy_on_write_set(child, rest, value)
 
     def _get_nested_value(
         self, data: Dict[str, Any], path: str, default: Any = None

@@ -5,6 +5,7 @@ Combines schema validation, template resolution, and derived field management
 into a dict-like model class that integrates with grimoire-context.
 """
 
+import copy as _copy
 import uuid
 from collections.abc import MutableMapping
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
@@ -12,14 +13,17 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 from pyrsistent import pmap
 
 from ..logging import get_logger
-from ..resolvers.derived import DerivedFieldResolver, create_derived_field_resolver
+from ..resolvers.derived import (
+    DerivedFieldResolver,
+    copy_on_write_delete,
+    copy_on_write_set,
+    create_derived_field_resolver,
+)
 from ..resolvers.template import TemplateResolver, create_template_resolver
 from ..utils.inheritance import resolve_model_inheritance
 from ..utils.paths import (
-    delete_nested_value,
     get_nested_value,
     has_nested_value,
-    set_nested_value,
 )
 from ..validation.validators import validate_field_value, validate_model_data
 from .exceptions import (
@@ -169,10 +173,30 @@ class GrimoireModel(MutableMapping):
 
     # MutableMapping interface
     def __getitem__(self, key: str) -> Any:
-        """Get item by key."""
+        """Get item by key.
+
+        A container read (a dict, list or nested model) is returned as an
+        independent copy, so a caller cannot mutate the model's storage through
+        what it was handed (R14, D2). Scalars are returned as they are.
+        """
         if "." in key:
-            return self._get_nested_value(key)
-        return self._data[key]
+            return self._read_value(self._get_nested_value(key))
+        return self._read_value(self._data[key])
+
+    @staticmethod
+    def _read_value(value: Any) -> Any:
+        """Return a value safe to hand to a caller (R14).
+
+        A nested ``GrimoireModel`` is copied with ``copy()`` (independent since
+        T016); a ``dict`` or ``list`` is deep-copied; a scalar is returned as
+        is. Internal reads (contexts, validation) use ``_data`` directly and
+        do not pay this cost.
+        """
+        if isinstance(value, GrimoireModel):
+            return value.copy()
+        if isinstance(value, (dict, list)):
+            return _copy.deepcopy(value)
+        return value
 
     def __setitem__(self, key: str, value: Any) -> None:
         """Set item by key with validation and derived field updates."""
@@ -181,14 +205,13 @@ class GrimoireModel(MutableMapping):
     def __delitem__(self, key: str) -> None:
         """Delete item by key."""
         if "." in key:
-            data_copy = dict(self._data)
-            if delete_nested_value(data_copy, key):
-                self._data = pmap(data_copy)
-                self._derived_field_resolver.set_model_data_accessor(data_copy)
-        else:
-            if key in self._data:
-                self._data = self._data.remove(key)
-                self._derived_field_resolver.set_model_data_accessor(dict(self._data))
+            if not self._has_nested_value(key):
+                return
+        elif key not in self._data:
+            return
+        data_copy = copy_on_write_delete(dict(self._data), key)
+        self._data = pmap(data_copy)
+        self._derived_field_resolver.set_model_data_accessor(data_copy)
 
     def __iter__(self) -> Iterator[str]:
         """Iterate over keys."""
@@ -639,7 +662,7 @@ class GrimoireModel(MutableMapping):
             else:
                 leaf = parts[-1]
                 if leaf not in target:
-                    target[leaf] = attr_def.default
+                    target[leaf] = _copy.deepcopy(attr_def.default)
                     logger.debug(
                         f"Applied default value for '{attr_path}': {attr_def.default}"
                     )
@@ -714,8 +737,7 @@ class GrimoireModel(MutableMapping):
                 if not skip_derived_update:
                     self._derived_field_resolver.set_field_value(head, nested)
                 return
-            data_copy = dict(self._data)
-            set_nested_value(data_copy, key, value)
+            data_copy = copy_on_write_set(dict(self._data), key, value)
             self._data = pmap(data_copy)
             self._derived_field_resolver.set_model_data_accessor(data_copy)
         else:
@@ -734,11 +756,7 @@ class GrimoireModel(MutableMapping):
 
     def _unset_field(self, key: str, skip_derived_update: bool = False) -> None:
         """Remove a field's value and update anything derived from it."""
-        data_copy = dict(self._data)
-        if "." in key:
-            delete_nested_value(data_copy, key)
-        else:
-            data_copy.pop(key, None)
+        data_copy = copy_on_write_delete(dict(self._data), key)
         self._data = pmap(data_copy)
         self._derived_field_resolver.set_model_data_accessor(data_copy)
         if not skip_derived_update:
@@ -761,9 +779,8 @@ class GrimoireModel(MutableMapping):
         return get_nested_value(dict(self._data), path)
 
     def _set_nested_value(self, path: str, value: Any) -> None:
-        """Set a nested value using dot notation."""
-        data_copy = dict(self._data)
-        set_nested_value(data_copy, path, value)
+        """Set a nested value, copying containers on the path (R14)."""
+        data_copy = copy_on_write_set(dict(self._data), path, value)
         self._data = pmap(data_copy)
         self._derived_field_resolver.set_model_data_accessor(data_copy)
 
@@ -772,11 +789,12 @@ class GrimoireModel(MutableMapping):
         return has_nested_value(dict(self._data), path)
 
     def _delete_nested_value(self, path: str) -> None:
-        """Delete a nested value using dot notation."""
-        data_copy = dict(self._data)
-        if delete_nested_value(data_copy, path):
-            self._data = pmap(data_copy)
-            self._derived_field_resolver.set_model_data_accessor(data_copy)
+        """Delete a nested value, copying containers on the path (R14)."""
+        if not self._has_nested_value(path):
+            return
+        data_copy = copy_on_write_delete(dict(self._data), path)
+        self._data = pmap(data_copy)
+        self._derived_field_resolver.set_model_data_accessor(data_copy)
 
     def _on_derived_field_changed(self, field_name: str, value: Any) -> None:
         """Callback when a derived field value changes."""
