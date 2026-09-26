@@ -9,7 +9,7 @@ T013 done (R12; test_model.py added, grep gate waived). T014 done (R13).
 Checkpoint 2 passed (coverage 91%, examples run; Wyrdbound
 `engine/tests/unit/test_model_translation.py` 17 passed against this branch via
 PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
-R15, R22, R23). T016 next.
+R15, R22, R23). T016 done (R15). T017 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -477,7 +477,7 @@ either leaves the model valid or leaves it untouched.
     `GrimoireModel.__hash__ is None`.
   *Accept:* each fails on 0.7.1 for the reason in design §3.3, `xfail(strict)`.
 
-- [ ] **T016** [US3] Fix R15. Files: `src/grimoire_model/core/model.py`,
+- [x] **T016** [US3] Fix R15. Files: `src/grimoire_model/core/model.py`,
   `tests/test_write_transactions.py`, `CHANGELOG.md` only.
 
   `copy(**overrides)` builds the new model with a **new** derived-field
@@ -1096,7 +1096,7 @@ now on.
 | [x] | T013 | 2 | | US2 | R12 |
 | [x] | T014 | 2 | P | US2 | R13 |
 | [x] | T015 | 3 | | US3 | tests R14, R15, R22, R23 |
-| [ ] | T016 | 3 | | US3 | R15 |
+| [x] | T016 | 3 | | US3 | R15 |
 | [ ] | T017 | 3 | | US3 | R14 |
 | [ ] | T018 | 3 | P | US3 | R22, R23 |
 | [ ] | T019 | 3 | | US3 | tests R16–R21 |

@@ -36,6 +36,24 @@ from .schema import (
 logger = get_logger("core.model")
 
 
+def _make_derived_resolver_like(
+    resolver: DerivedFieldResolver,
+) -> DerivedFieldResolver:
+    """Build a fresh derived-field resolver of the same kind as ``resolver``.
+
+    A copy must not share its resolver with the original: the resolver holds
+    the data view and the change callback, and re-pointing them at the copy
+    makes the original's writes recompute into the copy (R15). Batched stays
+    batched.
+    """
+    from ..resolvers.derived import BatchedDerivedFieldResolver
+
+    return create_derived_field_resolver(
+        template_resolver=resolver.template_resolver,
+        batched=isinstance(resolver, BatchedDerivedFieldResolver),
+    )
+
+
 class GrimoireModel(MutableMapping):
     """A dict-like model with validation, derived fields, and inheritance support.
 
@@ -66,6 +84,7 @@ class GrimoireModel(MutableMapping):
         """
         self._model_def = model_definition
         self._instance_id = instance_id or str(uuid.uuid4())
+        self._skip_initial_validation = skip_initial_validation
 
         # Dependency injection - create defaults if not provided
         self._template_resolver = template_resolver or create_template_resolver()
@@ -127,16 +146,25 @@ class GrimoireModel(MutableMapping):
         return self._instance_id
 
     def copy(self, **overrides) -> "GrimoireModel":
-        """Create a copy of this model with optional data overrides."""
+        """Create an independent copy of this model with optional data overrides.
+
+        The copy gets its own derived-field resolver (of the same kind as this
+        model's) and its own instance id, so a later write to either model
+        recomputes only that model. The template resolver is shared: it is
+        stateless apart from its lock-protected cache. The copy is built in the
+        same validation mode as the original.
+        """
         new_data = dict(self._data)
         new_data.update(overrides)
+
+        derived_resolver = _make_derived_resolver_like(self._derived_field_resolver)
 
         return GrimoireModel(
             model_definition=self._model_def,
             data=new_data,
             template_resolver=self._template_resolver,
-            derived_field_resolver=self._derived_field_resolver,
-            instance_id=self._instance_id,
+            derived_field_resolver=derived_resolver,
+            skip_initial_validation=self._skip_initial_validation,
         )
 
     # MutableMapping interface

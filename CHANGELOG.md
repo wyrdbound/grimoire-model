@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **`copy()` is independent.** A copy builds its own derived-field resolver (of
+  the same kind — batched stays batched) and gets a new instance id. Previously
+  it shared the original's resolver, so a later write to the original
+  recomputed the copy's derived fields and left the original's stale. The copy
+  is built in the original's validation mode. (R15)
 - **`of` is a list-only field.** The spec defines it as the element type of a
   `list`; on any other type it is now a definition error rather than silently
   ignored. (R13)

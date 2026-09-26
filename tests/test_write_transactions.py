@@ -96,7 +96,6 @@ class TestR14PrivateStorage:
 class TestR15CopyIsIndependent:
     """A copy has its own derived resolver and instance id."""
 
-    @pytest.mark.xfail(strict=True, reason="R15 — fixed by T016")
     def test_write_to_original_does_not_reach_the_copy(self):
         definition = ModelDefinition(
             id="r15_copy",
@@ -115,7 +114,6 @@ class TestR15CopyIsIndependent:
         assert model["b"] == 20
         assert copy["b"] == 10
 
-    @pytest.mark.xfail(strict=True, reason="R15 — fixed by T016")
     def test_copy_gets_a_new_instance_id(self):
         definition = ModelDefinition(
             id="r15_id",
