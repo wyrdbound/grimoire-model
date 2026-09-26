@@ -38,23 +38,25 @@ class ValidationRule(BaseModel):
     message: str = Field(
         ..., description="Error message to display when validation fails"
     )
-    fields: List[str] = Field(
-        default_factory=list,
-        description="List of fields this validation depends on",
-    )
-    severity: str = Field(
-        default="error",
-        description="Severity level: 'error', 'warning', or 'info'",
-    )
 
-    @field_validator("severity")
+    @model_validator(mode="before")
     @classmethod
-    def validate_severity(cls, v: str) -> str:
-        """Validate severity is one of allowed values."""
-        allowed = {"error", "warning", "info"}
-        if v not in allowed:
-            raise ValueError(f"Severity must be one of {allowed}, got '{v}'")
-        return v
+    def reject_removed_fields(cls, data: Any) -> Any:
+        """Reject ``severity`` and ``fields``, which are not GRIMOIRE fields.
+
+        Neither is in the specification. ``fields`` was never read, and
+        ``severity`` silently behaved as ``error``. Every GRIMOIRE validation
+        rule is an error, so a ``warning`` or ``info`` rule would otherwise
+        fail instantiation like any other failing rule.
+        """
+        if isinstance(data, dict):
+            for key in ("severity", "fields"):
+                if key in data:
+                    raise ValueError(
+                        f"`{key}` is not a validation rule field. GRIMOIRE "
+                        "validations have no severity: every rule is an error."
+                    )
+        return data
 
     @field_validator("expression")
     @classmethod

@@ -87,12 +87,10 @@ class TestR10ExactTypeCase:
 class TestR12SeverityAndFieldsRemoved:
     """``severity`` and ``fields`` are not GRIMOIRE validation fields."""
 
-    @pytest.mark.xfail(strict=True, reason="R12 — fixed by T013")
     def test_severity_raises(self):
         with pytest.raises(ValidationError):
             ValidationRule(expression="a", message="m", severity="warning")
 
-    @pytest.mark.xfail(strict=True, reason="R12 — fixed by T013")
     def test_fields_raises(self):
         with pytest.raises(ValidationError):
             ValidationRule(expression="a", message="m", fields=["a"])
