@@ -10,7 +10,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Protocol, Set
 
-from ..core.exceptions import DependencyError, TemplateResolutionError
+from ..core.exceptions import (
+    DependencyError,
+    ModelValidationError,
+    TemplateResolutionError,
+)
 from ..core.schema import unset_as_null
 from ..logging import get_logger
 from .template import extract_reference_paths
@@ -380,7 +384,9 @@ class DerivedFieldResolver:
 
             # Apply type conversion if we have attribute definition
             if dep_info.attr_def:
-                value = self._convert_value_to_type(value, dep_info.attr_def)
+                value = self._convert_value_to_type(
+                    value, dep_info.attr_def, field_name
+                )
 
             # Update the field value
             self._set_nested_value(self._model_data, field_name, value)
@@ -398,6 +404,10 @@ class DerivedFieldResolver:
             logger.debug(f"Computed derived field {field_name} = {value}")
             return value
 
+        except ModelValidationError:
+            # A bad conversion (R27) is a validation error, not a template one;
+            # keep its type so callers see it as a validation failure.
+            raise
         except Exception as e:
             raise TemplateResolutionError(
                 f"Failed to compute derived field '{field_name}': {e}",
@@ -481,38 +491,86 @@ class DerivedFieldResolver:
         return unset_as_null(self._model_data, self._declared_attributes)
 
     def _convert_value_to_type(
-        self, value: Any, attr_def: "AttributeDefinition"
+        self, value: Any, attr_def: "AttributeDefinition", field_name: str = ""
     ) -> Any:
-        """Convert a template result to the proper type based on attribute
-        definition."""
-        if attr_def.type == "int":
-            try:
-                if isinstance(value, str):
-                    return int(float(value))  # Handle "15.0" -> 15
-                elif isinstance(value, (int, float)):
-                    return int(value)
-                return value
-            except (ValueError, TypeError):
-                return value
-        elif attr_def.type == "float":
-            try:
-                if isinstance(value, str):
-                    return float(value)
-                elif isinstance(value, (int, float)):
-                    return float(value)
-                return value
-            except (ValueError, TypeError):
-                return value
-        elif attr_def.type == "bool":
-            # Handle string boolean conversion (we've seen this before)
-            if isinstance(value, str):
-                return value.lower() in ("true", "1", "yes", "on")
-            return bool(value)
-        elif attr_def.type == "str":
-            return str(value)
-        else:
-            # For other types (list, dict, etc.), return as-is
+        """Convert a template result to the attribute's declared type, exactly.
+
+        A value that cannot be converted raises ``ModelValidationError`` naming
+        the field, the expression and the value -- it is never returned
+        unconverted (R27). ``None`` stays ``None`` for every type.
+        """
+        if value is None:
+            return None
+
+        type_name = attr_def.type
+        try:
+            if type_name == "int":
+                return self._to_int(value)
+            if type_name == "float":
+                return self._to_float(value)
+            if type_name == "bool":
+                return self._to_bool(value)
+            if type_name == "str":
+                return self._to_str(value)
+        except (ValueError, TypeError) as exc:
+            raise ModelValidationError(
+                f"Derived field '{field_name}' could not be converted to "
+                f"{type_name}: {exc}",
+                field_name=field_name,
+                field_value=value,
+                validation_errors=[
+                    f"Derived value {value!r} is not a valid {type_name}"
+                ],
+            ) from exc
+
+        # For other types (list, dict, model ids), return as-is.
+        return value
+
+    @staticmethod
+    def _to_int(value: Any) -> int:
+        """An int, an integral float (``4.0``), or a string that parses to one."""
+        if isinstance(value, bool):
+            raise TypeError("a bool is not an int")
+        if isinstance(value, int):
             return value
+        if isinstance(value, float):
+            if value.is_integer():
+                return int(value)
+            raise ValueError("a fractional value is not an int")
+        if isinstance(value, str):
+            return int(value.strip())
+        raise TypeError(f"{type(value).__name__} is not an int")
+
+    @staticmethod
+    def _to_float(value: Any) -> float:
+        """A number or a numeric string."""
+        if isinstance(value, bool):
+            raise TypeError("a bool is not a float")
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            return float(value.strip())
+        raise TypeError(f"{type(value).__name__} is not a float")
+
+    @staticmethod
+    def _to_bool(value: Any) -> bool:
+        """A bool, or exactly true/false/1/0/yes/no/on/off (any case)."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in ("true", "1", "yes", "on"):
+                return True
+            if lowered in ("false", "0", "no", "off"):
+                return False
+        raise ValueError("not a recognised boolean")
+
+    @staticmethod
+    def _to_str(value: Any) -> str:
+        """A scalar; a container is not a string."""
+        if isinstance(value, (dict, list, tuple, set)):
+            raise TypeError(f"{type(value).__name__} is not a string")
+        return str(value)
 
     def _topological_sort(self, fields: Set[str]) -> List[str]:
         """Sort fields in dependency order, deterministically.
