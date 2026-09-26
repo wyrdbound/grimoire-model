@@ -661,6 +661,16 @@ class BatchedDerivedFieldResolver(DerivedFieldResolver):
 
         self._pending_updates.clear()
 
+    def abort_batch(self) -> None:
+        """Discard a batch without recomputing (a rolled-back transaction).
+
+        Balances the batch flag and clears pending updates, so a failed batch
+        does not leave batching on or trigger a recompute against data that has
+        just been restored.
+        """
+        self._batching = False
+        self._pending_updates.clear()
+
     def set_field_value(self, field_name: str, value: Any) -> None:
         """Set field value with optional batching."""
         if self._batching:

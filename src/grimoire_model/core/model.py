@@ -376,33 +376,108 @@ class GrimoireModel(MutableMapping):
         self._derived_field_resolver.compute_all_derived_fields()
 
     def batch_update(self, updates: Dict[str, Any]) -> None:
-        """Perform batch updates to multiple fields efficiently."""
+        """Apply several writes as one transaction (R17, D3).
+
+        Each target is checked (readonly and derived are rejected before
+        anything is applied); the writes are staged without per-field
+        validation; dependents are recomputed once; then every written leaf is
+        validated against the **recomputed** data, every recomputed derived
+        field against its own constraints, and — for a validated model — the
+        model-level rules. Any failure restores the model and raises.
+        """
         from ..resolvers.derived import BatchedDerivedFieldResolver
 
-        # Check if we have a batched resolver
-        if isinstance(self._derived_field_resolver, BatchedDerivedFieldResolver):
-            # Use batching for better performance
-            self._derived_field_resolver.start_batch()
+        for key in updates:
+            self._reject_unwritable(key)
 
-            try:
-                # Apply all updates
-                for key, value in updates.items():
-                    self._set_with_validation(key, value, skip_derived_update=True)
+        data_snapshot = self._data
+        resolver_snapshot = self._derived_field_resolver.snapshot_state()
+        self._derived_field_resolver.take_recomputed()
 
-                # End batching and compute derived fields
-                self._derived_field_resolver.end_batch()
+        batched = self._derived_field_resolver
+        batch = batched if isinstance(batched, BatchedDerivedFieldResolver) else None
+        if batch is not None:
+            batch.start_batch()
 
-            except Exception:
-                # Ensure batching ends even if there's an error
-                self._derived_field_resolver.end_batch()
-                raise
-        else:
-            # Regular resolver: apply updates and recompute
+        try:
             for key, value in updates.items():
-                self._set_with_validation(key, value, skip_derived_update=True)
+                # Let the resolver see each write. A batched resolver defers the
+                # recompute to end_batch; a plain one recomputes per write, and
+                # recompute_derived_fields runs once more below; either way the
+                # final values are computed from all the batch's writes.
+                self._apply_write(
+                    key, value, skip_derived_update=False, validate_leaf=False
+                )
 
-            # Recompute all derived fields
-            self.recompute_derived_fields()
+            if batch is not None:
+                batch.end_batch()
+            else:
+                self.recompute_derived_fields()
+
+            errors = self._validate_batch(updates)
+            if errors:
+                raise ModelValidationError(
+                    "Batch update left the model invalid",
+                    validation_errors=errors,
+                )
+        except Exception:
+            if batch is not None:
+                # Balance the batch flag without recomputing a rolled-back state.
+                batch.abort_batch()
+            self._data = data_snapshot
+            self._derived_field_resolver.restore_state(resolver_snapshot)
+            raise
+
+    def _reject_unwritable(self, key: str) -> None:
+        """Reject a write to a derived, or already-valued readonly, attribute."""
+        attr_def = self.get_attribute_definition(key)
+        if attr_def is not None and attr_def.derived:
+            raise ModelValidationError(
+                f"Cannot write to derived field '{key}'",
+                field_name=key,
+                validation_errors=[f"Field '{key}' is derived and cannot be written"],
+            )
+        if attr_def is not None and attr_def.readonly and self._has_field(key):
+            raise ModelValidationError(
+                f"Cannot modify readonly field '{key}'",
+                field_name=key,
+                validation_errors=[f"Field '{key}' is readonly and cannot be modified"],
+            )
+
+    def _validate_batch(self, updates: Dict[str, Any]) -> List[str]:
+        """Errors from a batch: written leaves, recomputed fields, model rules."""
+        errors: List[str] = []
+
+        for key, value in updates.items():
+            attr_def = self.get_attribute_definition(key)
+            if attr_def is None:
+                continue
+            resolved = self._resolve_templated_ranges({key: attr_def})[key]
+            errors.extend(validate_field_value(value, key, resolved))
+        if errors:
+            return errors
+
+        errors.extend(self._validate_recomputed_fields())
+        if errors:
+            return errors
+
+        if not self._skip_initial_validation:
+            errors.extend(self._validate_model_rules())
+        return errors
+
+    def _validate_recomputed_fields(self) -> List[str]:
+        """Errors from the derived fields recomputed since the last take."""
+        errors: List[str] = []
+        for path in sorted(self._derived_field_resolver.take_recomputed()):
+            attr_def = self.get_attribute_definition(path)
+            if attr_def is None:
+                continue
+            resolved = self._resolve_templated_ranges({path: attr_def})[path]
+            value = self._get_field_value(path)
+            errors.extend(validate_field_value(value, path, resolved))
+            if errors:
+                return errors
+        return errors
 
     # Internal methods
     def _resolve_inheritance(self) -> Dict[str, AttributeDefinition]:
@@ -730,24 +805,29 @@ class GrimoireModel(MutableMapping):
         """
         errors: List[str] = []
 
-        recomputed = self._derived_field_resolver.take_recomputed()
-        for path in sorted(recomputed):
-            attr_def = self.get_attribute_definition(path)
-            if attr_def is None:
-                continue
-            resolved = self._resolve_templated_ranges({path: attr_def})[path]
-            value = self._get_field_value(path)
-            errors.extend(validate_field_value(value, path, resolved))
-            if errors:
-                return errors
+        errors.extend(self._validate_recomputed_fields())
+        if errors:
+            return errors
 
         if not self._skip_initial_validation:
             errors.extend(self._validate_model_rules())
 
         return errors
 
-    def _apply_write(self, key: str, value: Any, skip_derived_update: bool) -> None:
-        """Apply a single write; the body of :meth:`_set_with_validation`."""
+    def _apply_write(
+        self,
+        key: str,
+        value: Any,
+        skip_derived_update: bool,
+        validate_leaf: bool = True,
+    ) -> None:
+        """Apply a single write; the body of :meth:`_set_with_validation`.
+
+        ``validate_leaf`` is False while staging a batch: a templated range
+        resolved against data the batch's own writes have not recomputed yet
+        would fail spuriously, so validation happens once, after recompute
+        (:meth:`_validate_batch`).
+        """
         # Get attribute definition
         attr_def = self.get_attribute_definition(key)
 
@@ -770,7 +850,7 @@ class GrimoireModel(MutableMapping):
         # ("0..{{ max_hp }}") is resolved against the current data first, as
         # validate() does; otherwise every write to it would fail as an
         # invalid range specification.
-        if attr_def:
+        if attr_def and validate_leaf:
             attr_def = self._resolve_templated_ranges({key: attr_def})[key]
             errors = validate_field_value(value, key, attr_def)
             if errors:
