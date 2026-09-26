@@ -204,7 +204,6 @@ class TestR34ModelTypedLeafInGroup:
 
 
 class TestR35NestedInheritsValidationMode:
-    @pytest.mark.xfail(strict=True, reason="R35 — fixed by T035")
     def test_incremental_parent_builds_incremental_children(self):
         ModelDefinition(
             id="sword_r35",

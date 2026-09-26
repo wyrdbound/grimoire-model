@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **A nested model inherits its parent's validation mode.** An incremental
+  parent (`create_model_without_validation`) builds its nested models —
+  top-level, group leaf, list element — incrementally too. A validated parent's
+  `validate()` now includes each nested model's errors, prefixed with the path
+  to it (`abilities.con.defense: ...`, `inv[0].w: ...`). (R35)
 - **A model-typed attribute inside an anonymous group is built.** Construction
   walks every leaf (not just top-level attributes), so a model-typed leaf in a
   group gets its defaults, derived fields and validation; and a dotted write
