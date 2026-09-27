@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Python floor is 3.10.** `requires-python = ">=3.10"`, classifiers 3.10–3.12,
+  mypy and ruff targets 3.10, CI and release matrices 3.10–3.12, README badge
+  and Requirements 3.10+. The package did not import on 3.8 (`Mapping[str, Any]`
+  evaluated at definition time); 3.9 is end-of-life and current mypy rejects it
+  as a target. Callers on 3.8/3.9 must upgrade Python. (R46, D14)
 - **The registry-analysis helpers accept a namespaced registry.**
   `validate_model_registry`, `check_inheritance_conflicts`,
   `build_inheritance_graph` and `find_inheritance_cycles` accept a

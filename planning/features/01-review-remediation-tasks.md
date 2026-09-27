@@ -21,7 +21,8 @@ examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
 and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
 confirmed). T042 done (R42; Input gap 8 confirmed). T043 done (R45).
 Checkpoint 6 passed (coverage 92%, examples run, seeds 0-7; Wyrdbound
-engine/tests/unit/test_model_translation.py 17 passed). T044 next.
+engine/tests/unit/test_model_translation.py 17 passed). T044 done (R46; Input
+gap 9 confirmed). T045 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -1062,9 +1063,13 @@ now on.
 
 **Purpose:** US7.
 
-- [ ] **T044** [P] [US7] Fix R46: the Python floor. Files: `pyproject.toml`,
+- [x] **T044** [P] [US7] Fix R46: the Python floor. Files: `pyproject.toml`,
   `.github/workflows/ci.yml`, `.github/workflows/release.yml`, `README.md`
   (badge and Requirements only), `CHANGELOG.md` only.
+
+  *Amended while executing:* the ruff `UP006`/`UP035`/`UP045` rules that the
+  3.10 target unlocks are added to `ignore` with a comment (T044 raises the
+  floor only); a repo-wide syntax modernisation is a separate task.
 
   **Check Input gap 9 first.** `requires-python = ">=3.10"`; classifiers
   3.10–3.12 only; `[tool.mypy] python_version = "3.10"`; `[tool.ruff]
@@ -1200,7 +1205,7 @@ now on.
 | [x] | T041 | 6 | | US6 | R41 |
 | [x] | T042 | 6 | | US6 | R42 |
 | [x] | T043 | 6 | P | US6 | R45 |
-| [ ] | T044 | 7 | P | US7 | R46 |
+| [x] | T044 | 7 | P | US7 | R46 |
 | [ ] | T045 | 7 | P | US7 | R47, R48 |
 | [ ] | T046 | 7 | P | US7 | R50 |
 | [ ] | T047 | 7 | | US7 | R49 |
