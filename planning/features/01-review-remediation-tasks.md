@@ -23,7 +23,7 @@ confirmed). T042 done (R42; Input gap 8 confirmed). T043 done (R45).
 Checkpoint 6 passed (coverage 92%, examples run, seeds 0-7; Wyrdbound
 engine/tests/unit/test_model_translation.py 17 passed). T044 done (R46; Input
 gap 9 confirmed). T045 done (R47, R48). T046 done (R50). T047 done (R49).
-T048 next.
+T048 done (AGENTS.md). T049 next (release 0.8.0).
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -1119,7 +1119,7 @@ now on.
   *Accept:* every `examples/0*.py` runs; every API named in `README.md` exists
   (list what you checked in the commit message).
 
-- [ ] **T048** [US7] Reconcile `AGENTS.md` with the code. Files: `AGENTS.md`
+- [x] **T048** [US7] Reconcile `AGENTS.md` with the code. Files: `AGENTS.md`
   only.
 
   Correct the Repository Structure table (it omits `core/registry.py`,
@@ -1210,7 +1210,7 @@ now on.
 | [x] | T045 | 7 | P | US7 | R47, R48 |
 | [x] | T046 | 7 | P | US7 | R50 |
 | [x] | T047 | 7 | | US7 | R49 |
-| [ ] | T048 | 7 | | US7 | (AGENTS.md) |
+| [x] | T048 | 7 | | US7 | (AGENTS.md) |
 | [ ] | T049 | 7 | | US7 | (release 0.8.0) |
 
 ---
