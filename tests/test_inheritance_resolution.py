@@ -408,7 +408,6 @@ class TestR45NamespacedHelpers:
         yield
         clear_registry()
 
-    @pytest.mark.xfail(strict=True, reason="R45 — fixed by T043")
     def test_validate_model_registry_accepts_a_namespaced_dict(self):
         ModelDefinition(
             id="base_h",
@@ -427,7 +426,6 @@ class TestR45NamespacedHelpers:
         assert validate_model_registry(registry) == []
         assert validate_model_registry(registry.get_registry_dict()) == []
 
-    @pytest.mark.xfail(strict=True, reason="R45 — fixed by T043")
     def test_it_reports_a_missing_parent(self):
         ModelDefinition(
             id="orphan_h",
@@ -439,7 +437,6 @@ class TestR45NamespacedHelpers:
         errors = validate_model_registry(get_default_registry())
         assert any("nowhere_h" in error for error in errors)
 
-    @pytest.mark.xfail(strict=True, reason="R45 — fixed by T043")
     def test_check_inheritance_conflicts_accepts_namespaced_keys(self):
         ModelDefinition(
             id="base_c",

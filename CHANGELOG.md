@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **The registry-analysis helpers accept a namespaced registry.**
+  `validate_model_registry`, `check_inheritance_conflicts`,
+  `build_inheritance_graph` and `find_inheritance_cycles` accept a
+  `ModelRegistry` or a dict (plain id-keyed or namespaced) and resolve parents
+  through the same namespace-local lookup as inheritance, instead of assuming
+  id-keyed dicts. (R45)
 - **Resolution registers nothing; duplicate registration is explicit.**
   `resolve_model_inheritance` builds the flattened definition with
   `model_copy(update=…)`, which does not register it, so resolving inheritance
