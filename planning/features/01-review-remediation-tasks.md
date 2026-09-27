@@ -1,29 +1,12 @@
 # Review Remediation — tests first, then the fix, for every finding
 
-**Status:** In progress. T001 done (rebased onto `main` at `9b76519`, F57
-merged). T002 done (expression-safety tests written). T003 done (R01). T004
-done (R02). T005 done (R03, amended). T006 done (R04). T007 done (R05, R06). T008 done (R07). Checkpoint 1 passed. T009 done
-(definition-strictness tests written). T010 done (R08, Input gap 2 confirmed).
-T011 done (R09, R10; grep gate waived). T012 done (R11).
-T013 done (R12; test_model.py added, grep gate waived). T014 done (R13).
-Checkpoint 2 passed (coverage 91%, examples run; Wyrdbound
-`engine/tests/unit/test_model_translation.py` 17 passed against this branch via
-PYTHONPATH, no Wyrdbound change). T015 done (write-transaction tests for R14,
-R15, R22, R23). T016 done (R15). T017 done (R14; test_nested_models.py
-rewritten). T018 done (R22, R23; two old-test kwargs dropped). T019 done
-(write-rule tests for R16-R21). T020 done (R16). T021 done (R17). T022 done
-(R18-R20). T023 done (R21; examples 02/03 reworked). T024 done (R24).
-Checkpoint 3 passed (coverage 92%, examples run). T025 done
-(derived-ordering tests for R25-R30). T026 done (R25). T027 done (R26). T028 done (R27). T029 done (R28). T030 done (R29, R30).
-Checkpoint 4 passed (coverage 92%, examples run, suite green under
-PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R31, R32). T033 done (R33; Input gap 7 confirmed). T034 done (R34). T035 done (R35). T036 done (R36). T037 done (R37-R39). Checkpoint 5 passed (coverage 92%,
-examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
-and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
-confirmed). T042 done (R42; Input gap 8 confirmed). T043 done (R45).
-Checkpoint 6 passed (coverage 92%, examples run, seeds 0-7; Wyrdbound
-engine/tests/unit/test_model_translation.py 17 passed). T044 done (R46; Input
-gap 9 confirmed). T045 done (R47, R48). T046 done (R50). T047 done (R49).
-T048 done (AGENTS.md). T049 next (release 0.8.0).
+**Status:** Complete. All tasks T001–T049 done; released as 0.8.0. Findings
+R01–R50 fixed. Amended during execution: T005 (Mapping exposes data, not
+methods), T011 and T013 (grep gates waived; tests corrected), T017
+(test_nested_models.py rewritten), T018 (two silently-ignored kwargs dropped
+from tests), T023 (examples 02/03 reworked), T033 (Input gap 7 confirmed), T039
+(T040 folded in), T042 (tests/test_logging.py corrected). Every other input gap
+(2, 3, 4, 5, 6, 8, 9) confirmed. See the `for Justin` list in T049's commit.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -1133,7 +1116,7 @@ now on.
   *Accept:* every path, command and name in `AGENTS.md` exists (verify each by
   running or grepping; list them in the commit message).
 
-- [ ] **T049** [US7] Release 0.8.0. Files: `pyproject.toml`,
+- [x] **T049** [US7] Release 0.8.0. Files: `pyproject.toml`,
   `src/grimoire_model/__init__.py`, `CHANGELOG.md`, this file only.
 
   Set the version to `0.8.0` in both files (README rule 14). Rename
@@ -1211,7 +1194,7 @@ now on.
 | [x] | T046 | 7 | P | US7 | R50 |
 | [x] | T047 | 7 | | US7 | R49 |
 | [x] | T048 | 7 | | US7 | (AGENTS.md) |
-| [ ] | T049 | 7 | | US7 | (release 0.8.0) |
+| [x] | T049 | 7 | | US7 | (release 0.8.0) |
 
 ---
 
