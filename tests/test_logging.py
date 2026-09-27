@@ -691,5 +691,43 @@ class TestLoggingIntegration:
         create_model(model_def2, {"field": "test2"})
 
 
+class TestQuietByDefault:
+    """Instantiation is debug-level; a handled failure is not logged (R50)."""
+
+    def test_building_models_emits_no_info_or_above(self, caplog):
+        import logging as _logging
+
+        from grimoire_model import create_model_without_validation
+
+        definition = ModelDefinition(
+            id="quiet_model",
+            name="Quiet",
+            attributes={"a": {"type": "int", "default": 1}},
+        )
+        with caplog.at_level(_logging.INFO):
+            for _ in range(100):
+                create_model_without_validation(definition, {})
+
+        records = [r for r in caplog.records if r.levelno >= _logging.INFO]
+        assert records == []
+
+    def test_a_failing_validate_emits_no_record(self, caplog):
+        import logging as _logging
+
+        from grimoire_model import create_model_without_validation
+
+        definition = ModelDefinition(
+            id="quiet_validate",
+            name="Quiet",
+            attributes={"a": {"type": "int"}},
+        )
+        model = create_model_without_validation(definition, {})
+        with caplog.at_level(_logging.INFO):
+            errors = model.validate()
+
+        assert errors  # a missing required attribute
+        assert [r for r in caplog.records if r.levelno >= _logging.INFO] == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
