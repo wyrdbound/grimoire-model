@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The `_model` instance tag** (GRIMOIRE model spec, grimoire-spec 1.3.0,
+  "Instances of Derived Models"). An instance of a model that extends another
+  model records its own model id in its data under `_model`; an instance of a
+  model with no `extends` carries none. The tag is set when the instance is
+  built and is read-only (writing or deleting it raises). Where a model is
+  declared, a mapping's `_model` chooses what is built: it must name the
+  declared model or one that extends it, and a mapping without it is built as
+  the declared model. So a weapon saved in an `of: item` inventory as plain
+  data comes back as a weapon (Wyrdbound F62, part C2). Expressions can read
+  it: `{{ inv | selectattr('_model', 'defined') | selectattr('_model',
+  'equalto', 'weapon') | list }}`.
+
+### Changed (breaking)
+
+- **Instances of derived models carry `_model` in their data.** `dict(model)`,
+  and anything serialized from it, now includes `_model: <id>` for an instance
+  of any model with ancestors (flattened definitions included, via
+  `ModelDefinition.ancestors`). Instances of root models are unchanged. Stored
+  data containing such instances changes shape by that one key.
+- **Attribute names beginning with `_` are reserved.** A definition declaring
+  one, as a leaf or as a group, raises `ConfigurationError`. Rename it.
+
 ## [0.8.1] - 2026-09-26
 
 ### Fixed

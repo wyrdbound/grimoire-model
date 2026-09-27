@@ -22,6 +22,37 @@ PYTHON_BASIC_TYPES = frozenset({"int", "str", "float", "bool", "list", "dict"})
 # ``TypeValidator``, so a type name means the same thing everywhere.
 BASIC_TYPES = PYTHON_BASIC_TYPES | frozenset({"roll", "roll_result"})
 
+# GRIMOIRE model spec, "Attribute Names": names beginning with `_` are reserved
+# for data GRIMOIRE records on an instance itself.
+RESERVED_PREFIX = "_"
+
+# "Instances of Derived Models": an instance of a model that extends another
+# records its own model id here. It is instance data, not an attribute.
+MODEL_TAG = "_model"
+
+
+def _reserved_attribute_paths(
+    attributes: Mapping[str, Any], prefix: str = ""
+) -> List[str]:
+    """Every attribute or group path, at any depth, that uses the reserved prefix.
+
+    Accepts raw definition mappings (groups are mappings without ``type``) and
+    built ``AttributeDefinition`` objects (groups carry ``attributes``).
+    """
+    paths: List[str] = []
+    for name, value in attributes.items():
+        path = f"{prefix}{name}"
+        if isinstance(name, str) and name.startswith(RESERVED_PREFIX):
+            paths.append(path)
+        if isinstance(value, AttributeDefinition):
+            if value.attributes:
+                paths.extend(_reserved_attribute_paths(value.attributes, f"{path}."))
+        elif isinstance(value, Mapping):
+            nested = value.get("attributes") if "type" in value else value
+            if isinstance(nested, Mapping):
+                paths.extend(_reserved_attribute_paths(nested, f"{path}."))
+    return paths
+
 
 class ValidationRule(BaseModel):
     """Model validation rule definition.
@@ -322,6 +353,15 @@ class ModelDefinition(BaseModel):
         """
         if not isinstance(v, dict):
             return v
+
+        reserved = _reserved_attribute_paths(v)
+        if reserved:
+            raise ConfigurationError(
+                f"Invalid attribute name '{reserved[0]}': names beginning with "
+                f"`{RESERVED_PREFIX}` are reserved for GRIMOIRE (an instance of a "
+                f"derived model records its model in `{MODEL_TAG}`). Rename it.",
+                config_key=reserved[0],
+            )
 
         converted_attributes = {}
         for key, value in v.items():
