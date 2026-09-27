@@ -33,6 +33,8 @@ from .exceptions import (
 )
 from .schema import (
     BASIC_TYPES,
+    MODEL_TAG,
+    RESERVED_PREFIX,
     AttributeDefinition,
     ModelDefinition,
     iter_leaf_attributes,
@@ -121,7 +123,7 @@ class GrimoireModel(MutableMapping):
         # Initialize data storage (immutable). Null on an optional attribute
         # means "no value", which is stored as absence.
         initial_data = self._without_null_optionals(
-            data or {}, self._resolved_attributes
+            self._with_model_tag(data or {}), self._resolved_attributes
         )
         self._data = pmap(initial_data)
 
@@ -248,6 +250,7 @@ class GrimoireModel(MutableMapping):
 
     def _delitem_locked(self, key: str) -> None:
         """``__delitem__`` body, run under the lock."""
+        self._reject_reserved(key)
         attr_def = self.get_attribute_definition(key)
 
         if attr_def is None:
@@ -399,7 +402,7 @@ class GrimoireModel(MutableMapping):
         # (e.g. "0..{{ max_hp }}") are resolved against the current data
         # first, so the validators stay context-free.
         attributes = self._resolve_templated_ranges(self._resolved_attributes)
-        field_errors = validate_model_data(dict(self._data), attributes)
+        field_errors = validate_model_data(self._attribute_data(), attributes)
         errors.extend(field_errors)
 
         errors.extend(self._validate_nested_models())
@@ -534,6 +537,7 @@ class GrimoireModel(MutableMapping):
 
     def _reject_unwritable(self, key: str) -> None:
         """Reject a write to a derived, or already-valued readonly, attribute."""
+        self._reject_reserved(key)
         attr_def = self.get_attribute_definition(key)
         if attr_def is not None and attr_def.derived:
             raise ModelValidationError(
@@ -742,7 +746,7 @@ class GrimoireModel(MutableMapping):
                     f"Cannot write into '{name}': it holds a "
                     f"{type(current).__name__}, not a model"
                 )
-        return self._make_nested_model(attr_def, data)
+        return self._make_nested_model(attr_def, data, name)
 
     def _nested_model_at(
         self, prefix: str, attr_def: AttributeDefinition
@@ -771,10 +775,10 @@ class GrimoireModel(MutableMapping):
                 f"Cannot write into '{prefix}': it holds a "
                 f"{type(current).__name__}, not a model"
             )
-        return self._make_nested_model(attr_def, data)
+        return self._make_nested_model(attr_def, data, prefix)
 
     def _make_nested_model(
-        self, attr_def: AttributeDefinition, data: Dict[str, Any]
+        self, attr_def: AttributeDefinition, data: Dict[str, Any], path: str = ""
     ) -> "GrimoireModel":
         """Build a nested model as a partial.
 
@@ -783,8 +787,11 @@ class GrimoireModel(MutableMapping):
         what is present; the parent's full validation still runs when the whole
         is validated.
         """
+        declared = self._resolve_model_type(attr_def.type)
         return GrimoireModel(
-            model_definition=self._resolve_model_type(attr_def.type),
+            model_definition=self._tagged_definition(
+                declared, data, path or attr_def.type
+            ),
             data=dict(data),
             template_resolver=self._template_resolver,
             skip_initial_validation=True,
@@ -891,7 +898,7 @@ class GrimoireModel(MutableMapping):
             )
 
         nested_model = GrimoireModel(
-            model_definition=nested_model_def,
+            model_definition=self._tagged_definition(nested_model_def, value, path),
             data=dict(value),
             template_resolver=self._template_resolver,
             skip_initial_validation=self._skip_initial_validation,
@@ -899,6 +906,103 @@ class GrimoireModel(MutableMapping):
         )
         logger.debug(f"Instantiated nested model '{path}' of type '{attr_def.type}'")
         return nested_model
+
+    def _tagged_definition(
+        self, declared: ModelDefinition, data: Mapping[str, Any], path: str
+    ) -> ModelDefinition:
+        """The model to build ``data`` as, where ``declared`` is expected.
+
+        GRIMOIRE model spec, "Instances of Derived Models", rule 4: data whose
+        ``_model`` names a model is built as that model, which must be the
+        declared model or one that extends it. Data with no ``_model`` is built
+        as the declared model -- a type is never inferred from the keys.
+        """
+        tag = data.get(MODEL_TAG)
+        if tag is None or tag == declared.id:
+            return declared
+        if not isinstance(tag, str):
+            raise ModelValidationError(
+                f"Attribute '{path}': `{MODEL_TAG}` must be a model id (a "
+                f"string), got {type(tag).__name__}",
+                field_name=path,
+                field_value=tag,
+            )
+        try:
+            tagged = self._registry.lookup(tag, self._model_def.namespace)
+        except KeyError as exc:
+            raise ModelValidationError(
+                f"Attribute '{path}': `{MODEL_TAG}` names '{tag}', which is not a "
+                f"model in namespace '{self._model_def.namespace}'",
+                field_name=path,
+                field_value=tag,
+            ) from exc
+        if declared.id not in self._lineage_of(tagged):
+            raise ModelValidationError(
+                f"Attribute '{path}': `{MODEL_TAG}` names '{tag}', which is not "
+                f"'{declared.id}' or a model that extends it",
+                field_name=path,
+                field_value=tag,
+            )
+        return tagged
+
+    def _lineage_of(self, definition: ModelDefinition) -> Tuple[str, ...]:
+        """Every model ``definition`` inherits from (resolved, or as recorded)."""
+        if definition.has_inheritance():
+            return tuple(
+                resolve_model_inheritance(definition, self._registry).ancestors
+            )
+        return tuple(definition.ancestors)
+
+    def _with_model_tag(self, data: Mapping[str, Any]) -> Dict[str, Any]:
+        """``data`` with this model's ``_model`` tag set, or removed.
+
+        Rules 1 and 4: an instance of a model that extends another carries its
+        own model id; an instance of a root model carries none. Data that
+        already names a model must name this one.
+        """
+        result = {key: value for key, value in data.items() if key != MODEL_TAG}
+        tag = data.get(MODEL_TAG)
+        if tag is not None:
+            if not isinstance(tag, str):
+                raise ModelValidationError(
+                    f"`{MODEL_TAG}` must be a model id (a string), got "
+                    f"{type(tag).__name__}",
+                    field_name=MODEL_TAG,
+                    field_value=tag,
+                )
+            if tag != self._model_def.id:
+                raise ModelValidationError(
+                    f"`{MODEL_TAG}` names '{tag}', but this is a "
+                    f"'{self._model_def.id}' model",
+                    field_name=MODEL_TAG,
+                    field_value=tag,
+                )
+        if self._ancestors:
+            return {MODEL_TAG: self._model_def.id, **result}
+        return result
+
+    def _attribute_data(self) -> Dict[str, Any]:
+        """This model's data without its ``_model`` tag, which is not an
+        attribute and so is not validated as one."""
+        return {key: value for key, value in self._data.items() if key != MODEL_TAG}
+
+    @staticmethod
+    def _reject_reserved(key: str) -> None:
+        """Refuse to write or delete ``_model``, or any other reserved name."""
+        head = key.split(".", 1)[0]
+        if head == MODEL_TAG:
+            raise ModelValidationError(
+                f"`{MODEL_TAG}` is read-only: it is set from the model an instance "
+                "is built as",
+                field_name=key,
+                validation_errors=[f"'{key}' is read-only"],
+            )
+        if head.startswith(RESERVED_PREFIX):
+            raise ModelValidationError(
+                f"'{key}': names beginning with `{RESERVED_PREFIX}` are reserved",
+                field_name=key,
+                validation_errors=[f"'{key}' is reserved"],
+            )
 
     def _build_list_value(
         self, attr_def: AttributeDefinition, value: Any, path: str
@@ -1087,6 +1191,10 @@ class GrimoireModel(MutableMapping):
         would fail spuriously, so validation happens once, after recompute
         (:meth:`_validate_batch`).
         """
+        # `_model` is read-only and other `_` names are reserved (GRIMOIRE model
+        # spec). A path into a nested model is checked by that model.
+        self._reject_reserved(key)
+
         # Get attribute definition
         attr_def = self.get_attribute_definition(key)
 

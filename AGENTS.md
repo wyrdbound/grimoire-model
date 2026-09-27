@@ -176,8 +176,12 @@ cycle raises. A parent, a model-typed attribute and an `of` model type resolve
 in the requesting model's namespace first; another namespace is used only when
 exactly one has the id, and an ambiguous id raises. A value typed as a model
 accepts that model or one that extends it (`is_a`, checked against the
-`ancestors` that resolution records, so it survives flattening); a plain
-mapping is always built as the declared model, never typed by its keys.
+`ancestors` that resolution records, so it survives flattening). A mapping
+is built as the model its `_model` tag names -- the declared model or a
+descendant -- and without a tag as the declared model; a type is never
+inferred from the keys. An instance of a derived model carries `_model` in its
+data (read-only); attribute names beginning with `_` are reserved for such
+tags.
 
 ## Engineering Standards
 

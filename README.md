@@ -371,6 +371,11 @@ is an error) and no `fields`.
   model that extends it: a `weapon` model (`extends: [item]`) is an `item`, and
   keeps its own attributes. A plain dict has no type of its own and is always
   built as the declared model. `model.is_a("item")` answers the same question.
+- An instance of a model that extends another records its model id in its data
+  as `_model` (read-only), so a weapon saved as plain data in an `of: item`
+  list is rebuilt as a weapon. A dict tagged `_model: weapon` is built as a
+  weapon where an `item` is declared; untagged, it is built as the declared
+  model. Attribute names beginning with `_` are reserved.
 
 ## 🔧 API Reference
 
