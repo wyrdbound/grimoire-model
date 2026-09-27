@@ -1,7 +1,7 @@
 # Grimoire Model
 
 [![Tests](https://github.com/wyrdbound/grimoire-model/workflows/Tests/badge.svg)](https://github.com/wyrdbound/grimoire-model/actions)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Coverage](https://img.shields.io/badge/coverage-88%25-green.svg)](htmlcov/index.html)
 
@@ -562,7 +562,7 @@ source .venv/bin/activate && python examples/04_performance_integration.py
 
 ## 📋 Requirements
 
-- Python 3.8+
+- Python 3.10+
 - pydantic >= 2.0.0
 - pyrsistent >= 0.19.0
 - jinja2 >= 3.1.0
