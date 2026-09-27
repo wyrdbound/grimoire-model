@@ -20,7 +20,8 @@ PYTHONHASHSEED 0-7). T031 done (type-validation tests for R31-R39). T032 done (R
 examples run, seeds 0-7). T038 done (inheritance tests for R40-R45). T039
 and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
 confirmed). T042 done (R42; Input gap 8 confirmed). T043 done (R45).
-Checkpoint 6 next.
+Checkpoint 6 passed (coverage 92%, examples run, seeds 0-7; Wyrdbound
+engine/tests/unit/test_model_translation.py 17 passed). T044 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
