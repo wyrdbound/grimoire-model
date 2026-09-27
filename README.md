@@ -348,6 +348,26 @@ ValidationRule(
 )
 ```
 
+A rule has only `expression` and `message`. There is no `severity` (every rule
+is an error) and no `fields`.
+
+### Writing and reading data
+
+- A write is a transaction: it validates the value, recomputes dependents,
+  checks every derived field it recomputed against its own constraints and the
+  model-level `validations`, and rolls back on failure.
+- Reads return copies: `model["g"]` is a fresh dict/list and a nested model is
+  an independent copy. Write through a dotted path (`model["hit_points.current"]
+  = 5`) or a whole value; mutating what you read does not change the model.
+- Derived attributes are not writable. `del model[key]` unsets an optional
+  attribute and raises for a required, readonly or derived one.
+- Definitions are closed: an unknown key (`optinal: true`) is an error.
+  Undeclared data keys are errors too.
+- `extends` resolves later-parent-wins: `extends: [a, b]` means `b` overrides
+  `a`, then the model's own attributes override both.
+- `type: list, of: item` builds each element as an `item` model; a `type: dict`
+  attribute has no declared interior and holds free-form data.
+
 ## 🔧 API Reference
 
 ### Core Classes
@@ -375,8 +395,9 @@ AttributeDefinition(
     default: Any = None,          # Default value
     derived: str = None,          # Template expression for derived fields
     range: str = None,            # Value range constraint (e.g., "1..100")
-    enum: List[Any] = None,       # Allowed values
-    pattern: str = None,          # Regex pattern for strings
+    enum: List[str] = None,       # Allowed values
+    pattern: str = None,          # Regex pattern for strings (a full match)
+    of: str = None,               # Element type for a list attribute
     description: str = ""         # Field description
 )
 ```
@@ -391,18 +412,20 @@ class GrimoireModel(MutableMapping):
         data: Dict[str, Any] = None,
         template_resolver: TemplateResolver = None,
         derived_field_resolver: DerivedFieldResolver = None,
-        **kwargs
+        instance_id: str = None,
+        skip_initial_validation: bool = False,
+        registry: ModelRegistry = None,
     )
 
     # Dict-like interface
-    def __getitem__(self, key: str) -> Any
+    def __getitem__(self, key: str) -> Any     # a container is returned as a copy
     def __setitem__(self, key: str, value: Any) -> None
     def __delitem__(self, key: str) -> None
     def __iter__(self) -> Iterator[str]
     def __len__(self) -> int
     def keys(), values(), items()
 
-    # Attribute-style access (NEW in 0.3.2)
+    # Attribute-style access
     def __getattr__(self, name: str) -> Any
     def __setattr__(self, name: str, value: Any) -> None
     # Enables: obj.field_name (read) and obj.field_name = value (write)
@@ -410,12 +433,20 @@ class GrimoireModel(MutableMapping):
     # Batch operations
     def batch_update(self, updates: Dict[str, Any]) -> None
 
-    # Path operations (dot notation)
+    # Dot-notation read
     def get(self, path: str, default: Any = None) -> Any
-    def set(self, path: str, value: Any) -> None
-    def has(self, path: str) -> bool
-    def delete(self, path: str) -> None
+    # Write a nested leaf with a dotted key:
+    model["hit_points.current"] = 5
+
+    # Derived-field introspection
+    def get_derived_fields() -> Set[str]
+    def get_field_dependencies(field_name: str) -> Set[str]
+    def get_dependent_fields(field_name: str) -> Set[str]
+    def validate() -> List[str]
 ```
+
+There is no `set`, `has` or `delete` method; use `model[key] = value`,
+`key in model` and `del model[key]`.
 
 ### Factory Functions
 
@@ -426,12 +457,22 @@ def create_model(
     model_definition: ModelDefinition,
     data: Dict[str, Any] = None,
     template_resolver_type: str = "jinja2",
-    derived_field_resolver_type: str = "batched",
-    **kwargs
+    template_resolver: TemplateResolver = None,
+    derived_field_resolver: DerivedFieldResolver = None,
+    instance_id: str = None,
+    skip_initial_validation: bool = False,
+    template_resolver_kwargs: Dict[str, Any] = None,
+    derived_resolver_kwargs: Dict[str, Any] = None,
+    registry: ModelRegistry = None,
 ) -> GrimoireModel
 ```
 
-Creates a model instance with default resolvers. Inheritance is automatically resolved from the global model registry using namespaces.
+`create_model_without_validation` takes the same arguments (it always skips
+initial validation). There is no `derived_field_resolver_type` argument; pass
+`derived_resolver_kwargs={"batched": True}` for a batched resolver. Inheritance
+and model-typed attributes resolve in the model's own namespace first, falling
+back to another namespace only when exactly one has the id; pass `registry=` to
+use a registry other than the global one.
 
 ### Global Registry Functions
 
@@ -439,7 +480,7 @@ Creates a model instance with default resolvers. Inheritance is automatically re
 from grimoire_model import register_model, get_model, clear_registry
 
 # Register model manually (usually automatic)
-register_model("my_namespace", "my_model", model_definition)
+register_model("my_namespace", model_definition)
 
 # Retrieve model from registry
 model_def = get_model("my_namespace", "my_model")
@@ -496,6 +537,12 @@ clear_primitive_registry()
 - `BatchedDerivedFieldResolver`: Batches updates for performance
 - `DerivedFieldResolver`: Immediate update resolver
 
+### Expression reference paths
+
+`grimoire_model.resolvers.template.extract_reference_paths(expression)` parses
+a Jinja2 expression and returns every maximal dotted reference path, e.g.
+`"{{ p.mod + 1 }}"` → `{"p.mod"}`. Derived-field dependency tracking uses it.
+
 ## 🧪 Development
 
 ### Setup
@@ -512,16 +559,16 @@ pip install -e ".[dev]"
 
 ```bash
 # Run all tests with coverage
-/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest --cov=grimoire_model --cov-report=term
+uv run python -m pytest --cov=grimoire_model --cov-report=term
 
 # Run specific test file
-/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest tests/test_model.py
+uv run python -m pytest tests/test_model.py
 
 # Run with verbose output
-/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest -v
+uv run python -m pytest -v
 
 # Generate HTML coverage report
-/Users/justingaylor/src/grimoire-model/.venv/bin/python -m pytest --cov=grimoire_model --cov-report=html
+uv run python -m pytest --cov=grimoire_model --cov-report=html
 # Open htmlcov/index.html in browser
 ```
 
@@ -566,7 +613,7 @@ source .venv/bin/activate && python examples/04_performance_integration.py
 - pydantic >= 2.0.0
 - pyrsistent >= 0.19.0
 - jinja2 >= 3.1.0
-- pyyaml >= 6.0
+- grimoire-logging >= 0.1.0
 
 ### Development Dependencies
 
@@ -600,7 +647,7 @@ The package follows clean architecture principles with clear separation of conce
 ### Key Design Principles
 
 1. **Dependency Injection**: All major components can be swapped via constructor injection
-2. **Immutable Operations**: Uses pyrsistent for efficient immutable data structures
+2. **Private Storage**: Storage is copy-on-write; reads return copies, so a write through a value read earlier does not reach the model
 3. **Template-Driven**: Jinja2 templates provide powerful expression capabilities
 4. **Performance-Focused**: Batch updates and lazy evaluation minimize overhead
 5. **Type Safety**: Full type hints and Pydantic integration for runtime validation
@@ -681,16 +728,18 @@ model = GrimoireModel(
 
 ### Custom Validators
 
+A field validator is a `FieldValidator` subclass returned by `get_name()`; a
+custom primitive type instead takes a `(value) -> (is_valid, message)` callable:
+
 ```python
-from grimoire_model.validation.validators import ValidationEngine
+from grimoire_model import register_primitive_type
 
-def custom_validator(value, rule_params):
-    # Custom validation logic
-    return is_valid, error_message
+def validate_duration(value):
+    if isinstance(value, str) and value.endswith("s"):
+        return True, None
+    return False, "Duration must end with 's'"
 
-# Register custom validator
-engine = ValidationEngine()
-engine.register_validator("custom_rule", custom_validator)
+register_primitive_type("duration", validator=validate_duration)
 ```
 
 ### Multiple Inheritance
