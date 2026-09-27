@@ -46,12 +46,17 @@ Always remember the following points as you are working on this code base:
 
 | Path | What it is |
 | --- | --- |
-| `core/schema.py` | `ModelDefinition`, `AttributeDefinition`, the registry |
-| `core/model.py` | `GrimoireModel` — instantiation, defaults, validation entry |
-| `resolvers/derived.py` | Derived fields, dependency tracking, batching |
-| `resolvers/template.py` | Jinja2 expression evaluation |
+| `core/schema.py` | `ModelDefinition`, `AttributeDefinition`, `BASIC_TYPES`, `iter_leaf_attributes`, `unset_as_null` |
+| `core/registry.py` | `ModelRegistry`, namespaced key lookup, the global registry |
+| `core/primitive_registry.py` | Custom primitive types and their validators |
+| `core/exceptions.py` | The exception hierarchy |
+| `core/model.py` | `GrimoireModel` — instantiation, defaults, validation entry, writes |
+| `resolvers/derived.py` | Derived fields, dependency tracking, batching, observers |
+| `resolvers/template.py` | Jinja2 expression evaluation, `extract_reference_paths` |
 | `validation/validators.py` | Field validators and the validation engine |
-| `utils/inheritance.py` | `extends` resolution |
+| `utils/inheritance.py` | `extends` resolution and registry analysis |
+| `utils/paths.py` | Dotted-path helpers |
+| `logging.py` | `get_logger`, logger injection |
 
 ## Core Principles
 
@@ -65,6 +70,13 @@ compute and declared ranges silently did not apply. Nothing raised.
 A constraint that cannot be evaluated MUST become an error, never a skipped
 check. An expression that cannot be resolved MUST raise, never render empty
 or fall back to a builtin. When in doubt, raise.
+
+Storage backs this: it is copy-on-write, and reads return copies. No code path
+mutates a container reachable from a previous `_data`, so a value a caller was
+handed cannot change under it, and a default object is never shared between
+instances. A definition is closed: an unknown key (`optinal: true`) is an
+error, not a silent drop. An undeclared data key is an error too, at every
+group depth.
 
 ### II. Expressions use bare names, and nothing else is in scope
 
@@ -148,6 +160,21 @@ Four rules, and they only work together:
 Anything that walks attributes to apply one of these rules MUST recurse into
 groups (Principle III), and a write to a nested leaf MUST be validated and
 MUST trigger its dependents, exactly like a top-level write.
+
+A write is a transaction. `_set_with_validation` and `batch_update` snapshot,
+apply, recompute dependents, then validate the written leaf, every derived
+field the write recomputed, and — for a validated model — the model-level
+`validations`. Any failure restores the snapshot and raises, so a write never
+leaves the model violating a constraint. Writing a derived attribute raises;
+`del model[key]` unsets an optional attribute and raises for a required,
+readonly or derived one.
+
+Inheritance and type lookup follow the specification. `extends` resolves
+later-parent-wins (`extends: [a, b]` means `b` overrides `a`, then the model's
+own attributes), `max_depth` bounds the longest `extends` path, and a reachable
+cycle raises. A parent, a model-typed attribute and an `of` model type resolve
+in the requesting model's namespace first; another namespace is used only when
+exactly one has the id, and an ambiguous id raises.
 
 ## Engineering Standards
 
