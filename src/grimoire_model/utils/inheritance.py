@@ -7,7 +7,6 @@ inheritance, and merging attribute definitions from parent models.
 
 from __future__ import annotations
 
-from collections import deque
 from typing import TYPE_CHECKING, Union
 
 from ..core.exceptions import InheritanceError
@@ -20,67 +19,71 @@ if TYPE_CHECKING:
 logger = get_logger("utils.inheritance")
 
 
-def _normalize_registry(
-    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
-) -> dict[str, ModelDefinition]:
-    """Normalize a model registry to dict format.
-
-    Args:
-        model_registry: Registry in dict or ModelRegistry format
-
-    Returns:
-        Registry as a dictionary
-    """
-    if hasattr(model_registry, "get_registry_dict") and callable(
-        model_registry.get_registry_dict
-    ):
-        # It's a ModelRegistry instance
-        return model_registry.get_registry_dict()  # type: ignore
-    else:
-        # It's already a dict
-        return model_registry  # type: ignore
-
-
 def _resolve_parent(
     parent_id: str,
     namespace: str,
     model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
 ) -> ModelDefinition | None:
-    """Resolve a parent, namespace-local when the registry supports it (R41).
+    """Resolve a parent namespace-locally, then uniquely (R41).
 
-    A plain id-keyed dict has no namespace, so this falls back to
-    :func:`_find_model_in_registry` (rule 6).
+    A ``ModelRegistry`` uses its namespace-aware ``lookup``; a plain dict
+    (rule 6) is re-keyed by each model's own namespace and matched the same
+    way.
     """
     if hasattr(model_registry, "lookup"):
         try:
             return model_registry.lookup(parent_id, namespace)  # type: ignore[union-attr]
         except KeyError:
             return None
-    return _find_model_in_registry(parent_id, _normalize_registry(model_registry))
+    return _find_in_namespaced(parent_id, namespace, _to_namespaced(model_registry))
 
 
-def _find_model_in_registry(
-    model_id: str, model_registry: dict[str, ModelDefinition]
-) -> ModelDefinition | None:
-    """Find a model in the registry by ID, handling both direct and namespaced keys.
+def _to_namespaced(
+    registry: Union[dict[str, ModelDefinition], ModelRegistry],
+) -> dict[str, ModelDefinition]:
+    """Return the registry as a key→model dict, keys unchanged.
 
-    Args:
-        model_id: The model ID to find
-        model_registry: Registry of models
-
-    Returns:
-        The ModelDefinition if found, None otherwise
+    A ``ModelRegistry`` gives its namespaced keys; a plain dict is returned
+    as-is (its keys may be ids or namespaced, per rule 6).
     """
-    # First check if it's a direct match (backward compatibility)
-    if model_id in model_registry:
-        return model_registry[model_id]
+    if hasattr(registry, "get_registry_dict"):
+        return registry.get_registry_dict()  # type: ignore[union-attr]
+    return registry  # type: ignore[return-value]
 
-    # Search for namespaced keys ending with the model_id
-    for key, model in model_registry.items():
-        if key.endswith(f"__{model_id}"):
-            return model
 
+def _find_in_namespaced(
+    model_id: str, namespace: str, mapping: dict[str, ModelDefinition]
+) -> ModelDefinition | None:
+    """Resolve ``model_id`` namespace-locally, then by unique match (R41).
+
+    A plain id-keyed dict is matched directly first (rule 6).
+    """
+    if model_id in mapping:
+        return mapping[model_id]
+    local = mapping.get(f"{namespace}__{model_id}")
+    if local is not None:
+        return local
+    candidates = [
+        model for key, model in mapping.items() if key.endswith(f"__{model_id}")
+    ]
+    if len(candidates) == 1:
+        return candidates[0]
     return None
+
+
+def _model_namespace(key: str, model: ModelDefinition) -> str:
+    """The namespace of a namespaced registry key, or the model's own."""
+    if "__" in key:
+        return key.split("__", 1)[0]
+    return getattr(model, "namespace", "default") or "default"
+
+
+def _model_key_in(mapping: dict[str, ModelDefinition], model: ModelDefinition) -> str:
+    """The key a resolved parent is stored under (for graph/cycle output)."""
+    for key, candidate in mapping.items():
+        if candidate is model:
+            return key
+    return f"{model.namespace}__{model.id}"
 
 
 def resolve_model_inheritance(
@@ -217,85 +220,15 @@ def _resolve_sources(
     return _resolve(model_def, 0)
 
 
-def _get_inheritance_chain(
-    model_def: ModelDefinition,
-    model_registry: dict[str, ModelDefinition],
-    max_depth: int,
-) -> list[str]:
-    """Get the set of model IDs reachable from a model via ``extends``.
-
-    A breadth-first walk over the ``extends`` graph. Used by the registry
-    analysis helpers, not by :func:`resolve_model_inheritance`, which resolves
-    recursively in ``extends`` order.
-
-    Args:
-        model_def: The model definition to get the chain for
-        model_registry: Registry of all available model definitions
-        max_depth: Maximum number of nodes to visit
-
-    Returns:
-        List of model IDs reachable from the model (including itself)
-
-    Raises:
-        InheritanceError: If a parent is missing or a cycle reaches the model
-    """
-    # Start with the model itself
-    chain = [model_def.id]
-    visited = {model_def.id}
-    depth = 0
-
-    queue = deque([(model_def.id, model_def.extends)])
-
-    while queue and depth < max_depth:
-        current_id, parent_ids = queue.popleft()
-        depth += 1
-
-        for parent_id in parent_ids:
-            # Check if parent exists - handle both namespaced and non-namespaced keys
-            parent_model = _find_model_in_registry(parent_id, model_registry)
-
-            if parent_model is None:
-                raise InheritanceError(
-                    f"Parent model '{parent_id}' not found in registry",
-                    model_id=current_id,
-                    parent_ids=[parent_id],
-                    inheritance_chain=chain,
-                )
-
-            # Check for circular inheritance
-            if parent_id in visited:
-                if parent_id == model_def.id:
-                    raise InheritanceError(
-                        f"Circular inheritance detected: model '{parent_id}' inherits "
-                        f"from itself",
-                        model_id=model_def.id,
-                        parent_ids=parent_ids,
-                        inheritance_chain=chain + [parent_id],
-                    )
-                continue  # Skip already processed parents
-
-            # Add to chain and visited set
-            chain.append(parent_id)
-            visited.add(parent_id)
-
-            # Queue parent's parents for processing
-            if parent_model.extends:
-                queue.append((parent_id, parent_model.extends))
-
-    if depth >= max_depth:
-        raise InheritanceError(
-            f"Maximum inheritance depth ({max_depth}) exceeded",
-            model_id=model_def.id,
-            inheritance_chain=chain,
-        )
-
-    return chain
-
-
 def check_inheritance_conflicts(
-    model_def: ModelDefinition, model_registry: dict[str, ModelDefinition]
+    model_def: ModelDefinition,
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
 ) -> list[str]:
     """Check for potential inheritance conflicts in a model definition.
+
+    Accepts a ``ModelRegistry`` or a dict (plain or namespaced), and resolves
+    each ancestor namespace-locally through the same lookup as inheritance
+    (R45).
 
     Args:
         model_def: The model definition to check
@@ -309,33 +242,36 @@ def check_inheritance_conflicts(
     if not model_def.has_inheritance():
         return conflicts
 
-    try:
-        inheritance_chain = _get_inheritance_chain(
-            model_def, model_registry, max_depth=10
-        )
-    except InheritanceError as e:
-        conflicts.append(str(e))
-        return conflicts
+    namespaced = _to_namespaced(model_registry)
 
-    # Check for attribute type conflicts
-    # attr_name -> [(model_id, attr_def), ...]
+    # Collect every chain member's attributes, resolving each namespace-locally.
     attribute_sources: dict[str, list[tuple[str, AttributeDefinition]]] = {}
+    visited: set[tuple[str, str]] = set()
 
-    for model_id in reversed(inheritance_chain):
-        model = model_registry[model_id]
+    def _record(source: ModelDefinition) -> None:
+        for attr_name, attr_def in source.attributes.items():
+            if not isinstance(attr_def, AttributeDefinition):
+                attr_def = AttributeDefinition(**attr_def)
+            attribute_sources.setdefault(attr_name, []).append((source.id, attr_def))
 
-        for attr_name, attr_def in model.attributes.items():
-            if attr_name not in attribute_sources:
-                attribute_sources[attr_name] = []
+    def _visit(current: ModelDefinition) -> None:
+        _record(current)
+        for parent_id in current.extends:
+            parent = _find_in_namespaced(parent_id, current.namespace, namespaced)
+            if parent is None:
+                conflicts.append(
+                    f"Parent model '{parent_id}' not found in namespace "
+                    f"'{current.namespace}' or uniquely elsewhere"
+                )
+                continue
+            key = (parent.namespace, parent.id)
+            if key in visited:
+                continue
+            visited.add(key)
+            _visit(parent)
 
-            if isinstance(attr_def, AttributeDefinition):
-                attribute_sources[attr_name].append((model_id, attr_def))
-            else:
-                # Convert dict to AttributeDefinition for comparison
-                converted_attr = AttributeDefinition(**attr_def)
-                attribute_sources[attr_name].append((model_id, converted_attr))
+    _visit(model_def)
 
-    # Check for type conflicts
     for attr_name, sources in attribute_sources.items():
         if len(sources) > 1:
             types = {attr_def.type for _, attr_def in sources}
@@ -352,72 +288,86 @@ def check_inheritance_conflicts(
 
 
 def build_inheritance_graph(
-    model_registry: dict[str, ModelDefinition],
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
 ) -> dict[str, set[str]]:
     """Build an inheritance graph from a model registry.
+
+    Accepts a ``ModelRegistry`` or a dict; keys are the registry's own keys.
 
     Args:
         model_registry: Registry of all available model definitions
 
     Returns:
-        Dictionary mapping model IDs to their direct children
+        Dictionary mapping model keys to their direct children's keys
     """
-    inheritance_graph: dict[str, set[str]] = {
-        model_id: set() for model_id in model_registry
-    }
+    mapping = _to_namespaced(model_registry)
+    inheritance_graph: dict[str, set[str]] = {key: set() for key in mapping}
 
-    for model_id, model_def in model_registry.items():
+    for key, model_def in mapping.items():
+        namespace = _model_namespace(key, model_def)
         for parent_id in model_def.extends:
-            if parent_id in inheritance_graph:
-                inheritance_graph[parent_id].add(model_id)
+            parent = _find_in_namespaced(parent_id, namespace, mapping)
+            if parent is None:
+                continue
+            parent_key = _model_key_in(mapping, parent)
+            if parent_key in inheritance_graph:
+                inheritance_graph[parent_key].add(key)
 
     return inheritance_graph
 
 
 def find_inheritance_cycles(
-    model_registry: dict[str, ModelDefinition],
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
 ) -> list[list[str]]:
     """Find all inheritance cycles in a model registry.
+
+    Accepts a ``ModelRegistry`` or a dict; cycle members are namespaced keys.
 
     Args:
         model_registry: Registry of all available model definitions
 
     Returns:
-        List of cycles, where each cycle is a list of model IDs
+        List of cycles, where each cycle is a list of namespaced model keys
     """
-    cycles = []
-    visited = set()
-    rec_stack = set()
+    mapping = _to_namespaced(model_registry)
+    cycles: list[list[str]] = []
+    visited: set[str] = set()
+    rec_stack: set[str] = set()
 
-    def _dfs(model_id: str, path: list[str]) -> None:
-        if model_id in rec_stack:
-            # Found a cycle
-            cycle_start = path.index(model_id)
-            cycles.append(path[cycle_start:] + [model_id])
+    def _dfs(key: str, path: list[str]) -> None:
+        if key in rec_stack:
+            cycle_start = path.index(key)
+            cycles.append(path[cycle_start:] + [key])
             return
 
-        if model_id in visited:
+        if key in visited:
             return
 
-        visited.add(model_id)
-        rec_stack.add(model_id)
+        visited.add(key)
+        rec_stack.add(key)
 
-        if model_id in model_registry:
-            model_def = model_registry[model_id]
-            for parent_id in model_def.extends:
-                _dfs(parent_id, path + [model_id])
+        model_def = mapping[key]
+        namespace = _model_namespace(key, model_def)
+        for parent_id in model_def.extends:
+            parent = _find_in_namespaced(parent_id, namespace, mapping)
+            if parent is not None:
+                _dfs(_model_key_in(mapping, parent), path + [key])
 
-        rec_stack.remove(model_id)
+        rec_stack.remove(key)
 
-    for model_id in model_registry:
-        if model_id not in visited:
-            _dfs(model_id, [])
+    for key in mapping:
+        if key not in visited:
+            _dfs(key, [])
 
     return cycles
 
 
-def validate_model_registry(model_registry: dict[str, ModelDefinition]) -> list[str]:
+def validate_model_registry(
+    model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
+) -> list[str]:
     """Validate a model registry for inheritance issues.
+
+    Accepts a ``ModelRegistry`` or a dict (plain or namespaced) (R45).
 
     Args:
         model_registry: Registry of all available model definitions
@@ -425,28 +375,25 @@ def validate_model_registry(model_registry: dict[str, ModelDefinition]) -> list[
     Returns:
         List of validation error messages (empty if valid)
     """
+    namespaced = _to_namespaced(model_registry)
     errors = []
 
     # Check for inheritance cycles
-    cycles = find_inheritance_cycles(model_registry)
-    for cycle in cycles:
+    for cycle in find_inheritance_cycles(namespaced):
         cycle_str = " -> ".join(cycle)
         errors.append(f"Inheritance cycle detected: {cycle_str}")
 
-    # Check for missing parent references
-    for model_id, model_def in model_registry.items():
+    # Check for missing parent references, resolving namespace-locally
+    for key, model_def in namespaced.items():
+        namespace = _model_namespace(key, model_def)
         for parent_id in model_def.extends:
-            if parent_id not in model_registry:
-                errors.append(f"Model '{model_id}' extends unknown model '{parent_id}'")
+            if _find_in_namespaced(parent_id, namespace, namespaced) is None:
+                errors.append(f"Model '{key}' extends unknown model '{parent_id}'")
 
     # Check for individual model inheritance conflicts
-    for model_id, model_def in model_registry.items():
+    for key, model_def in namespaced.items():
         if model_def.has_inheritance():
-            try:
-                conflicts = check_inheritance_conflicts(model_def, model_registry)
-                for conflict in conflicts:
-                    errors.append(f"Model '{model_id}': {conflict}")
-            except InheritanceError as e:
-                errors.append(f"Model '{model_id}': {e}")
+            for conflict in check_inheritance_conflicts(model_def, namespaced):
+                errors.append(f"Model '{key}': {conflict}")
 
     return errors
