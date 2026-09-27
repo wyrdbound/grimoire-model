@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A value typed as a model accepts a model that extends it.** 0.8.0 compared
+  model ids exactly, so a `weapon` model (`extends: [item]`) was rejected in an
+  `inventory: {type: list, of: item}` list, and as the value of a
+  `type: item` attribute: *"must be a model of type 'item', got 'weapon'"*.
+  The specification's own model example declares exactly that inventory next
+  to exactly that weapon. A `GrimoireModel` is now accepted where its own model
+  or any model it inherits from (directly or through its parents) is declared,
+  and is kept as it is: a weapon in an inventory keeps its own attributes and
+  derived fields. An unrelated model, or a parent where a child is declared, is
+  still rejected. A plain mapping carries no type of its own and is still
+  built as the declared model, so subtype *data* (a dict with `damage` under
+  `of: item`) is still an undeclared-attribute error. Found by Wyrdbound (F62,
+  part C1); a regression introduced by 0.8.0's R32/R33.
+
+### Added
+
+- **`ModelDefinition.ancestors`**, the ids of every model a definition inherits
+  from, transitively, in `extends` order with each id once.
+  `resolve_model_inheritance` records it on the flattened definition it
+  returns, so lineage survives a definition being dumped, given
+  `extends: []` and rebuilt (as Wyrdbound's `ModelCatalog` does). It is a
+  library field, not a GRIMOIRE one; a definition may not list itself or
+  repeat an id.
+- **`GrimoireModel.is_a(model_id)`**: whether the model is `model_id` or
+  inherits from it.
+
 ## [0.8.0] - 2026-09-26
 
 ### Removed (breaking)
