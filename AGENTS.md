@@ -174,7 +174,10 @@ later-parent-wins (`extends: [a, b]` means `b` overrides `a`, then the model's
 own attributes), `max_depth` bounds the longest `extends` path, and a reachable
 cycle raises. A parent, a model-typed attribute and an `of` model type resolve
 in the requesting model's namespace first; another namespace is used only when
-exactly one has the id, and an ambiguous id raises.
+exactly one has the id, and an ambiguous id raises. A value typed as a model
+accepts that model or one that extends it (`is_a`, checked against the
+`ancestors` that resolution records, so it survives flattening); a plain
+mapping is always built as the declared model, never typed by its keys.
 
 ## Engineering Standards
 

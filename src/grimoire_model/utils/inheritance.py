@@ -118,16 +118,19 @@ def resolve_model_inheritance(
 
     logger.debug(f"Resolving inheritance for model '{model_def.id}'")
 
-    resolved_attributes, resolved_validations = _resolve_sources(
+    resolved_attributes, resolved_validations, ancestors = _resolve_sources(
         model_def, model_registry, max_depth
     )
 
     # Build the flattened definition without registering it (R42): model_copy
     # does not run model_post_init, so it never touches the registry. The
-    # child's namespace is kept.
+    # child's namespace is kept. ``extends`` is cleared, so the lineage it
+    # expressed is recorded in ``ancestors``: a value typed as ``item`` must
+    # still accept this model if it extends ``item`` (F62 C1).
     resolved_model = model_def.model_copy(
         update={
             "extends": [],
+            "ancestors": ancestors,
             "attributes": resolved_attributes,
             "validations": resolved_validations,
         }
@@ -143,8 +146,13 @@ def _resolve_sources(
     model_def: ModelDefinition,
     model_registry: Union[dict[str, ModelDefinition], ModelRegistry],
     max_depth: int,
-) -> tuple[dict[str, AttributeDefinition], list[ValidationRule]]:
+) -> tuple[dict[str, AttributeDefinition], list[ValidationRule], list[str]]:
     """Merge a model's own and its ancestors' attributes and validations.
+
+    Also returns the model's ancestors: each parent in ``extends`` order,
+    followed by that parent's own ancestors, each id once (a diamond's shared
+    base appears once, where it is first reached). A parent that was itself
+    flattened contributes the ``ancestors`` it recorded.
 
     resolved(M) = merge(resolved(P1) … resolved(Pn), own(M)) in ``extends``
     order: each parent's fully resolved sources first, then M's own, each later
@@ -154,6 +162,7 @@ def _resolve_sources(
     cycle reachable from M raises ``InheritanceError`` naming the cycle (R44).
     """
     cache: dict[tuple[str, str], tuple[dict[str, AttributeDefinition], list]] = {}
+    lineage: dict[tuple[str, str], list[str]] = {}
     path: list[tuple[str, str]] = []
 
     def _resolve(
@@ -182,6 +191,7 @@ def _resolve_sources(
             attributes: dict[str, AttributeDefinition] = {}
             validations: list[ValidationRule] = []
             seen_rules: set[tuple[str, str]] = set()
+            ancestors: list[str] = []
 
             for parent_id in current.extends:
                 parent = _resolve_parent(parent_id, current.namespace, model_registry)
@@ -194,6 +204,13 @@ def _resolve_sources(
                     )
                 parent_attrs, parent_rules = _resolve(parent, depth + 1)
                 attributes.update(parent_attrs)
+                for ancestor in [
+                    parent.id,
+                    *parent.ancestors,
+                    *lineage[(parent.namespace, parent.id)],
+                ]:
+                    if ancestor not in ancestors:
+                        ancestors.append(ancestor)
                 for rule in parent_rules:
                     rule_key = (rule.expression, rule.message)
                     if rule_key not in seen_rules:
@@ -213,11 +230,18 @@ def _resolve_sources(
 
             result = (attributes, validations)
             cache[key] = result
+            lineage[key] = ancestors
             return result
         finally:
             path.pop()
 
-    return _resolve(model_def, 0)
+    attributes, validations = _resolve(model_def, 0)
+    own_key = (model_def.namespace, model_def.id)
+    ancestors = list(model_def.ancestors)
+    for ancestor in lineage[own_key]:
+        if ancestor not in ancestors:
+            ancestors.append(ancestor)
+    return attributes, validations, ancestors
 
 
 def check_inheritance_conflicts(

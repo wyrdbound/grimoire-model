@@ -367,6 +367,10 @@ is an error) and no `fields`.
   `a`, then the model's own attributes override both.
 - `type: list, of: item` builds each element as an `item` model; a `type: dict`
   attribute has no declared interior and holds free-form data.
+- A value typed as a model — an attribute or an `of` element — also accepts a
+  model that extends it: a `weapon` model (`extends: [item]`) is an `item`, and
+  keeps its own attributes. A plain dict has no type of its own and is always
+  built as the declared model. `model.is_a("item")` answers the same question.
 
 ## 🔧 API Reference
 
@@ -382,7 +386,8 @@ ModelDefinition(
     description: str = "",                      # Model description
     attributes: Dict[str, AttributeDefinition], # Field definitions
     extends: List[str] = None,                  # Parent model IDs (resolved in namespace)
-    validations: List[ValidationRule] = None    # Validation rules
+    validations: List[ValidationRule] = None,   # Validation rules
+    ancestors: List[str] = None,                # Recorded by resolve_model_inheritance
 )
 ```
 
@@ -443,6 +448,7 @@ class GrimoireModel(MutableMapping):
     def get_field_dependencies(field_name: str) -> Set[str]
     def get_dependent_fields(field_name: str) -> Set[str]
     def validate() -> List[str]
+    def is_a(model_id: str) -> bool             # this model, or one it inherits from
 ```
 
 There is no `set`, `has` or `delete` method; use `model[key] = value`,

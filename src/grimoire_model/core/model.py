@@ -114,8 +114,9 @@ class GrimoireModel(MutableMapping):
             or create_derived_field_resolver(self._template_resolver, self._instance_id)
         )
 
-        # Resolve inheritance to get complete schema
-        self._resolved_attributes = self._resolve_inheritance()
+        # Resolve inheritance to get complete schema, and the lineage that a
+        # value typed as an ancestor is checked against (``is_a``).
+        self._resolved_attributes, self._ancestors = self._resolve_inheritance()
 
         # Initialize data storage (immutable). Null on an optional attribute
         # means "no value", which is stored as absence.
@@ -165,6 +166,15 @@ class GrimoireModel(MutableMapping):
     def instance_id(self) -> str:
         """Get the instance ID."""
         return self._instance_id
+
+    def is_a(self, model_id: str) -> bool:
+        """Whether this model is ``model_id`` or inherits from it.
+
+        A value typed as a model accepts that model or any model that extends
+        it, directly or through its own parents: a ``weapon`` that extends
+        ``item`` is an ``item``. Ids are compared the way ``type`` names them.
+        """
+        return model_id == self._model_def.id or model_id in self._ancestors
 
     def copy(self, **overrides) -> "GrimoireModel":
         """Create an independent copy of this model with optional data overrides.
@@ -574,23 +584,36 @@ class GrimoireModel(MutableMapping):
         return errors
 
     # Internal methods
-    def _resolve_inheritance(self) -> Dict[str, AttributeDefinition]:
-        """Resolve model inheritance and get complete attribute definitions."""
+    def _resolve_inheritance(
+        self,
+    ) -> Tuple[Dict[str, AttributeDefinition], Tuple[str, ...]]:
+        """Resolve inheritance: the complete attribute definitions, and every
+        model this one inherits from.
+
+        A definition that was already flattened (``extends: []``) keeps the
+        ``ancestors`` recorded when it was resolved.
+        """
         if not self._model_def.has_inheritance():
             # No inheritance, return attributes as-is
-            return {
-                name: attr
-                for name, attr in self._model_def.attributes.items()
-                if isinstance(attr, AttributeDefinition)
-            }
+            return (
+                {
+                    name: attr
+                    for name, attr in self._model_def.attributes.items()
+                    if isinstance(attr, AttributeDefinition)
+                },
+                tuple(self._model_def.ancestors),
+            )
 
         try:
             resolved_model = resolve_model_inheritance(self._model_def, self._registry)
-            return {
-                name: attr
-                for name, attr in resolved_model.attributes.items()
-                if isinstance(attr, AttributeDefinition)
-            }
+            return (
+                {
+                    name: attr
+                    for name, attr in resolved_model.attributes.items()
+                    if isinstance(attr, AttributeDefinition)
+                },
+                tuple(resolved_model.ancestors),
+            )
         except Exception as e:
             raise InheritanceError(
                 f"Failed to resolve inheritance for model '{self._model_def.id}': {e}",
@@ -836,18 +859,24 @@ class GrimoireModel(MutableMapping):
     ) -> "GrimoireModel":
         """Build ``value`` as the model ``attr_def.type`` names.
 
-        A mapping is built into a model; a ``GrimoireModel`` of the right id is
-        returned as it is; a model of a different id, or anything that is
-        neither, raises ``ModelValidationError`` (R32). ``path`` names the
-        attribute in errors (a list element is ``inv[0]``).
+        A mapping is built into that model. A ``GrimoireModel`` of that model,
+        or of any model that extends it (``is_a``), is returned as it is: a
+        ``weapon`` is an ``item``, and keeps its own attributes and derived
+        fields (F62 C1). Any other model, or anything that is neither, raises
+        ``ModelValidationError`` (R32). ``path`` names the attribute in errors
+        (a list element is ``inv[0]``).
+
+        A mapping carries no type of its own, so it is always built as the
+        declared model; subtype *data* is not inferred from its keys.
         """
         nested_model_def = self._resolve_model_type(attr_def.type)
 
         if isinstance(value, GrimoireModel):
-            if value.model_definition.id != nested_model_def.id:
+            if not value.is_a(nested_model_def.id):
                 raise ModelValidationError(
                     f"Attribute '{path}' must be a model of type "
-                    f"'{nested_model_def.id}', got '{value.model_definition.id}'",
+                    f"'{nested_model_def.id}' or a model that extends it, got "
+                    f"'{value.model_definition.id}'",
                     field_name=path,
                     field_value=value,
                 )

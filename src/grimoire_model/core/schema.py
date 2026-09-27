@@ -288,6 +288,18 @@ class ModelDefinition(BaseModel):
         description="List of parent model IDs to inherit from",
     )
 
+    # Lineage. Not a GRIMOIRE field: the library records it when it resolves
+    # ``extends``, so that "is this a weapon an item?" can still be answered
+    # after a definition has been flattened to ``extends: []`` and rebuilt.
+    ancestors: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Ids of every model this definition inherits from, transitively, "
+            "recorded by resolve_model_inheritance. A value typed as a model "
+            "accepts that model or any model whose ancestors include it."
+        ),
+    )
+
     # Attributes
     attributes: Dict[str, AttributeDefinition] = Field(
         default_factory=dict,
@@ -468,6 +480,16 @@ class ModelDefinition(BaseModel):
                 parent for parent in self.extends if self.extends.count(parent) > 1
             ]
             raise ValueError(f"Duplicate parent models: {duplicates}")
+
+        if self.id in self.ancestors:
+            raise ValueError(f"Model '{self.id}' cannot be its own ancestor")
+        if len(self.ancestors) != len(set(self.ancestors)):
+            repeated = sorted({
+                ancestor
+                for ancestor in self.ancestors
+                if self.ancestors.count(ancestor) > 1
+            })
+            raise ValueError(f"Duplicate ancestors: {repeated}")
 
         return self
 
