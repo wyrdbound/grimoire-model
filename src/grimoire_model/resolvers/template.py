@@ -239,7 +239,8 @@ class Jinja2TemplateResolver:
                 f"Available context keys: "
                 f"{list(context.keys()) if isinstance(context, dict) else 'N/A'}"
             )
-            logger.error(error_msg)
+            # Raised, not logged: the exception carries the message, and a
+            # caller may handle it (validate(), incremental builds). (R50)
             raise TemplateResolutionError(
                 error_msg,
                 template_str=template_str,

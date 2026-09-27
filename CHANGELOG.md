@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- **Model instantiation logs at `debug`; a template failure is raised, not
+  logged.** Building a model logged an `info` line per instance, and every
+  template resolution failure logged an `error` even when the caller handled it
+  (`validate()`, incremental builds). The exception carries the message, so the
+  `logger.error` is gone. (R50)
 - **Python floor is 3.10.** `requires-python = ">=3.10"`, classifiers 3.10–3.12,
   mypy and ruff targets 3.10, CI and release matrices 3.10–3.12, README badge
   and Requirements 3.10+. The package did not import on 3.8 (`Mapping[str, Any]`

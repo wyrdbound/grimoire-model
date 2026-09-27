@@ -151,7 +151,7 @@ class GrimoireModel(MutableMapping):
         if not skip_initial_validation:
             self._validate_initial_data()
 
-        logger.info(
+        logger.debug(
             f"Successfully initialized model '{self._model_def.id}' "
             f"with instance ID '{self._instance_id}'"
         )
