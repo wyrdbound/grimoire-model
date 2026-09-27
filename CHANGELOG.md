@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed (breaking)
+
+- **`register_with_grimoire_context` is gone**, along with `__meta__` and the
+  import-time auto-registration that called it. `grimoire-context` has no
+  `register_dict_like_type`, so the function never did anything, and the
+  `except Exception: pass` around it was a bare silent failure. `__meta__`
+  duplicated `pyproject.toml` and had drifted. (R48)
+- **`pyyaml` is no longer a dependency.** It was a runtime dependency but
+  imported nowhere. (R47)
+- **`ValidationRule.severity` and `ValidationRule.fields` are gone.** Neither
+  is in the GRIMOIRE specification. `fields` was never read, and `severity`
+  silently behaved as `error` (a `warning` rule failed instantiation like any
+  other). Every rule is an error. Passing either key now raises a
+  `pydantic.ValidationError` naming the reason; a caller that passed
+  `fields=[...]` must simply drop it. (R12)
+
 ### Changed (breaking)
 
 - **Python floor is 3.10.** `requires-python = ">=3.10"`, classifiers 3.10–3.12,
@@ -178,18 +194,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   default, so a mutable default is no longer shared by every instance. Callers
   that did `model["inventory"].append(x)` must write a new whole value or use a
   dotted path. (R14, D2)
-
-### Removed (breaking)
-
-- **`ValidationRule.severity` and `ValidationRule.fields` are gone.** Neither
-  is in the GRIMOIRE specification. `fields` was never read, and `severity`
-  silently behaved as `error` (a `warning` rule failed instantiation like any
-  other). Every rule is an error. Passing either key now raises a
-  `pydantic.ValidationError` naming the reason; a caller that passed
-  `fields=[...]` must simply drop it. (R12)
-
-### Changed (breaking)
-
 - **`copy()` is independent.** A copy builds its own derived-field resolver (of
   the same kind — batched stays batched) and gets a new instance id. Previously
   it shared the original's resolver, so a later write to the original
