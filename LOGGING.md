@@ -109,17 +109,16 @@ The library logs messages at appropriate levels for different operational scenar
 
 ### INFO Level Messages
 
-- **Model Creation**: `"Successfully initialized model 'model_id' with instance ID 'uuid'"`
-- **Setup Confirmation**: Indicates successful model initialization and configuration
+The library logs nothing at INFO or above during normal operation.
 
 ### WARNING Level Messages
 
-- **Model Registration Conflicts**: `"Model 'namespace__model_id' already registered. Overwriting with new definition."`
-- **Template Resolution Issues**: When template variables cannot be resolved
-- **Validation Warnings**: Non-fatal validation issues
+- **Template Variable Extraction**: When a template cannot be parsed for
+  variable extraction
 
 ### DEBUG Level Messages
 
+- **Model Creation**: `"Successfully initialized model 'model_id' with instance ID 'uuid'"`
 - **Model Registration**: `"Registered model 'model_id' in namespace 'namespace'"`
 - **Model Unregistration**: `"Unregistered model 'namespace__model_id'"`
 - **Registry Operations**: `"Cleared N models from namespace 'namespace'"`
@@ -131,8 +130,9 @@ The library logs messages at appropriate levels for different operational scenar
 
 ### ERROR Level Messages
 
-- **Template Errors**: Failed template resolution with detailed error information
-- **Observer Errors**: Errors in derived field observers during computation
+The library logs nothing at ERROR: a template resolution failure is raised as a
+`TemplateResolutionError`, and a failing observer exception is re-raised. The
+exception carries the message, and a caller may handle it.
 
 ## Configuration Examples
 

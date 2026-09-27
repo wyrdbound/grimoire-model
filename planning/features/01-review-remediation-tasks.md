@@ -22,7 +22,8 @@ and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
 confirmed). T042 done (R42; Input gap 8 confirmed). T043 done (R45).
 Checkpoint 6 passed (coverage 92%, examples run, seeds 0-7; Wyrdbound
 engine/tests/unit/test_model_translation.py 17 passed). T044 done (R46; Input
-gap 9 confirmed). T045 done (R47, R48). T046 done (R50). T047 next.
+gap 9 confirmed). T045 done (R47, R48). T046 done (R50). T047 done (R49).
+T048 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -1104,7 +1105,7 @@ now on.
   record at `info` or above.
   *Accept:* the new test passes; `tests/test_logging.py` passes.
 
-- [ ] **T047** [US7] Fix R49: documentation matches code. Files: `README.md`,
+- [x] **T047** [US7] Fix R49: documentation matches code. Files: `README.md`,
   `LOGGING.md`, `examples/*.py`, `examples/README.md` only.
 
   Walk every code block and API signature in `README.md` against `src/`:
@@ -1208,7 +1209,7 @@ now on.
 | [x] | T044 | 7 | P | US7 | R46 |
 | [x] | T045 | 7 | P | US7 | R47, R48 |
 | [x] | T046 | 7 | P | US7 | R50 |
-| [ ] | T047 | 7 | | US7 | R49 |
+| [x] | T047 | 7 | | US7 | R49 |
 | [ ] | T048 | 7 | | US7 | (AGENTS.md) |
 | [ ] | T049 | 7 | | US7 | (release 0.8.0) |
 
