@@ -22,7 +22,7 @@ and T040 done (R40, R43, R44; T040 folded in). T041 done (R41; Input gap 5
 confirmed). T042 done (R42; Input gap 8 confirmed). T043 done (R45).
 Checkpoint 6 passed (coverage 92%, examples run, seeds 0-7; Wyrdbound
 engine/tests/unit/test_model_translation.py 17 passed). T044 done (R46; Input
-gap 9 confirmed). T045 next.
+gap 9 confirmed). T045 done (R47, R48). T046 next.
 **Source design:** `planning/features/01-review-remediation.md` (§N and RNN
 references below are into that document; §3 is the findings register).
 Execution rules: `planning/features/README.md`. Governance: `AGENTS.md`.
@@ -1082,7 +1082,7 @@ now on.
   *Accept:* `uv run --python 3.10 pytest -q` passes; `uv run mypy src/` prints
   no `python_version` warning.
 
-- [ ] **T045** [P] [US7] Fix R47 and R48. Files: `pyproject.toml`,
+- [x] **T045** [P] [US7] Fix R47 and R48. Files: `pyproject.toml`,
   `src/grimoire_model/__init__.py`, `CHANGELOG.md` only.
 
   Remove `pyyaml` from `dependencies`. Remove `__meta__`,
@@ -1206,7 +1206,7 @@ now on.
 | [x] | T042 | 6 | | US6 | R42 |
 | [x] | T043 | 6 | P | US6 | R45 |
 | [x] | T044 | 7 | P | US7 | R46 |
-| [ ] | T045 | 7 | P | US7 | R47, R48 |
+| [x] | T045 | 7 | P | US7 | R47, R48 |
 | [ ] | T046 | 7 | P | US7 | R50 |
 | [ ] | T047 | 7 | | US7 | R49 |
 | [ ] | T048 | 7 | | US7 | (AGENTS.md) |
